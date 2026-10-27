@@ -9,6 +9,7 @@
   1. Real scan of https://github.com/excalidraw/excalidraw, then one of the owner's repos. Judge whether `graph.md` is believable.
   2. Prove a Muse Code `PreToolUse` hook can block a tool call. Its stdin format and how it blocks are not documented on the page we read. If this fails, fall back to Claude Code.
 - Schedule: scans + hook test Oct 27–28 · catalog + engine Oct 29 · decision page Oct 30 · skill + hook + Muse Spark questions Oct 31 · pivot Nov 1 · benchmark + README Nov 2 · record Nov 3.
+- 2026-10-27: public repo at https://github.com/leadui/hoist-decisions (remote `origin`, SSH, `main` pushed). Commits use Oliveway <lead.with.oleg@gmail.com>. GitHub Pages: `site/index.html` (the decision card prototype, sample data) is published by `.github/workflows/pages.yml` to https://leadui.github.io/hoist-decisions/ once the repo's Settings → Pages → Source is set to "GitHub Actions". Pages is public: no password option on a personal account, and the page makes no API calls, so no key is ever in it. Owner is turning on secret protection and push protection (Settings → Advanced Security).
 - Open: the owner hasn't named their own repo for the audit test yet.
 - Deadline: submission closes **Wed Nov 4, 8:00 PM Central** (9:00 PM ET). Record the demo by Tue Nov 3.
 - Reconcile with git if this disagrees (git wins).
@@ -42,7 +43,7 @@ References: [Hoist Decision Card](https://claude.ai/artifact/8BNdWnry1pnz3mHF1sW
 - Real scan: `.venv/bin/python hoist_audit.py <path-or-git-url>` → local repo writes to `<repo>/docs/decisions/`; URL writes to `./hoist-out/<name>/`
 - Re-render without an API call: `.venv/bin/python hoist_audit.py <target> --from-json .hoist/last_response.json`
 - Validate gate: `.venv/bin/python -m py_compile hoist_audit.py` and `.venv/bin/python hoist_audit.py https://github.com/excalidraw/excalidraw --from-json test/sample_reply.json --out test/out` must succeed.
-- Layout: `hoist_audit.py` (scanner) · `test/sample_reply.json` (hand-written fixture, not a real model reply) · `.hoist/` (local prompts, replies; gitignored) · `~/.hoist/spend.json` (spend ledger)
+- Layout: `hoist_audit.py` (scanner) · `test/sample_reply.json` (hand-written fixture, not a real model reply) · `site/index.html` (decision card prototype for GitHub Pages; edit here, then republish the artifact copy if needed) · `.github/workflows/pages.yml` (Pages deploy) · `.hoist/` (local prompts, replies; gitignored) · `~/.hoist/spend.json` (spend ledger)
 
 ## Muse Spark API
 - OpenAI-compatible. Base URL `https://api.meta.ai/v1`, key in `MODEL_API_KEY`, OpenAI SDK with `base_url` and `api_key` passed explicitly.
