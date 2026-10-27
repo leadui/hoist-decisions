@@ -19,11 +19,11 @@ Agents ask questions you can't answer. Hoist turns them into decisions you under
 When a coding agent reaches a choice that is costly to undo (a one-way door), Hoist pauses it and opens a decision card: what's being decided, what it costs to undo, questions about you (not about the tech), each option's gains and costs, what decides it, and what would flip it. Every proposal can be traced back to its evidence. The choice is recorded as an ADR, and the record updates when plans change. Entry for the Meta Global AI Developer Hackathon, Indie developer track (judged on creativity, technical ambition, and whether it works), theme "Build for your world". Meta tools doing real work: Muse Spark (audit, questions, inferred facts, record prose) and Muse Code (the agent Hoist guards).
 
 ### What the user sees (three layers)
-1. **Glance (5 seconds):** decision title, door badge, best fit with its score, and where the agent's own pick ranks.
-2. **Decide (30 seconds):** "About you" questions, already-known facts (from ADRs), options ranked with "You get / You give up", top 3 deciding factors, "Would flip if" with a Try-it what-if, and three exits: Choose, No preference (best fit is recorded as delegated, to revisit), Ask me later (parked).
-3. **Trust (on demand):** clicking Evidence on any option opens a graph, Sources → Facts → What matters → Proposal. Sources are tagged seen in repo, your answer, agent's task, docs, or inferred by Muse Spark (dashed). Edges into the proposal are green when they help, red when they hurt, and thicker when they count more. Clicking a node highlights its path and shows the file snippet, answer, or doc link.
+1. **Glance (5 seconds):** the decision as a question, door badge, best fit and where the agent's own pick ranks (in words, never a score), a confidence badge with its reasons, and who is accountable (Proposed by Muse Code · Analyzed by Muse Spark · Decided by you).
+2. **Decide (30 seconds):** "About you" questions; already-known facts (from ADRs); considered options ranked Best fit / Runner-up / Third, each with "Strong on / Weak on" and "Good, because / Bad, because" consequences tagged Now or Later; options that fail a hard limit shown as **Ruled out** with the reason and source; a "Close call" tag when the top two are near; top 3 deciding factors; "Would flip if" with a Try-it what-if; how Hoist keeps the decision true; a live **record preview**; then Select an option and three exits: Record, No preference (best fit recorded as delegated, low confidence, revisit), Ask me later (recorded as proposed with a short-term placeholder).
+3. **Trust (on demand):** clicking Evidence on any option (including a ruled-out one) opens a graph, Sources → Facts → What matters → Option. Sources are tagged seen in repo, your answer, agent's task, docs, or inferred by Muse Spark (dashed). Edges are green when they help, red when they hurt, and thicker when they count more. Clicking a node highlights its path and shows the file snippet, answer, or doc link. The raw weights and ratings sit in a collapsed "How Hoist ranked this" section.
 
-Left rail: the decision map (recorded, deciding now, open and blocked). It gives context; the card is where you decide.
+Left rail: the decision map (recorded, deciding now, open and blocked), then **Decided by your agent**: two-way doors Muse Code settled on its own, each as a Y-statement with "Looks right" and "Open as a card". The card is where you decide; the rail is context and review.
 
 ### Pieces, in build order
 1. **Audit** (`hoist_audit.py`, done): Muse Spark reads a repo's manifests, CI and deploy config, infers its lasting decisions, tags each seen / inferred / unknown, and writes `docs/decisions/ADR-NNN-*.md` plus `graph.md` (Mermaid). To do: use catalog ids where a decision matches, and also write `docs/decisions/hoist.json`.
@@ -72,10 +72,56 @@ References: [Hoist Decision Card](https://claude.ai/artifact/8BNdWnry1pnz3mHF1sW
 - Python 3.10+, single-file scripts, standard library first. Only third-party dependency: `openai`, imported lazily inside the function that calls the API.
 - `argparse` CLI with plain-language help strings; guardrail flags have safe defaults.
 - User-facing messages: one line, plain words, say what happened and what to do next (e.g. "Stopped: worst case $0.61 is above --max-cost $0.50.").
-- Decision records follow MADR (Markdown ADR template) sections: Context and problem, Decision drivers, Considered options, Decision outcome, plus Hoist's own: Status line with Door, Would change if, Evidence (each with its source tag), Verify, Revisit when delegated. `hoist_audit.py` still writes the older layout; move it to MADR when the engine lands.
+- Decision records: see **Decision records (output format)** below. `hoist_audit.py` still writes the older layout; move it to that format when the engine lands.
 - Graph: Mermaid `graph LR` with classDefs red/amber/green for one-way/heavy/two-way doors, dashed for unknown.
 - Door scale: 1 two-way (an afternoon), 2 heavy (days), 3 one-way (rewrite).
 - Decision page look: Geist + Geist Mono, neutral grays with one green accent; red and amber are reserved for door levels. Copy speaks to the user ("You get", "You give up"), no jargon in questions. Respect `prefers-reduced-motion`. Light and dark themes.
+
+## Decision records (output format)
+Every decision an agent makes is recorded. How much gets written depends on the door (sources: Olaf Zimmermann, "How to create ADRs — and how not to" and "The MADR template explained and distilled", Medium).
+
+| Door | Who decides | What Hoist writes |
+|---|---|---|
+| 1 two-way | Muse Code, on its own | One Y-statement line in `docs/decisions/agent-log.md`, marked `not reviewed` until the owner says "Looks right" or opens it as a card |
+| 2 heavy | The owner, via the card | MADR light: front matter, title, Context and Problem Statement, Considered Options, Decision Outcome with Consequences |
+| 3 one-way | The owner, via the card | Full MADR (below) |
+
+**Files:** `docs/decisions/NNNN-<title-slug>.md` (4-digit number, title states the problem and the choice, e.g. `0004-store-saved-projects-in-postgres.md`) and `docs/decisions/agent-log.md`.
+
+**Y-statement** (agent log line): `In the context of <where>, facing <concern>, Muse Code chose <option> over <other option>, to achieve <quality>, accepting <downside>.` followed by `· two-way · not reviewed` and the date.
+
+**Full MADR, with Hoist's fields in the front matter:**
+```markdown
+---
+status: proposed | accepted | rejected | deprecated | superseded by NNNN
+date: YYYY-MM-DD
+door: two-way | heavy | one-way
+proposed-by: Muse Code (<the task it was doing>)
+consulted: Muse Spark (repo analysis, questions)
+deciders: project owner | Hoist, delegated by the project owner (no preference)
+confidence: high | medium | low
+depends-on: [NNNN-slug]
+supersedes: NNNN-slug        # only on a pivot
+---
+# <Title: problem and choice>
+
+## Context and Problem Statement      — the decision as a question, with what the repo shows
+## Decision Drivers                   — each tagged (your answer) / (seen in repo) / (docs) / (inferred)
+## Considered Options                 — chosen option first; then "Ruled out: <option>, because <reason>"
+## Decision Outcome                   — "Chosen: <option>, because <justification>"
+### Consequences                      — "Good, because …" and "Bad, because …", now and later
+### Confirmation                      — how Hoist keeps it true (hook, `hoist check` in CI) + checklist
+## Pros and Cons of the Options       — Good/Bad for every other option; mark the agent's original pick
+## More Information                   — confidence and its reasons, revisit conditions (the flips), evidence links
+```
+
+**Rules, so records avoid the named anti-patterns** (apply to the card and to Muse Spark's prompts):
+- No fit numbers anywhere the user reads: rank words, "Strong on / Weak on", "Matters a lot / Matters / Minor". Numbers only order options internally and appear only under "How Hoist ranked this" (avoids *Pseudo-accuracy*).
+- At least two viable options, compared at the same level (engines with how they are hosted, not a product against a file format). An option that fails a hard limit is listed as Ruled out with its reason and source, never as a low-ranked option (avoids *Dummy Alternative*).
+- Every option, including the chosen one, has at least one "Bad, because", and at least one consequence tagged Later (avoids *Fairy Tale*, *Free Lunch Coupon*, *Sprint*). Include running and maintaining it, not only building it (avoids *Tunnel Vision*).
+- Plain, factual wording; every claim cites a file, an answer, or a doc link; no marketing adjectives (avoids *Sales Pitch*). Keep records short; detail designs go elsewhere (avoids *Mega-ADR*).
+- Confidence is always stated with its reasons: medium when any driver is inferred or the top two are a close call; low when delegated or based on a what-if; high only when every driver is seen or answered and the winner is clear.
+- "Ask me later" writes `status: proposed` with the short-term placeholder and a revisit point, so a deferred decision is still recorded.
 
 ## Working loop
 - One step at a time: implement → verify (it actually runs) → validate (gate above) → commit → update Now.
@@ -98,6 +144,9 @@ References: [Hoist Decision Card](https://claude.ai/artifact/8BNdWnry1pnz3mHF1sW
 - 2026-10-26 — Every proposal can be traced to its evidence (sources → facts → factors → proposal), with each source tagged as seen, your answer, agent's task, docs, or inferred by Muse Spark. This answers "why should I trust this ranking?" and shows Muse Spark's work.
 - 2026-10-26 — Muse Code is the agent in the demo, so every tool on screen is Meta's. One SKILL.md in `.claude/skills` serves both Muse Code and Claude Code. If the Muse Code hook can't block a call by Oct 28, demo in Claude Code.
 - 2026-10-26 — "No preference" is a real answer: Hoist records the best fit as delegated and adds a Revisit line, so silence is never a silent choice.
+- 2026-10-26 — Reviewed against Olaf Zimmermann's ADR guidance. Fit scores are hidden from the user: weighted scoring shown as numbers is the "Pseudo-accuracy" anti-pattern. The deterministic math stays, because it produces the ranking and the flips, but the user sees rank words and trade-offs.
+- 2026-10-26 — Every agent decision is recorded, sized by door: Y-statements in `agent-log.md` for two-way doors the agent settles alone, MADR light for heavy doors, full MADR for one-way doors. Records carry accountability (proposed by, consulted, deciders), confidence with reasons, and a Confirmation section saying how Hoist enforces them.
+- 2026-10-26 — Options that can't work in context are shown as Ruled out with a source, and replaced by a real alternative (hosted SQLite instead of a SQLite file on Vercel), so the comparison is honest.
 
 ## Backlog
 - MCP server exposing get_project / open_decision / answer / what_if / commit / pivot
@@ -105,3 +154,4 @@ References: [Hoist Decision Card](https://claude.ai/artifact/8BNdWnry1pnz3mHF1sW
 - One-page landing site on GitHub Pages (only after the demo is recorded; for the "most viral" bonus)
 - Support other agents (Codex, Gemini CLI, Cursor rules files)
 - Add `firebase.json` and similar backend config files to the audit's `EVIDENCE` list
+- Consider making each ADR's front matter the source of truth and `hoist.json` a cache built from it (no second file to keep in sync). The MADR authors also published a YAML variant, YADR (March 2026).
