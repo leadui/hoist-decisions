@@ -149,6 +149,8 @@ details.more summary{cursor:pointer;font-size:14px;color:var(--muted)}
 details.more[open] summary{margin-bottom:10px}
 pre.adr{font-family:var(--mono);font-size:12.5px;line-height:1.6;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;white-space:pre-wrap;word-break:break-word;max-height:480px;overflow:auto;margin:0}
 
+.offline{max-width:660px;margin:16px auto 0;padding:12px 16px;border-radius:10px;background:var(--oneway-soft);color:var(--oneway);font-size:14px}
+.offline code{background:transparent;color:inherit}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,24px);opacity:0;background:var(--ink);color:var(--surface);font-size:14px;padding:10px 16px;border-radius:10px;transition:transform .4s var(--ease),opacity .3s var(--ease);pointer-events:none;max-width:calc(100vw - 32px);z-index:30}
 .toast.on{transform:translate(-50%,0);opacity:1}
 
@@ -189,6 +191,7 @@ table.raw td:first-child,table.raw th:first-child{text-align:left}
   </nav>
 </div></header>
 
+<div class="offline" id="offline" role="alert" hidden>Hoist stopped running, so choices can't be saved. Start it again with <code>python3 hoist.py serve</code> in your project, then reload this page.</div>
 <main class="wrap" id="app"><p class="small">Loading decisions…</p></main>
 
 <button class="scrim" id="scrim" aria-label="Close" tabindex="-1"></button>
@@ -212,7 +215,8 @@ let F=null; /* the decision flow in progress: {id, A, qi, step, pick, done} */
 
 /* ---------- data ---------- */
 async function loadState(){
-  try{const r=await fetch('/api/state',{cache:'no-store'});if(r.ok){S=await r.json();LIVE=true;return;}}catch(e){}
+  try{const r=await fetch('/api/state',{cache:'no-store'});if(r.ok){S=await r.json();LIVE=true;$('offline').hidden=true;return;}}catch(e){}
+  if(LIVE){$('offline').hidden=false;return;}
   S=await (await fetch('sample.json',{cache:'no-store'})).json();LIVE=false;
 }
 async function boot(){

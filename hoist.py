@@ -9,15 +9,16 @@ Commands:
 
 Standard library only. The page and its server listen on 127.0.0.1 and never call an API.
 """
-import argparse, json, os, re, shlex, socket, subprocess, sys, time, webbrowser
+import argparse, json, os, re, shlex, socket, sys, time, urllib.request, webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 HOME = Path(__file__).resolve().parent
 PORT = int(os.environ.get("HOIST_PORT", "7317"))
 URL = f"http://127.0.0.1:{PORT}"
-WAIT = int(os.environ.get("HOIST_WAIT", "540"))  # seconds the hook holds the agent; keep below the hook timeout
+WAIT = int(os.environ.get("HOIST_WAIT", "0"))  # seconds the hook itself holds the agent; 0 = block at once and let `hoist wait` show the pause
 HOOK_TIMEOUT = 600
+DOOR_WORDS = {3: "one-way door: hard to undo", 2: "heavy door: days to undo", 1: "two-way door: easy to undo"}
 
 
 def catalog():
@@ -140,33 +141,53 @@ def gate():
                "agent_pick": opt, "trigger": {"package": pkg, "tool": payload.get("tool_name")},
                "facts": facts, "fact_sources": sources, "answers": {}}
         save_decision(root, dec)
-    ensure_server(root)
-    webbrowser.open(f"{URL}/#/decide/{dec['id']}")
+    page = f"{URL}/#/decide/{dec['id']}"
+    if ensure_server(root):
+        webbrowser.open(page)
     end = time.time() + WAIT
     while time.time() < end:
         time.sleep(1)
         dec = json.loads((decisions_dir(root) / f"{dec['id']}.json").read_text())
         if dec["status"] != "open":
             return block(outcome_message(dec, k, pkg))
-    return block(f"Hoist: \"{k['title']}\" is waiting for the user at {URL}/#/decide/{dec['id']}. "
-                 "Stop here, ask the user to finish it there, then try this step again.")
+    wait_cmd = f"python3 {shlex.quote(str(HOME / 'hoist.py'))} wait {dec['id']}"
+    return block(f"Hoist: paused for a lasting decision ({k['title'].lower()}). The user is deciding at {page}. "
+                 f"Do not add `{pkg}` or pick another option yourself. Run `{wait_cmd}` now and let it finish: "
+                 "it waits for the user and prints what they chose. Then follow that and continue the original task.")
 
 
 def ensure_server(root):
-    if port_open():
-        return
-    log = open(root / ".hoist" / "server.log", "a")
-    subprocess.Popen([sys.executable, str(HOME / "hoist.py"), "serve", str(root)], stdout=log, stderr=log, start_new_session=True)
+    """Make sure the page server for this project is answering; start it detached if needed."""
+    if serving(root):
+        return True
+    if port_open():  # something else holds the port, likely a server for another project
+        return False
+    if os.fork() == 0:  # double fork, so cancelling the hook can't take the server down with it
+        os.setsid()
+        if os.fork() == 0:
+            log = os.open(str(root / ".hoist" / "server.log"), os.O_WRONLY | os.O_CREAT | os.O_APPEND)
+            os.dup2(log, 1); os.dup2(log, 2)
+            os.execv(sys.executable, [sys.executable, "-u", str(HOME / "hoist.py"), "serve", str(root)])
+        os._exit(0)
     for _ in range(50):
-        if port_open():
-            return
+        if serving(root):
+            return True
         time.sleep(0.1)
+    return False
 
 
 def port_open():
     with socket.socket() as s:
         s.settimeout(0.2)
         return s.connect_ex(("127.0.0.1", PORT)) == 0
+
+
+def serving(root):
+    try:
+        with urllib.request.urlopen(f"{URL}/api/state", timeout=1) as r:
+            return json.loads(r.read()).get("root") == str(root)
+    except (OSError, ValueError):
+        return False
 
 
 # ---------- the local page ----------
@@ -193,7 +214,7 @@ def make_handler(root):
                 return self.send(200, (HOME / "catalog.json").read_bytes())
             if path == "/api/state":
                 records = [{"file": p.name, "markdown": p.read_text()} for p in sorted(records_dir(root).glob("[0-9][0-9][0-9][0-9]-*.md"))]
-                return self.send(200, {"project": root.name, "live": True, "decisions": load_decisions(root), "records": records})
+                return self.send(200, {"project": root.name, "root": str(root), "live": True, "decisions": load_decisions(root), "records": records})
             self.send(404, {"error": "not found"})
 
         def do_POST(self):
@@ -226,12 +247,30 @@ def serve(project):
 
 
 def wait(did, project):
-    f = decisions_dir(Path(project).resolve()) / f"{did}.json"
+    root = Path(project).resolve()
+    if not did:
+        waiting = [d for d in load_decisions(root) if d["status"] == "open"]
+        if not waiting:
+            print("HOIST: no decision is waiting. Carry on.")
+            return
+        did = waiting[0]["id"]
+    f = decisions_dir(root) / f"{did}.json"
     if not f.exists():
         sys.exit(f"No decision {did} in {project}.")
+    dec = json.loads(f.read_text())
+    k = catalog()["kinds"][dec["kind"]]
+    line = "-" * 64
+    if dec["status"] == "open":
+        print(f"{line}\nHOIST: {dec.get('agent', 'Your agent')} is paused for a decision that is hard to undo\n"
+              f"  Decision:   {k['title']} ({DOOR_WORDS.get(k['door'], '')})\n"
+              f"  Agent was adding: `{dec['trigger']['package']}`\n"
+              f"  Decide at:  {URL}/#/decide/{did}\n"
+              f"  Waiting for you. The agent continues as soon as you choose.\n{line}", flush=True)
     while (dec := json.loads(f.read_text()))["status"] == "open":
         time.sleep(1)
-    k = catalog()["kinds"][dec["kind"]]
+    opt = k["options"].get(dec.get("choice") or "", {})
+    print(f"{line}\nHOIST: decided. {'Parked for now' if dec['status'] == 'parked' else opt.get('n', dec.get('choice'))}"
+          f" (record: {dec.get('record', '')})\n{line}")
     print(outcome_message(dec, k, dec["trigger"]["package"]))
 
 
@@ -275,7 +314,7 @@ def main():
     sub.add_parser("serve", help="Run the decision page").add_argument("project", nargs="?", default=".")
     sub.add_parser("gate", help="Muse Code hook entry point (payload on stdin)")
     w = sub.add_parser("wait", help="Wait for a decision, then print the outcome")
-    w.add_argument("id"); w.add_argument("project", nargs="?", default=".")
+    w.add_argument("id", nargs="?", default=None, help="Decision ID; default: the open one"); w.add_argument("project", nargs="?", default=".")
     args = ap.parse_args()
     if args.cmd == "install":
         install(args.project)
