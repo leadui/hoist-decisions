@@ -281,9 +281,10 @@ PLAN_SYSTEM = """You are Hoist. An AI agent is about to work on a task for a per
 this task will force: choices that are costly to undo later. The project may be software, a design system,
 writing, data, or anything else; use the evidence to tell which.
 
-Rules:
+Rules for decisions:
 - Only decisions this task needs now. Skip anything already decided in the recorded decisions or visible in the project files.
 - Usually 2 to 6 decisions. Order them so a decision comes after the ones it depends on.
+- Each decision has one clear scope. Two decisions must not overlap: if one choice is part of another, merge them.
 - door: 3 = one-way (redo most of the work to undo), 2 = heavy (days to undo), 1 = two-way (an afternoon).
 - owner: "you" when the right answer depends on the person's goals, users, money, risk, or taste.
   "agent" when a competent practitioner would pick the same sensible default without asking.
@@ -291,40 +292,60 @@ Rules:
   person can review later; "log" for two-way doors the agent can just make.
 - default: the safe default in a few plain words. why: one plain sentence on why it matters for this task.
 
+Profile questions: 2 to 4 questions about the person and their project, asked once and used by every decision,
+so the person is never asked the same thing twice. Rules:
+- About their situation, audience, plans, constraints, or taste. Things they know without expertise.
+- Never about products or technologies. Never ask for numbers they cannot know. No invented scenarios.
+- Each one must matter to at least one "ask" decision; list which in used_by.
+- 2 to 4 short answers each, plus beginner_note (one sentence explaining any term, or empty).
+
 Reply with JSON only:
-{"task_summary": str, "decisions": [{"id": "kebab-case", "title": "plain verb phrase", "door": 1|2|3,
-  "owner": "you"|"agent", "mode": "ask"|"default"|"log", "default": str, "why": str, "depends_on": [ids]}]}"""
+{"task_summary": str,
+ "profile": [{"id": "kebab-case", "text": str, "why": "one sentence: what it changes", "beginner_note": str,
+   "answers": [str], "used_by": [decision ids]}],
+ "decisions": [{"id": "kebab-case", "title": "plain verb phrase", "scope": "one sentence: what this decision covers and what it leaves to others",
+   "door": 1|2|3, "owner": "you"|"agent", "mode": "ask"|"default"|"log", "default": str, "why": str, "depends_on": [ids]}]}"""
 
 DRAFT_SYSTEM = """You are Hoist. You help a person make one decision that an AI agent is about to make for them and
 that is hard to undo. The person is smart but may not know the field. Write the way a patient expert explains
 something to a friend: short sentences, plain words, no hype, no marketing adjectives, no scores or percentages.
 
+You get the task, the project evidence, the plan of decisions for this task, and the profile questions the
+person answers once for all of them. Stay inside this decision's scope. Treat the other decisions as handled
+elsewhere: if this one depends on a decision not made yet, assume its default and say so in assumes.
+
 Contract (reply with JSON only):
 {"question": "the decision as a plain question about their project, not about product names",
  "why_now": "one sentence: why this has to be decided now",
  "undo": "one sentence: what undoing it later would involve",
+ "assumes": "one sentence on what this takes as given from other decisions, or empty",
  "door": 1|2|3,
+ "profile_effects": [{"profile_id": "id from the profile", "answers": [{"label": "exact answer text from the profile",
+   "effects": [{"option": "option id", "dir": "favors"|"against", "reason": "short"}]}]}],
  "questions": [{"id": "kebab-case", "text": "...", "why": "one sentence: what the answer changes",
    "beginner_note": "one sentence explaining any term in the question, or empty",
    "answers": [{"label": "short answer", "effects": [{"option": "option id", "dir": "favors"|"against", "reason": "short"}]}]}],
  "options": [{"id": "kebab-case", "name": "...", "summary": "one line",
    "good": [{"when": "now"|"later", "text": "..."}], "bad": [{"when": "now"|"later", "text": "..."}],
-   "learn": {"what": "two plain sentences", "living_with": "two sentences on what day-to-day life with it is like",
+   "learn": {"what": "two plain sentences describing what it is and how it works", "living_with": "two sentences on what day-to-day life with it is like",
      "terms": [{"term": "...", "meaning": "one line"}], "docs_url": "official documentation home page, or empty if unsure"},
+   "check_current": "if the option names a product, vendor, plan, or price: one sentence on what to confirm is still true before relying on it; else empty",
    "ruled_out": "" or "reason it cannot work here"}],
  "default_option": "option id", "default_reason": "one sentence",
  "agent_pick": "option id or empty",
- "evidence": [{"source": "file name" | "task" | "inferred", "detail": "..."}]}
+ "evidence": [{"source": "file name" | "task" | "profile" | "inferred", "detail": "..."}]}
 
-Rules for questions (at most 3):
-- Ask about the person's situation, plans, constraints, or preferences: things they know without expertise.
-- Never ask them to pick a product or technology. Never ask for numbers they cannot know.
-- Each question must change which option fits. Skip anything the evidence already answers.
-- 2 to 4 answers each. Every answer lists at least one effect with a reason.
+Rules for questions:
+- Use the profile first: map each relevant profile answer to effects in profile_effects. Do not ask a profile question again.
+- Add at most 1 question of your own, only if no profile question decides this. Same standards as the profile:
+  about their situation, never about technology, no numbers they cannot know, no invented scenarios.
+- Every answer lists at least one effect with a reason.
 Rules for options:
 - 2 to 4 options that could really work, at the same level (compare like with like). Include the agent's pick.
+- Prefer kinds of solution over brand names. Name a product only when it is the usual concrete choice, and then fill check_current.
 - Put options that cannot work given the evidence in ruled_out with the reason instead of leaving them as weak choices.
 - Every option has at least one bad item and at least one item about later.
+- learn describes the option itself. Never write "you will learn".
 - terms: up to 4 terms the option's text uses that a newcomer may not know."""
 
 
@@ -346,9 +367,25 @@ def muse_json(system, prompt, label, max_output=8000):
     return hoist_audit.parse(text)
 
 
-def check_draft(d):
+def check_draft(d, profile=None):
     """Quality rules from the ADR guidance; returns problems in plain words (empty = passes)."""
     problems = []
+    if profile:
+        known = {q["id"]: set(q.get("answers", [])) for q in profile}
+        if len(d.get("questions") or []) > 1:
+            problems.append(f"asks {len(d['questions'])} questions of its own; at most 1 when profile questions exist")
+        for pe in d.get("profile_effects") or []:
+            if pe.get("profile_id") not in known:
+                problems.append(f"profile_effects uses unknown profile question '{pe.get('profile_id')}'")
+                continue
+            for a in pe.get("answers") or []:
+                if a.get("label") not in known[pe["profile_id"]]:
+                    problems.append(f"profile answer '{a.get('label')}' is not one of the profile's answers")
+                for e in a.get("effects") or []:
+                    if e.get("option") not in {o.get("id") for o in d.get("options") or []}:
+                        problems.append(f"profile answer '{a.get('label')}' points at unknown option '{e.get('option')}'")
+        if not d.get("profile_effects") and not d.get("questions"):
+            problems.append("nothing the person says changes the ranking: map profile answers to effects")
     opts = d.get("options") or []
     ids = {o.get("id") for o in opts}
     viable = [o for o in opts if not o.get("ruled_out")]
@@ -377,7 +414,7 @@ def check_draft(d):
     if d.get("default_option") not in {o.get("id") for o in viable}:
         problems.append("default_option is not a workable option")
     text = json.dumps(d).lower()
-    for w in ("%", " score", "best-in-class", "industry-leading", "seamless", "blazing"):
+    for w in ("%", " score", "best-in-class", "industry-leading", "seamless", "blazing", "you will learn"):
         if w in text:
             problems.append(f"uses '{w.strip()}': no scores or marketing words")
     for o in opts:  # keep only docs links that answer
@@ -413,6 +450,11 @@ def plan(task, project):
     (root / ".hoist").mkdir(exist_ok=True)
     (root / ".hoist" / "plan.json").write_text(json.dumps({"task": task, **p}, indent=2))
     print(f"\n{p.get('task_summary', task)}\n")
+    if p.get("profile"):
+        print("Asked once, used by every decision")
+        for q in p["profile"]:
+            print(f"  - {q['text']}  [{' / '.join(q.get('answers', []))}]\n      why: {q.get('why')}  (used by: {', '.join(q.get('used_by', []))})")
+        print()
     for label, mode in (("Ask you", "ask"), ("Default, review later", "default"), ("Agent's call, logged", "log")):
         rows = [d for d in p["decisions"] if d.get("mode") == mode]
         if rows:
@@ -424,22 +466,42 @@ def plan(task, project):
             print()
 
 
-def draft(title, task, project):
+def draft(which, task, project):
     root = Path(project).resolve()
-    prompt = f"Decision to draft: {title}\n\n{project_context(root, task)}"
+    plan_file = root / ".hoist" / "plan.json"
+    pl = json.loads(plan_file.read_text()) if plan_file.exists() else {}
+    task = task or pl.get("task", "")
+    entry = next((x for x in pl.get("decisions", []) if which in (x.get("id"), x.get("title"))), None)
+    title = entry["title"] if entry else which
+    out = root / ".hoist" / "drafts"; out.mkdir(parents=True, exist_ok=True)
+    slug = (entry or {}).get("id") or re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")[:50]
+    others = []
+    for x in pl.get("decisions", []):
+        if x is entry:
+            continue
+        f = out / f"{x['id']}.json"
+        default = json.loads(f.read_text()).get("default_option") if f.exists() else x.get("default")
+        others.append(f"- {x['title']} ({x.get('mode')}): {x.get('scope', '')} Default if not decided: {default}")
+    prompt = (f"Decision to draft: {title}\n" + (f"Scope: {entry.get('scope')}\n" if entry else "")
+              + ("Other decisions in this task, handled elsewhere:\n" + "\n".join(others) + "\n" if others else "")
+              + ("Profile questions (asked once):\n" + json.dumps(pl.get("profile", []), indent=1) + "\n" if pl.get("profile") else "")
+              + "\n" + project_context(root, task))
     d = muse_json(DRAFT_SYSTEM, prompt, f"draft:{root.name}")
-    problems = check_draft(d)
+    problems = check_draft(d, pl.get("profile"))
     if problems:  # one repair round, then report honestly
         print(f"Quality check failed ({len(problems)}): {'; '.join(problems)}. Asking Muse Spark to fix it.", file=sys.stderr)
         d = muse_json(DRAFT_SYSTEM, prompt + "\n\nYour last draft broke these rules; fix them:\n- " + "\n- ".join(problems)
                       + "\n\nLast draft:\n" + json.dumps(d), f"draft-fix:{root.name}")
-        problems = check_draft(d)
-    out = root / ".hoist" / "drafts"; out.mkdir(parents=True, exist_ok=True)
-    slug = re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")[:50]
+        problems = check_draft(d, pl.get("profile"))
     (out / f"{slug}.json").write_text(json.dumps({"title": title, "task": task, "problems": problems, **d}, indent=2))
-    print(f"\n{d.get('question')}\n  why now: {d.get('why_now')}\n  undo:    {d.get('undo')}")
+    print(f"\n{d.get('question')}\n  why now: {d.get('why_now')}\n  undo:    {d.get('undo')}"
+          + (f"\n  assumes: {d['assumes']}" if d.get("assumes") else ""))
+    for pe in d.get("profile_effects", []):
+        print(f"\n  uses profile '{pe['profile_id']}':")
+        for a in pe.get("answers", []):
+            print(f"     - {a['label']}: " + "; ".join(f"{e['dir']} {e['option']} ({e['reason']})" for e in a.get("effects", [])))
     for q in d.get("questions", []):
-        print(f"\n  Q: {q['text']}\n     ({q.get('why')})" + (f"\n     new to this: {q['beginner_note']}" if q.get("beginner_note") else ""))
+        print(f"\n  OWN QUESTION: {q['text']}\n     ({q.get('why')})" + (f"\n     new to this: {q['beginner_note']}" if q.get("beginner_note") else ""))
         for a in q.get("answers", []):
             print(f"     - {a['label']}: " + "; ".join(f"{e['dir']} {e['option']} ({e['reason']})" for e in a.get("effects", [])))
     for o in d.get("options", []):
@@ -448,7 +510,8 @@ def draft(title, task, project):
         for g in o.get("good", []): print(f"     + ({g['when']}) {g['text']}")
         for b in o.get("bad", []): print(f"     - ({b['when']}) {b['text']}")
         lrn = o.get("learn") or {}
-        print(f"     learn: {lrn.get('what', '')}" + (f"\n     docs: {lrn['docs_url']}" if lrn.get("docs_url") else ""))
+        print(f"     learn: {lrn.get('what', '')}" + (f"\n     check it's current: {o['check_current']}" if o.get("check_current") else "")
+              + (f"\n     docs: {lrn['docs_url']}" if lrn.get("docs_url") else ""))
     print(f"\n  default if you don't mind: {d.get('default_option')} ({d.get('default_reason')})")
     print(f"  quality check: {'passed' if not problems else 'still failing: ' + '; '.join(problems)}")
     print(f"  saved: {(out / f'{slug}.json').relative_to(root)}")
@@ -498,7 +561,7 @@ def main():
     pl = sub.add_parser("plan", help="Muse Spark: list the lasting decisions a task will force")
     pl.add_argument("task"); pl.add_argument("project", nargs="?", default=".")
     dr = sub.add_parser("draft", help="Muse Spark: write one decision for the person to make")
-    dr.add_argument("title"); dr.add_argument("--task", default=""); dr.add_argument("project", nargs="?", default=".")
+    dr.add_argument("title", help="Decision id from the plan, or a title"); dr.add_argument("--task", default=""); dr.add_argument("project", nargs="?", default=".")
     args = ap.parse_args()
     if args.cmd == "install":
         install(args.project)
