@@ -51,6 +51,7 @@ nav.tabs a[aria-current="page"]{background:var(--surface);color:var(--ink);box-s
 @media (max-width:640px){.wrap{padding-block:24px 48px}}
 .step{display:flex;flex-direction:column;gap:22px;animation:in .45s var(--ease)}
 @keyframes in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.step.still{animation:none}
 .status{display:inline-flex;align-items:center;gap:9px;font-size:13.5px;color:var(--muted)}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--heavy);position:relative;flex:none}
 .dot::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:1px solid var(--heavy);opacity:0;animation:breathe 2.4s var(--ease) infinite}
@@ -149,6 +150,43 @@ details.more summary{cursor:pointer;font-size:14px;color:var(--muted)}
 details.more[open] summary{margin-bottom:10px}
 pre.adr{font-family:var(--mono);font-size:12.5px;line-height:1.6;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;white-space:pre-wrap;word-break:break-word;max-height:480px;overflow:auto;margin:0}
 
+/* session */
+.newbie{display:inline-flex;align-items:center;gap:8px;font-size:13.5px;color:var(--muted);cursor:pointer;user-select:none}
+.newbie input{accent-color:var(--accent);width:16px;height:16px;margin:0}
+.task{width:100%;min-height:84px;font:inherit;font-size:16px;padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);resize:vertical}
+.task:focus{outline:2px solid var(--accent);outline-offset:1px}
+.examples{display:flex;flex-wrap:wrap;gap:8px}
+.examples button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 12px;font-size:13px;color:var(--muted)}
+.examples button:hover{color:var(--ink)}
+.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
+.steps li{display:grid;grid-template-columns:22px minmax(0,1fr);gap:12px;align-items:start;font-size:15.5px;color:var(--faint)}
+.steps li.on{color:var(--ink)} .steps li.ok{color:var(--muted)}
+.steps .ic{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--line);margin-top:3px;display:grid;place-items:center}
+.steps li.ok .ic{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.steps li.ok .ic svg{width:12px;height:12px}
+.steps li.on .ic{border-color:var(--accent);border-top-color:transparent;animation:spin .9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.steps small{display:block;font-size:13px;color:var(--faint)}
+.skel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px;display:flex;flex-direction:column;gap:12px}
+.skel i{display:block;height:12px;border-radius:6px;background:linear-gradient(90deg,var(--soft) 0%,var(--line) 50%,var(--soft) 100%);background-size:200% 100%;animation:shimmer 1.4s ease-in-out infinite}
+@keyframes shimmer{from{background-position:100% 0}to{background-position:-100% 0}}
+.group{display:flex;flex-direction:column;gap:8px}
+.group h2{font-size:13px;font-weight:500;color:var(--faint)}
+.row2{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 14px;padding:12px 16px;background:var(--surface);border:1px solid var(--line);border-radius:12px;align-items:center}
+.row2 .t{font-weight:500}
+.row2 .s{font-size:14px;color:var(--muted);grid-column:1/2}
+.row2 .m{grid-row:1/3;grid-column:2}
+.row2.quiet{background:transparent}
+.note{font-size:14px;color:var(--muted);background:var(--soft);border-radius:10px;padding:10px 14px;margin:0}
+.newnote{font-size:14px;color:var(--accent);margin:-10px 0 0}
+.learn{border-top:1px solid var(--line);padding-top:12px;display:flex;flex-direction:column;gap:8px;font-size:14.5px}
+.learn p{margin:0}
+.learn b{font-weight:500}
+.learn dl{margin:0;display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;font-size:14px}
+.learn dt{font-weight:500}
+.learn dd{margin:0;color:var(--muted)}
+.check{font-size:14px;color:var(--heavy);background:var(--heavy-soft);border-radius:8px;padding:8px 12px;margin:0}
+.assumes{font-size:14px;color:var(--faint);margin:-8px 0 0}
 .offline{max-width:660px;margin:16px auto 0;padding:12px 16px;border-radius:10px;background:var(--oneway-soft);color:var(--oneway);font-size:14px}
 .offline code{background:transparent;color:inherit}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,24px);opacity:0;background:var(--ink);color:var(--surface);font-size:14px;padding:10px 16px;border-radius:10px;transition:transform .4s var(--ease),opacity .3s var(--ease);pointer-events:none;max-width:calc(100vw - 32px);z-index:30}
@@ -186,6 +224,7 @@ table.raw td:first-child,table.raw th:first-child{text-align:left}
   <span class="proj" id="proj"></span>
   <span class="sample" id="sampleTag" hidden>Sample data</span>
   <nav class="tabs" aria-label="Views">
+    <a href="#/session" id="tabSession">This task <span class="count" id="sessionCount"></span></a>
     <a href="#/decide" id="tabDecide">Waiting for you <span class="count" id="openCount"></span></a>
     <a href="#/records" id="tabRecords">Decision records</a>
   </nav>
@@ -227,7 +266,13 @@ async function boot(){
   $('proj').textContent=S.project||'';
   $('sampleTag').hidden=LIVE;
   addEventListener('hashchange',async()=>{if(LIVE)await loadState();render();});
-  if(LIVE)setInterval(async()=>{if(F&&!F.done)return;const before=JSON.stringify(S.decisions);await loadState();if(JSON.stringify(S.decisions)!==before)render();},3000);
+  if(LIVE)setInterval(async()=>{
+    const busy=S.session&&['planning','drafting'].includes(S.session.status);
+    if(!busy&&F&&!F.done)return;
+    const before=JSON.stringify([S.decisions,S.session&&S.session.status,S.session&&S.session.drafted]);
+    await loadState();
+    if(JSON.stringify([S.decisions,S.session&&S.session.status,S.session&&S.session.drafted])!==before)render();
+  },busyPoll());
   render();
 }
 const openDecisions=()=>S.decisions.filter(d=>d.status==='open');
@@ -265,6 +310,13 @@ function render(){
   $('tabDecide').hidden=!openDecisions().length;
   $('tabDecide').setAttribute('aria-current',h.startsWith('#/decide')?'page':'false');
   $('tabRecords').setAttribute('aria-current',h.startsWith('#/records')?'page':'false');
+  const pend=sessionPending();
+  $('tabSession').hidden=!S.session&&LIVE;
+  $('sessionCount').textContent=pend||'';
+  $('tabSession').setAttribute('aria-current',h.startsWith('#/session')?'page':'false');
+  if(h==='#/session')return renderSession();
+  if(h==='#/'&&S.session&&(['planning','drafting'].includes(S.session.status)||pend)){location.replace('#/session');return;}
+  if(h==='#/'&&!LIVE){location.replace('#/session');return;}
   if((m=h.match(/^#\/decide\/(\d{4})$/)))return renderDecide(m[1]);
   if(h==='#/decide'){const d=openDecisions()[0];if(d){location.replace('#/decide/'+d.id);return;}}
   if((m=h.match(/^#\/records\/(\d{4})$/)))return renderRecord(m[1]);
@@ -469,6 +521,329 @@ function renderRecord(id){
   </div>`;
   scrollTo({top:0});
 }
+
+/* ---------- sessions: Muse Spark drafts a task's decisions; Hoist ranks, explains, records ---------- */
+let G={view:null,pi:0,di:0,learn:{},pick:{},sim:null};
+const NEWBIE_KEY='hoist-newbie';
+let NEWBIE=(()=>{try{return localStorage.getItem(NEWBIE_KEY)==='1';}catch(e){return false;}})();
+const busyPoll=()=>1500;
+const SS=()=>S.session;
+function asks(){const p=SS()&&SS().plan;return p?p.decisions.filter(d=>d.mode==='ask'):[];}
+function sessionPending(){const ss=SS();if(!ss||ss.status!=='ready')return 0;return asks().filter(d=>!(ss.outcomes||{})[d.id]).length;}
+function draftOf(id){return (SS().drafts||{})[id];}
+function newbieToggle(){return `<label class="newbie"><input type="checkbox" id="newbie" ${NEWBIE?'checked':''}>I'm new to this: explain terms as I go</label>`;}
+function slugify(t){const s=t.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');return s.length<=60?s:s.slice(0,61).replace(/-[^-]*$/,'');}
+function doorWord(d){return {3:'one-way door',2:'heavy door',1:'two-way door'}[d]||'';}
+async function post(url,body){
+  const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if(!r.ok)throw new Error((await r.json().catch(()=>({}))).error||'Request failed');
+  return r.json();
+}
+async function saveAnswers(patch){
+  const ss=SS();Object.assign(ss.profile_answers,patch.profile_answers||{});
+  for(const[k,v]of Object.entries(patch.answers||{}))ss.answers[k]=Object.assign(ss.answers[k]||{},v);
+  if(LIVE){try{S.session=await post('/api/session/answers',patch);}catch(e){toast('Couldn\'t save that answer. Is Hoist still running?');}}
+}
+
+/* ranking from stated effects: each chosen answer favors (+1) or works against (-1) options, with a reason */
+function rankDraft(dr,did,over){
+  const ss=SS(),opts=dr.options.filter(o=>!o.ruled_out),sc={},why={};
+  opts.forEach(o=>{sc[o.id]=0;why[o.id]=[];});
+  const pa={...ss.profile_answers,...(over&&over.profile||{})},oa={...((ss.answers||{})[did]||{}),...(over&&over.own||{})};
+  const apply=(a)=>(a&&a.effects||[]).forEach(e=>{if(!(e.option in sc))return;sc[e.option]+=e.dir==='favors'?1:-1;if(e.dir==='favors')why[e.option].push(e.reason);});
+  (dr.profile_effects||[]).forEach(pe=>apply((pe.answers||[]).find(a=>a.label===pa[pe.profile_id])));
+  (dr.questions||[]).forEach(q=>apply((q.answers||[]).find(a=>a.label===oa[q.id])));
+  const order=opts.map((o,i)=>({o,i})).sort((x,y)=>(sc[y.o.id]-sc[x.o.id])||((y.o.id===dr.default_option)-(x.o.id===dr.default_option))||(x.i-y.i)).map(x=>x.o);
+  const close=order.length>1&&sc[order[0].id]-sc[order[1].id]<=1;
+  return{order,sc,why,close};
+}
+function flipsDraft(dr,did){
+  const ss=SS(),win=rankDraft(dr,did).order[0].id,out=[];
+  const prof=(SS().plan.profile||[]);
+  (dr.profile_effects||[]).forEach(pe=>{const q=prof.find(x=>x.id===pe.profile_id);if(!q)return;
+    q.answers.forEach(lbl=>{if(lbl===ss.profile_answers[q.id])return;const w=rankDraft(dr,did,{profile:{[q.id]:lbl}}).order[0];
+      if(w.id!==win)out.push({txt:`you had answered “${lbl}” to “${q.text}”`,win:w});});});
+  (dr.questions||[]).forEach(q=>q.answers.forEach(a=>{if(a.label===((ss.answers||{})[did]||{})[q.id])return;const w=rankDraft(dr,did,{own:{[q.id]:a.label}}).order[0];
+    if(w.id!==win)out.push({txt:`you had answered “${a.label}” to “${q.text}”`,win:w});}));
+  return out;
+}
+function confDraft(dr,rk,mode){
+  if(mode==='delegated')return{lv:'low',txt:'you didn\'t mind, so Hoist used the default'};
+  const inferred=(dr.evidence||[]).filter(e=>e.source==='inferred').length;
+  if(rk.close)return{lv:'medium',txt:'the runner-up is close'+(inferred?`; ${inferred} fact${inferred>1?'s':''} inferred`:'')};
+  if(inferred)return{lv:'medium',txt:`${inferred} fact${inferred>1?'s were':' was'} inferred by Muse Spark`};
+  return{lv:'high',txt:'your answers point clearly one way'};
+}
+
+function renderSession(){
+  const ss=SS();
+  if(!(G.sim||(ss&&['planning','drafting'].includes(ss.status))))app.dataset.view='';
+  if(G.sim)return renderLoading(G.sim);
+  if(!ss)return renderStart();
+  if(['planning','drafting'].includes(ss.status))return renderLoading(ss);
+  if(ss.status==='error')return renderSessionError(ss);
+  if(!G.view)G.view=Object.keys(ss.outcomes||{}).length?'decide':'overview';
+  if(G.view==='overview')return renderOverview();
+  if(G.view==='profile')return renderProfileQ();
+  const pend=asks().findIndex(d=>!(ss.outcomes||{})[d.id]);
+  if(pend<0)return renderSessionDone();
+  G.di=pend;renderSessionDecision(asks()[pend]);
+}
+function renderStart(){
+  const ex=['Add user accounts with saved projects','Set up color tokens and theming for our design system','Add analytics to see where customers drop off during checkout'];
+  app.innerHTML=`<div class="step">
+    <span class="status"><span class="dot ok"></span>Hoist is ready</span>
+    <h1>What is your agent about to do?</h1>
+    <p class="lead">Describe the task. Muse Spark reads your project, finds the decisions that would be hard to undo, and prepares each one so you can decide in plain language.</p>
+    <textarea class="task" id="taskIn" placeholder="Add user accounts with saved projects">${LIVE?'':esc(ex[0])}</textarea>
+    <div class="examples">${ex.map(e=>`<button data-ex="${esc(e)}">${esc(e)}</button>`).join('')}</div>
+    <div class="row"><button class="btn primary" data-s="start">Prepare the decisions</button></div>
+    <p class="err" id="startErr" hidden></p>
+  </div>`;
+}
+function renderLoading(ss){
+  const pl=ss.plan,cur=ss.current&&pl?pl.decisions.find(d=>d.id===ss.current):null;
+  const t0=G.t0||(G.t0=Date.now()),secs=Math.round((Date.now()-t0)/1000);
+  const st=(on,ok)=>ok?'ok':on?'on':'';
+  const planning=ss.status==='planning';
+  const again=app.dataset.view==='loading';app.dataset.view='loading';
+  app.innerHTML=`<div class="step${again?' still':''}">
+    <span class="status"><span class="dot"></span>Muse Spark is working · ${secs}s</span>
+    <h1>Preparing your decisions</h1>
+    <p class="lead">“${esc(ss.task)}”. Muse Spark writes the questions and options; Hoist checks every draft against its rules before you see it.</p>
+    <ol class="steps">
+      <li class="${st(planning,!planning)}"><span class="ic">${planning?'':CHECK}</span><span>Reading your project and finding the lasting decisions<small>Files, existing decision records, and the task</small></span></li>
+      <li class="${st(!planning,false)}"><span class="ic"></span><span>${pl?`Writing ${ss.total} decision${ss.total===1?'':'s'} for you to make`:'Writing each decision for you to make'}
+        <small>${cur?`Now: ${esc(cur.title)} (${(ss.drafted||[]).length+1} of ${ss.total})`:'Questions about you, options, trade-offs, and plain explanations'}</small></span></li>
+      <li><span class="ic"></span><span>Ready for you<small>Usually under a minute</small></span></li>
+    </ol>
+    <div class="skel" aria-hidden="true"><i style="width:40%"></i><i style="width:85%"></i><i style="width:70%"></i><i style="width:55%"></i></div>
+  </div>`;
+  clearTimeout(renderLoading.t);renderLoading.t=setTimeout(()=>{if(location.hash==='#/session'&&(G.sim||['planning','drafting'].includes((SS()||{}).status)))renderSession();},1000);
+}
+function renderSessionError(ss){
+  app.innerHTML=`<div class="step"><h1>Muse Spark couldn't finish</h1><p class="lead">${esc(ss.error||'Something went wrong.')}</p>
+    <div class="row"><button class="btn primary" data-s="retry">Try again</button></div></div>`;
+}
+function renderOverview(){
+  const ss=SS(),pl=ss.plan,a=asks(),def=pl.decisions.filter(d=>d.mode==='default'),log=pl.decisions.filter(d=>d.mode==='log');
+  const moved=def.filter(d=>d.budget_note).length,prof=pl.profile||[];
+  app.innerHTML=`<div class="step">
+    <span class="status"><span class="dot"></span>${LIVE?'Your agent is waiting for these decisions':'Ready for you'}</span>
+    <h1>This task needs ${a.length} decision${a.length===1?'':'s'} from you</h1>
+    <p class="lead">${esc(pl.task_summary||ss.task)}</p>
+    <p class="note">First ${prof.length} quick question${prof.length===1?'':'s'} about you and the project. Every decision uses those answers, so nothing is asked twice. About ${Math.max(2,a.length+1)} minutes in all.</p>
+    <div class="group"><h2>You decide</h2>${a.map(d=>`<div class="row2"><span class="t">${esc(d.title)}</span><span class="s">${esc(d.why)}</span><span class="m">${pillDoor({3:'one-way',2:'heavy',1:'two-way'}[d.door])}</span></div>`).join('')}</div>
+    ${def.length?`<div class="group"><h2>Safe defaults, recorded so you can review them later</h2>${def.map(d=>`<div class="row2 quiet"><span class="t">${esc(d.title)}</span><span class="s">${esc(d.default)}</span></div>`).join('')}
+      ${moved?`<p class="small">To keep this short, Hoist moved ${moved} decision${moved>1?'s':''} here instead of asking.</p>`:''}</div>`:''}
+    ${log.length?`<div class="group"><h2>Your agent decides these and notes them in the log</h2>${log.map(d=>`<div class="row2 quiet"><span class="t">${esc(d.title)}</span><span class="s">${esc(d.default)}</span></div>`).join('')}</div>`:''}
+    <div class="row"><button class="btn primary" data-s="begin">Start</button>${newbieToggle()}</div>
+  </div>`;
+}
+function renderProfileQ(){
+  const prof=SS().plan.profile||[];
+  if(G.pi>=prof.length){G.view='decide';return renderSession();}
+  const q=prof[G.pi],cur=SS().profile_answers[q.id];
+  app.innerHTML=`<div class="step">
+    <span class="status"><span class="dot"></span>About you and the project</span>
+    <div class="qhead"><span class="qnum">Question ${G.pi+1} of ${prof.length} · asked once, used by every decision</span><span class="pips">${prof.map((_,i)=>`<i class="${i<=G.pi?'on':''}"></i>`).join('')}</span></div>
+    <p class="qtext">${esc(q.text)}</p><p class="qwhy">${esc(q.why)}</p>
+    ${NEWBIE&&q.beginner_note?`<p class="newnote">${esc(q.beginner_note)}</p>`:''}
+    <div class="answers">${q.answers.map((a,i)=>`<button class="ans ${cur===a?'sel':''}" data-pa="${i}"><span class="key">${i+1}</span>${esc(a)}</button>`).join('')}</div>
+    <div class="row">${G.pi>0?'<button class="link" data-s="pback">Back</button>':'<button class="link" data-s="overview">Back to the overview</button>'}${newbieToggle()}</div>
+  </div>`;
+}
+function learnHtml(o){
+  const l=o.learn||{};
+  return `<div class="learn">${l.what?`<p><b>What it is.</b> ${esc(l.what)}</p>`:''}${l.living_with?`<p><b>Living with it.</b> ${esc(l.living_with)}</p>`:''}
+    ${(l.terms||[]).length?`<dl>${l.terms.map(t=>`<dt>${esc(t.term)}</dt><dd>${esc(t.meaning)}</dd>`).join('')}</dl>`:''}
+    ${o.check_current?`<p class="check">Check it's current: ${esc(o.check_current)}</p>`:''}
+    ${l.docs_url?`<p><a href="${esc(l.docs_url)}" target="_blank" rel="noopener">Official documentation</a></p>`:''}</div>`;
+}
+function renderSessionDecision(d){
+  const dr=draftOf(d.id),ss=SS(),n=asks().length;
+  if(!dr){app.innerHTML=`<div class="step"><h1>${esc(d.title)}</h1><p class="lead">This decision wasn't drafted. <button class="link" data-s="skip">Use the default: ${esc(d.default)}</button></p></div>`;return;}
+  const own=(dr.questions||[]).find(q=>!((ss.answers||{})[d.id]||{})[q.id]);
+  const head=`<div class="qhead"><span class="qnum">Decision ${G.di+1} of ${n} · ${doorWord(dr.door||d.door)}</span><span class="pips">${asks().map((_,i)=>`<i class="${i<=G.di?'on':''}"></i>`).join('')}</span></div>`;
+  if(own){
+    app.innerHTML=`<div class="step">${head}<h1>${esc(dr.question)}</h1><p class="lead">${esc(dr.why_now)} ${esc(dr.undo)}</p>
+      <p class="qtext">${esc(own.text)}</p><p class="qwhy">${esc(own.why)}</p>${NEWBIE&&own.beginner_note?`<p class="newnote">${esc(own.beginner_note)}</p>`:''}
+      <div class="answers">${own.answers.map((a,i)=>`<button class="ans" data-oa="${i}" data-q="${esc(own.id)}"><span class="key">${i+1}</span>${esc(a.label)}</button>`).join('')}</div>
+      <div class="row">${newbieToggle()}</div></div>`;
+    return;
+  }
+  const rk=rankDraft(dr,d.id),best=rk.order[0],chosen=dr.options.find(o=>o.id===G.pick[d.id])||best,fl=flipsDraft(dr,d.id),cf=confDraft(dr,rk);
+  const reasons=[...new Set(rk.why[chosen.id])].slice(0,2);
+  const accept=[...(chosen.bad||[])].sort((x,y)=>(y.when==='later')-(x.when==='later'));
+  const ruled=dr.options.filter(o=>o.ruled_out);
+  app.innerHTML=`<div class="step">
+    ${head}
+    <h1>${esc(dr.question)}</h1>
+    <p class="lead">${esc(dr.why_now)} ${esc(dr.undo)}</p>
+    ${dr.assumes?`<p class="assumes">${/^assum/i.test(dr.assumes)?'':'Assumes: '}${esc(dr.assumes)}</p>`:''}
+    <div class="rec">
+      <span class="small">${chosen===best?'Recommended for you':'Your choice'}</span>
+      <h1>${esc(chosen.name)}</h1>
+      <p class="why">${chosen===best?(reasons.length?`It fits because ${esc(reasons.map(lc).join(', and '))}.`:esc(dr.default_reason)):`You picked this over ${esc(best.name)}, which fits your answers better.`} ${esc(chosen.summary||'')}</p>
+      <div class="accept"><b>You accept</b><span>${esc(accept.map(b=>b.text).join(' '))}</span></div>
+      <div class="row"><button class="btn primary" data-s="choose" data-o="${esc(chosen.id)}">${CHECK}Use ${esc(chosen.name)}</button><button class="link" data-learn="${esc(chosen.id)}">${G.learn[chosen.id]?'Hide':'Learn more'}</button></div>
+      ${G.learn[chosen.id]?learnHtml(chosen):(chosen.check_current?`<p class="check">Check it's current: ${esc(chosen.check_current)}</p>`:'')}
+      <p class="small"><span class="lv ${cf.lv}">Confidence ${cf.lv}</span> &nbsp;${esc(cf.txt)}.${fl.length?` It would change if ${esc(fl[0].txt)}; then ${esc(fl[0].win.name)} fits better.`:''}</p>
+    </div>
+    <div class="others"><h2>Other options</h2>
+      ${rk.order.filter(o=>o!==chosen).map(o=>`<div class="other"><span class="n">${esc(o.name)}${o.id===dr.agent_pick?'<span class="tag">Agent\'s pick</span>':''}${o===best?'<span class="tag">Best fit</span>':''}</span>
+        <span class="d">${esc(o.summary||'')} ${o.bad&&o.bad[0]?'Downside: '+esc(lc(o.bad[0].text)):''}</span>
+        <span class="acts"><button class="link" data-learn="${esc(o.id)}">${G.learn[o.id]?'Hide':'Learn more'}</button><button class="link" data-use="${esc(o.id)}">Use this</button></span>
+        ${G.learn[o.id]?`<div style="grid-column:1/-1">${learnHtml(o)}</div>`:''}</div>`).join('')}
+      ${ruled.map(o=>`<p class="ruled"><s>${esc(o.name)}</s> ruled out: ${esc(o.ruled_out)}</p>`).join('')}
+    </div>
+    <div class="row"><button class="link" data-s="delegate">I don't mind, use the default</button><button class="link" data-s="park">Ask me later</button>${newbieToggle()}</div>
+    <p class="err" id="sErr" hidden></p>
+  </div>`;
+}
+function madrDraft(d,dr,opt,mode){
+  const ss=SS(),rk=rankDraft(dr,d.id),fl=flipsDraft(dr,d.id),cf=confDraft(dr,rk,mode),prof=ss.plan.profile||[];
+  const reasons=[...new Set(rk.why[opt.id])];
+  const because=mode==='delegated'?`the owner didn't mind and this is the safe default: ${lc(dr.default_reason||'')}`.replace(/\.$/,''):
+    opt.id===rk.order[0].id?(reasons.map(lc).join(' and ')||lc(dr.default_reason||'it fits the answers')).replace(/\.$/,''):`the owner preferred it over ${rk.order[0].name}`;
+  const used=(dr.profile_effects||[]).map(pe=>{const q=prof.find(x=>x.id===pe.profile_id);return q&&ss.profile_answers[q.id]?`- ${q.text.replace(/\?$/,'')}: ${ss.profile_answers[q.id]} (your answer)`:null;}).filter(Boolean);
+  const own=(dr.questions||[]).map(q=>{const a=((ss.answers||{})[d.id]||{})[q.id];return a?`- ${q.text.replace(/\?$/,'')}: ${a} (your answer)`:null;}).filter(Boolean);
+  const ev=(dr.evidence||[]).map(e=>`- ${e.detail} (${e.source==='inferred'?'inferred by Muse Spark':e.source==='profile'?'your answers':e.source==='task'?'the task':'seen in '+e.source})`);
+  const order=[opt,...rk.order.filter(o=>o!==opt)],ruled=dr.options.filter(o=>o.ruled_out);
+  const later=(opt.bad||[]).find(b=>b.when==='later')||(opt.bad||[])[0];
+  return `---
+status: accepted
+date: ${today()}
+door: ${{3:'one-way',2:'heavy',1:'two-way'}[dr.door||d.door]}
+proposed-by: ${LIVE?'Muse Code':'your agent'} (${ss.task})
+consulted: Muse Spark (drafted the questions and options)
+deciders: ${mode==='delegated'?'Hoist, delegated by the project owner':'project owner'}
+confidence: ${cf.lv}
+---
+# ${d.title}: ${opt.name}
+
+> **Decision:** ${opt.name}. **Because** ${because}. **Accepted cost:** ${later?lc(later.text).replace(/\.$/,''):'none recorded'}. ${fl.length?`**Revisit if** ${fl[0].txt}.`:''}
+
+## Context and Problem Statement
+${dr.question} ${dr.why_now} ${dr.undo}${dr.assumes?`\nAssumes: ${dr.assumes}`:''}
+
+## Decision Drivers
+${[...used,...own,...ev].join('\n')||'- No drivers recorded'}
+
+## Considered Options
+${order.map((o,i)=>`${i+1}. ${o.name}${o.id===dr.agent_pick?' (the agent\'s pick)':''}`).join('\n')}${ruled.length?'\n'+ruled.map(o=>`- Ruled out: ${o.name}, because ${lc(o.ruled_out)}`).join('\n'):''}
+
+## Decision Outcome
+Chosen: ${opt.name}, because ${because}.
+
+### Consequences
+${(opt.good||[]).map(g=>`- Good, because ${lc(g.text)}`).join('\n')}
+${(opt.bad||[]).map(b=>`- Bad, because ${lc(b.text)}`).join('\n')}
+
+### Confirmation
+${opt.check_current?`- [ ] ${opt.check_current}\n`:''}- Hoist flags later changes that conflict with this record.
+
+## Pros and Cons of the Options
+${order.slice(1).map(o=>`### ${o.name}\n${(o.good||[]).map(g=>`- Good, because ${lc(g.text)}`).join('\n')}\n${(o.bad||[]).map(b=>`- Bad, because ${lc(b.text)}`).join('\n')}`).join('\n\n')}
+
+## More Information
+- Confidence: ${cf.lv}; ${cf.txt}.
+${fl.map(f=>`- Revisit if ${f.txt}: ${f.win.name} would fit better.`).join('\n')||'- No single answer change would flip it.'}${(opt.learn||{}).docs_url?`\n- Documentation: ${opt.learn.docs_url}`:''}
+`;
+}
+function madrDefault(d){
+  const ss=SS();
+  return `---
+status: accepted
+date: ${today()}
+door: ${{3:'one-way',2:'heavy',1:'two-way'}[d.door]}
+proposed-by: Hoist plan for "${ss.task}"
+deciders: Hoist default (the owner can review it)
+confidence: low
+---
+# ${d.title}: ${d.default}
+
+> **Decision:** ${d.default}. **Because** it is the safe default and the owner wasn't asked, to keep the task short. **Revisit** when reviewing defaults.
+
+## Context and Problem Statement
+${d.why}
+
+## Decision Outcome
+Chosen: ${d.default}, as a default.${d.budget_note?`\n\n## More Information\n- ${d.budget_note}`:''}
+`;
+}
+async function recordSession(d,payload){
+  const ss=SS();
+  if(LIVE){S.session=await post('/api/session/decisions/'+d.id,payload);}
+  else{
+    const n=String(Math.max(0,...S.records.map(r=>+r.file.slice(0,4)))+1).padStart(4,'0'),file=`${n}-${payload.slug}.md`;
+    S.records.push({file,markdown:payload.markdown});ss.outcomes[d.id]={choice:payload.choice,mode:payload.mode,record:'docs/decisions/'+file};
+  }
+}
+async function chooseSession(mode,optId){
+  const d=asks()[G.di],dr=draftOf(d.id);
+  const opt=mode==='delegated'?dr.options.find(o=>o.id===dr.default_option):dr.options.find(o=>o.id===optId);
+  try{
+    if(mode==='parked')await recordSession(d,{choice:null,mode,slug:slugify(d.title+' later'),markdown:`---\nstatus: proposed\ndate: ${today()}\ndoor: ${{3:'one-way',2:'heavy',1:'two-way'}[dr.door||d.door]}\nproposed-by: ${SS().task}\ndeciders: project owner (asked to decide later)\nconfidence: low\n---\n# ${d.title}: decide later\n\n> **Decision:** Not decided yet. **Because** the owner asked to decide later. **Revisit** before this choice is built on.\n\n## Context and Problem Statement\n${dr.question} ${dr.why_now}\n\n## Decision Outcome\nShort term: ${dr.options.find(o=>o.id===dr.default_option).name} as a placeholder the agent keeps easy to replace.\n`});
+    else await recordSession(d,{choice:opt.id,mode,slug:slugify(d.title+' '+opt.name),markdown:madrDraft(d,dr,opt,mode)});
+  }catch(e){const el=$('sErr');if(el){el.hidden=false;el.textContent=`Couldn't save: ${e.message}`;}return;}
+  G.learn={};delete G.pick[d.id];
+  toast(mode==='parked'?'Parked. Your agent will keep this easy to replace.':`Recorded: ${opt.name}`);
+  renderSession();
+}
+async function renderSessionDone(){
+  const ss=SS(),pl=ss.plan,def=pl.decisions.filter(d=>d.mode==='default');
+  if(!ss.defaults_recorded){ss.defaults_recorded=true;for(const d of def){if((ss.outcomes||{})[d.id])continue;try{await recordSession(d,{choice:d.default,mode:'default',slug:slugify(d.title+' default'),markdown:madrDefault(d)});}catch(e){}}}
+  const rows=pl.decisions.filter(d=>d.mode!=='log').map(d=>{const o=(SS().outcomes||{})[d.id];const id=o&&o.record?o.record.split('/').pop().slice(0,4):null;
+    const dr=draftOf(d.id),name=o&&o.choice&&dr?((dr.options.find(x=>x.id===o.choice)||{}).name||o.choice):(o&&o.choice)||'';
+    return `<a class="item" href="${id?'#/records/'+id:'#/records'}"><span class="t">${esc(d.title)}</span><span class="s">${o?(o.mode==='parked'?'Parked for later':o.mode==='default'?'Default: '+esc(name):o.mode==='delegated'?esc(name)+' (you didn\'t mind)':esc(name)):'Not recorded'}</span><span class="m">${o&&o.mode==='default'?'<span class="pill proposed">Review later</span>':'<span class="pill accepted">Recorded</span>'}</span></a>`;}).join('');
+  app.innerHTML=`<div class="step">
+    <span class="status"><span class="dot ok"></span>${LIVE?'Your agent can continue':'All decided'}</span>
+    <h1>All set</h1>
+    <p class="lead">Every decision for “${esc(ss.task)}” is recorded in <code>docs/decisions/</code>, with your reasons. ${LIVE?'Your agent continues with these choices.':'In a real project, your agent now continues with these choices.'}</p>
+    <div class="list">${rows}</div>
+    <div class="row"><a class="btn primary" href="#/records">See all decision records</a>${LIVE?'':'<button class="link" data-s="reset">Try another task</button>'}</div>
+  </div>`;
+}
+async function startSession(task){
+  if(!task){const el=$('startErr');el.hidden=false;el.textContent='Describe the task first.';return;}
+  G={view:null,pi:0,di:0,learn:{},pick:{},sim:null,t0:Date.now()};
+  if(LIVE){try{S.session=await post('/api/session',{task});}catch(e){const el=$('startErr');if(el){el.hidden=false;el.textContent=e.message;}return;}renderSession();return;}
+  /* sample mode: replay the preparation with the recorded fieldnotes session */
+  const base=JSON.parse(JSON.stringify(S.sample_session)),total=base.plan.decisions.filter(d=>d.mode==='ask').length;
+  G.sim={task,status:'planning',plan:null,drafted:[],total:0};renderSession();
+  const step=(f,ms)=>new Promise(r=>setTimeout(()=>{f();r();},ms));
+  await step(()=>{G.sim={...G.sim,status:'drafting',plan:base.plan,total,current:base.plan.decisions.find(d=>d.mode==='ask').id};},2400);
+  const ids=base.plan.decisions.filter(d=>d.mode==='ask').map(d=>d.id);
+  for(let i=0;i<ids.length;i++)await step(()=>{G.sim={...G.sim,drafted:ids.slice(0,i+1),current:ids[i+1]||null};},1600);
+  await step(()=>{S.session={...base,task:base.task,status:'ready',profile_answers:{},answers:{},outcomes:{}};G.sim=null;},400);
+  if(location.hash==='#/session')renderSession();
+}
+app.addEventListener('click',async e=>{
+  if(!/^#\/session/.test(location.hash))return;
+  const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.ex){$('taskIn').value=b.dataset.ex;return;}
+  const s=b.dataset.s;
+  if(s==='start')return startSession($('taskIn').value.trim());
+  if(s==='retry')return startSession(SS().task);
+  if(s==='begin'){G.view='profile';G.pi=0;return renderSession();}
+  if(s==='overview'){G.view='overview';return renderSession();}
+  if(s==='pback'){G.pi--;return renderSession();}
+  if(s==='reset'){S.session=null;G={view:null,pi:0,di:0,learn:{},pick:{},sim:null};return renderSession();}
+  if(b.dataset.pa!=null){const q=SS().plan.profile[G.pi];await saveAnswers({profile_answers:{[q.id]:q.answers[+b.dataset.pa]}});G.pi++;return renderSession();}
+  if(b.dataset.oa!=null){const d=asks()[G.di],dr=draftOf(d.id),q=dr.questions.find(x=>x.id===b.dataset.q);await saveAnswers({answers:{[d.id]:{[q.id]:q.answers[+b.dataset.oa].label}}});return renderSession();}
+  if(b.dataset.learn){G.learn[b.dataset.learn]=!G.learn[b.dataset.learn];return renderSession();}
+  if(b.dataset.use){G.pick[asks()[G.di].id]=b.dataset.use;G.learn={};return renderSession();}
+  if(s==='choose')return chooseSession('chosen',b.dataset.o);
+  if(s==='delegate')return chooseSession('delegated');
+  if(s==='park')return chooseSession('parked');
+  if(s==='skip'){const d=asks()[G.di];return recordSession(d,{choice:d.default,mode:'default',slug:slugify(d.title+' default'),markdown:madrDefault(d)}).then(renderSession);}
+});
+app.addEventListener('change',e=>{if(e.target.id==='newbie'){NEWBIE=e.target.checked;try{localStorage.setItem(NEWBIE_KEY,NEWBIE?'1':'0');}catch(x){}if(/^#\/session/.test(location.hash))renderSession();}});
+document.addEventListener('keydown',e=>{
+  if(!/^#\/session/.test(location.hash)||$('whySheet').classList.contains('on')||!/^[1-9]$/.test(e.key)||e.target.tagName==='TEXTAREA')return;
+  const btns=[...app.querySelectorAll('[data-pa],[data-oa]')];const b=btns[+e.key-1];if(b)b.click();
+});
 
 /* ---------- why sheet ---------- */
 function openWhy(dec,k){

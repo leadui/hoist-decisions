@@ -9,7 +9,7 @@ Commands:
 
 Standard library only. The page and its server listen on 127.0.0.1 and never call an API.
 """
-import argparse, json, os, re, shlex, socket, sys, time, urllib.request, webbrowser
+import argparse, json, os, re, shlex, shutil, socket, subprocess, sys, threading, time, urllib.request, webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -214,12 +214,44 @@ def make_handler(root):
                 return self.send(200, (HOME / "catalog.json").read_bytes())
             if path == "/api/state":
                 records = [{"file": p.name, "markdown": p.read_text()} for p in sorted(records_dir(root).glob("[0-9][0-9][0-9][0-9]-*.md"))]
-                return self.send(200, {"project": root.name, "root": str(root), "live": True, "decisions": load_decisions(root), "records": records})
+                return self.send(200, {"project": root.name, "root": str(root), "live": True, "decisions": load_decisions(root),
+                                       "records": records, "session": session_state(root)})
             self.send(404, {"error": "not found"})
 
         def do_POST(self):
             if self.headers.get("Origin") not in allowed:
                 return self.send(403, {"error": "Requests must come from the Hoist page."})
+            body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))) or "{}")
+            if self.path == "/api/session":
+                ses = load_session(root)
+                if ses and ses["status"] in ("planning", "drafting"):
+                    return self.send(409, {"error": "Muse Spark is still preparing the last task."})
+                task = str(body.get("task", "")).strip()[:500]
+                if not task:
+                    return self.send(400, {"error": "Describe the task first."})
+                threading.Thread(target=run_session, args=(root, task), daemon=True).start()
+                time.sleep(0.2)
+                return self.send(200, session_state(root))
+            if self.path == "/api/session/answers":
+                ses = load_session(root)
+                if not ses:
+                    return self.send(404, {"error": "No session."})
+                ses["profile_answers"].update(body.get("profile_answers", {}))
+                for k, v in (body.get("answers") or {}).items():
+                    ses["answers"].setdefault(k, {}).update(v)
+                save_session(root, ses)
+                return self.send(200, session_state(root))
+            m = re.fullmatch(r"/api/session/decisions/([a-z0-9-]{1,60})", self.path)
+            if m:
+                ses = load_session(root)
+                if not ses or m.group(1) not in ses.get("drafted", []) + [x["id"] for x in (session_state(root).get("plan") or {}).get("decisions", [])]:
+                    return self.send(404, {"error": "No such decision in this task."})
+                slug = re.sub(r"[^a-z0-9-]+", "-", str(body.get("slug", "decision")).lower()).strip("-")[:60] or "decision"
+                name = f"{next_id(root)}-{slug}.md"
+                (records_dir(root) / name).write_text(str(body.get("markdown", "")))
+                ses["outcomes"][m.group(1)] = {"choice": body.get("choice"), "mode": body.get("mode"), "record": f"docs/decisions/{name}"}
+                save_session(root, ses)
+                return self.send(200, session_state(root))
             m = re.fullmatch(r"/api/decisions/(\d{4})", self.path)
             f = decisions_dir(root) / f"{m.group(1)}.json" if m else None
             if not f or not f.exists():
@@ -227,7 +259,6 @@ def make_handler(root):
             dec = json.loads(f.read_text())
             if dec["status"] != "open":
                 return self.send(409, {"error": "This decision is already made."})
-            body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))) or "{}")
             slug = re.sub(r"[^a-z0-9-]+", "-", str(body.get("slug", "decision")).lower()).strip("-")[:60] or "decision"
             name = f"{dec['id']}-{slug}.md"
             (records_dir(root) / name).write_text(str(body.get("markdown", "")))
@@ -444,11 +475,16 @@ def apply_budget(plan):
     return plan
 
 
-def plan(task, project):
-    root = Path(project).resolve()
+def make_plan(root, task):
     p = apply_budget(muse_json(PLAN_SYSTEM, project_context(root, task), f"plan:{root.name}", max_output=4000))
     (root / ".hoist").mkdir(exist_ok=True)
     (root / ".hoist" / "plan.json").write_text(json.dumps({"task": task, **p}, indent=2))
+    return p
+
+
+def plan(task, project):
+    root = Path(project).resolve()
+    p = make_plan(root, task)
     print(f"\n{p.get('task_summary', task)}\n")
     if p.get("profile"):
         print("Asked once, used by every decision")
@@ -466,8 +502,7 @@ def plan(task, project):
             print()
 
 
-def draft(which, task, project):
-    root = Path(project).resolve()
+def make_draft(root, which, task=""):
     plan_file = root / ".hoist" / "plan.json"
     pl = json.loads(plan_file.read_text()) if plan_file.exists() else {}
     task = task or pl.get("task", "")
@@ -493,7 +528,14 @@ def draft(which, task, project):
         d = muse_json(DRAFT_SYSTEM, prompt + "\n\nYour last draft broke these rules; fix them:\n- " + "\n- ".join(problems)
                       + "\n\nLast draft:\n" + json.dumps(d), f"draft-fix:{root.name}")
         problems = check_draft(d, pl.get("profile"))
-    (out / f"{slug}.json").write_text(json.dumps({"title": title, "task": task, "problems": problems, **d}, indent=2))
+    path = out / f"{slug}.json"
+    path.write_text(json.dumps({"id": slug, "title": title, "task": task, "problems": problems, **d}, indent=2))
+    return d, problems, path
+
+
+def draft(which, task, project):
+    root = Path(project).resolve()
+    d, problems, path = make_draft(root, which, task)
     print(f"\n{d.get('question')}\n  why now: {d.get('why_now')}\n  undo:    {d.get('undo')}"
           + (f"\n  assumes: {d['assumes']}" if d.get("assumes") else ""))
     for pe in d.get("profile_effects", []):
@@ -514,7 +556,84 @@ def draft(which, task, project):
               + (f"\n     docs: {lrn['docs_url']}" if lrn.get("docs_url") else ""))
     print(f"\n  default if you don't mind: {d.get('default_option')} ({d.get('default_reason')})")
     print(f"  quality check: {'passed' if not problems else 'still failing: ' + '; '.join(problems)}")
-    print(f"  saved: {(out / f'{slug}.json').relative_to(root)}")
+    print(f"  saved: {path.relative_to(root)}")
+
+
+# ---------- sessions: a task's decisions, planned and drafted in the background ----------
+def session_file(root):
+    return root / ".hoist" / "session.json"
+
+
+def load_session(root):
+    f = session_file(root)
+    return json.loads(f.read_text()) if f.exists() else None
+
+
+def save_session(root, ses):
+    (root / ".hoist").mkdir(exist_ok=True)
+    session_file(root).write_text(json.dumps(ses, indent=2))
+
+
+def ensure_key():
+    """The page server may start without MODEL_API_KEY; read it from the macOS Keychain entry `hoist install` documents."""
+    if os.environ.get("MODEL_API_KEY"):
+        return True
+    try:
+        out = subprocess.run(["security", "find-generic-password", "-s", "hoist-meta-api", "-w"], capture_output=True, text=True, timeout=10)
+    except (OSError, subprocess.SubprocessError):
+        return False
+    if out.returncode == 0 and out.stdout.strip():
+        os.environ["MODEL_API_KEY"] = out.stdout.strip()
+        return True
+    return False
+
+
+def run_session(root, task):
+    """Plan the task, then draft each decision the person is asked. Progress goes to .hoist/session.json for the page."""
+    ses = {"task": task, "status": "planning", "started": time.strftime("%Y-%m-%d %H:%M:%S"), "drafted": [], "total": 0,
+           "profile_answers": {}, "answers": {}, "outcomes": {}}
+    save_session(root, ses)
+    try:
+        if not ensure_key():
+            raise RuntimeError("No Muse Spark key. Save it with: security add-generic-password -a \"$USER\" -s hoist-meta-api -w")
+        shutil.rmtree(root / ".hoist" / "drafts", ignore_errors=True)
+        p = make_plan(root, task)
+        asks = [d["id"] for d in p.get("decisions", []) if d.get("mode") == "ask"]
+        ses.update(status="drafting", total=len(asks))
+        save_session(root, ses)
+        for did in asks:
+            ses["current"] = did; save_session(root, ses)
+            make_draft(root, did, task)
+            ses["drafted"].append(did); save_session(root, ses)
+        ses.update(status="ready", current=None)
+    except (Exception, SystemExit) as e:  # muse_json exits on early stops; report it on the page instead
+        ses.update(status="error", error=str(e) or e.__class__.__name__)
+    save_session(root, ses)
+
+
+def session_state(root):
+    ses = load_session(root)
+    if not ses:
+        return None
+    plan_file, drafts = root / ".hoist" / "plan.json", root / ".hoist" / "drafts"
+    ses["plan"] = json.loads(plan_file.read_text()) if plan_file.exists() and ses["status"] != "planning" else None
+    ses["drafts"] = {p.stem: json.loads(p.read_text()) for p in sorted(drafts.glob("*.json"))} if drafts.exists() else {}
+    return ses
+
+
+def start(task, project):
+    """Start a session through the page server, so the page shows Muse Spark's progress live."""
+    root = Path(project).resolve()
+    if not ensure_server(root):
+        sys.exit(f"Hoist couldn't start its page on {URL}. Is another project's Hoist running?")
+    req = urllib.request.Request(f"{URL}/api/session", data=json.dumps({"task": task}).encode(), method="POST",
+                                 headers={"Content-Type": "application/json", "Origin": URL})
+    try:
+        urllib.request.urlopen(req, timeout=10).read()
+    except urllib.error.HTTPError as e:
+        sys.exit(f"Hoist: {json.loads(e.read()).get('error', e.reason)}")
+    webbrowser.open(f"{URL}/#/session")
+    print(f"HOIST: Muse Spark is preparing the decisions for \"{task}\". Follow along at {URL}/#/session")
 
 
 # ---------- install ----------
@@ -558,6 +677,8 @@ def main():
     sub.add_parser("gate", help="Muse Code hook entry point (payload on stdin)")
     w = sub.add_parser("wait", help="Wait for a decision, then print the outcome")
     w.add_argument("id", nargs="?", default=None, help="Decision ID; default: the open one"); w.add_argument("project", nargs="?", default=".")
+    st = sub.add_parser("start", help="Plan and draft a task's decisions, then open the page")
+    st.add_argument("task"); st.add_argument("project", nargs="?", default=".")
     pl = sub.add_parser("plan", help="Muse Spark: list the lasting decisions a task will force")
     pl.add_argument("task"); pl.add_argument("project", nargs="?", default=".")
     dr = sub.add_parser("draft", help="Muse Spark: write one decision for the person to make")
@@ -567,6 +688,8 @@ def main():
         install(args.project)
     elif args.cmd == "serve":
         serve(args.project)
+    elif args.cmd == "start":
+        start(args.task, args.project)
     elif args.cmd == "plan":
         plan(args.task, args.project)
     elif args.cmd == "draft":

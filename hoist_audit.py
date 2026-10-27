@@ -152,23 +152,26 @@ def ask_muse(system, prompt, label, max_output=8000, max_cost=0.50, budget=25.0,
         sys.exit(f"Stopped: worst case ${worst:.3f} is above the ${max_cost:.2f} cap per call.")
     if ledger()["total_usd"] + worst > budget:
         sys.exit(f"Stopped: this call could push hoist's total past the ${budget:.2f} budget.")
-    from openai import OpenAI
+    import urllib.request  # standard library only, so the page server needs no install
     key = os.environ.get("MODEL_API_KEY")
     if not key:
         sys.exit("Set MODEL_API_KEY first (create a key at dev.meta.ai).")
     t = time.time()
-    kw = dict(model=model, max_completion_tokens=max_output,
-              messages=[{"role": "system", "content": system}, {"role": "user", "content": prompt}])
+    body = {"model": model, "max_completion_tokens": max_output,
+            "messages": [{"role": "system", "content": system}, {"role": "user", "content": prompt}]}
     if effort:
-        kw["extra_body"] = {"reasoning_effort": effort}
-    resp = OpenAI(base_url=BASE_URL, api_key=key).chat.completions.create(**kw)
-    u = resp.usage
-    usd = (u.prompt_tokens * PRICE_IN + u.completion_tokens * PRICE_OUT) / 1e6
-    led = record({"at": time.strftime("%Y-%m-%d %H:%M"), "model": model, "repo": label,
-                  "in": u.prompt_tokens, "out": u.completion_tokens, "usd": round(usd, 5)})
-    print(f"Muse Spark: {u.prompt_tokens:,} in / {u.completion_tokens:,} out · ${usd:.4f} · {time.time()-t:.0f}s · "
+        body["reasoning_effort"] = effort
+    req = urllib.request.Request(f"{BASE_URL}/chat/completions", data=json.dumps(body).encode(), method="POST",
+                                 headers={"Content-Type": "application/json", "Authorization": f"Bearer {key}"})
+    with urllib.request.urlopen(req, timeout=180) as r:
+        resp = json.loads(r.read())
+    u, choice = resp.get("usage") or {}, (resp.get("choices") or [{}])[0]
+    tin, tout = u.get("prompt_tokens", 0), u.get("completion_tokens", 0)
+    usd = (tin * PRICE_IN + tout * PRICE_OUT) / 1e6
+    led = record({"at": time.strftime("%Y-%m-%d %H:%M"), "model": model, "repo": label, "in": tin, "out": tout, "usd": round(usd, 5)})
+    print(f"Muse Spark: {tin:,} in / {tout:,} out · ${usd:.4f} · {time.time()-t:.0f}s · "
           f"total spent via hoist ${led['total_usd']:.2f} of ${budget:.2f}", file=sys.stderr)
-    return resp.choices[0].message.content or "", resp.choices[0].finish_reason
+    return (choice.get("message") or {}).get("content") or "", choice.get("finish_reason")
 
 
 def parse(text):
