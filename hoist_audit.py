@@ -36,7 +36,7 @@ EVIDENCE = [  # files that reveal decisions, in priority order
     "tsconfig.json", "next.config.*", "vite.config.*", "nuxt.config.*", "astro.config.*",
     ".env.example", ".env.sample", "LICENSE*", "README*", "docs/decisions/*.md", "docs/adr/*.md",
 ]
-SKIP_DIRS = {".git", "node_modules", "vendor", "dist", "build", ".next", "venv", ".venv", "__pycache__", "target", ".turbo", "coverage"}
+SKIP_DIRS = {".git", ".hoist", ".hoist-test-backup", ".muse", ".agents", "node_modules", "vendor", "dist", "build", ".next", "venv", ".venv", "__pycache__", "target", ".turbo", "coverage"}
 PER_FILE_CHARS = 6000
 MAX_FILES = 80
 
@@ -140,6 +140,34 @@ def call_muse(prompt, args):
                   "in": u.prompt_tokens, "out": u.completion_tokens, "usd": round(usd, 5)})
     print(f"Muse Spark: {u.prompt_tokens:,} in / {u.completion_tokens:,} out · ${usd:.4f} · {time.time()-t:.0f}s · "
           f"total spent via hoist ${led['total_usd']:.2f} of ${args.budget:.2f} budget")
+    return resp.choices[0].message.content or "", resp.choices[0].finish_reason
+
+
+def ask_muse(system, prompt, label, max_output=8000, max_cost=0.50, budget=25.0, effort="low"):
+    """One guarded Muse Spark call for other Hoist commands: estimate, check the caps, call, log to the ledger."""
+    model = os.environ.get("HOIST_MODEL", "muse-spark-1.1")
+    tin = est_tokens(prompt) + est_tokens(system)
+    worst = (tin * PRICE_IN + max_output * PRICE_OUT) / 1e6
+    if worst > max_cost:
+        sys.exit(f"Stopped: worst case ${worst:.3f} is above the ${max_cost:.2f} cap per call.")
+    if ledger()["total_usd"] + worst > budget:
+        sys.exit(f"Stopped: this call could push hoist's total past the ${budget:.2f} budget.")
+    from openai import OpenAI
+    key = os.environ.get("MODEL_API_KEY")
+    if not key:
+        sys.exit("Set MODEL_API_KEY first (create a key at dev.meta.ai).")
+    t = time.time()
+    kw = dict(model=model, max_completion_tokens=max_output,
+              messages=[{"role": "system", "content": system}, {"role": "user", "content": prompt}])
+    if effort:
+        kw["extra_body"] = {"reasoning_effort": effort}
+    resp = OpenAI(base_url=BASE_URL, api_key=key).chat.completions.create(**kw)
+    u = resp.usage
+    usd = (u.prompt_tokens * PRICE_IN + u.completion_tokens * PRICE_OUT) / 1e6
+    led = record({"at": time.strftime("%Y-%m-%d %H:%M"), "model": model, "repo": label,
+                  "in": u.prompt_tokens, "out": u.completion_tokens, "usd": round(usd, 5)})
+    print(f"Muse Spark: {u.prompt_tokens:,} in / {u.completion_tokens:,} out · ${usd:.4f} · {time.time()-t:.0f}s · "
+          f"total spent via hoist ${led['total_usd']:.2f} of ${budget:.2f}", file=sys.stderr)
     return resp.choices[0].message.content or "", resp.choices[0].finish_reason
 
 

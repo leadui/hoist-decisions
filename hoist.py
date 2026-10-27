@@ -274,6 +274,186 @@ def wait(did, project):
     print(outcome_message(dec, k, dec["trigger"]["package"]))
 
 
+# ---------- Muse Spark writes the content; this code sets the contract and checks it ----------
+MAX_ASK = int(os.environ.get("HOIST_MAX_ASK", "3"))  # decision-fatigue budget: questions to the person per task
+
+PLAN_SYSTEM = """You are Hoist. An AI agent is about to work on a task for a person. List the lasting decisions
+this task will force: choices that are costly to undo later. The project may be software, a design system,
+writing, data, or anything else; use the evidence to tell which.
+
+Rules:
+- Only decisions this task needs now. Skip anything already decided in the recorded decisions or visible in the project files.
+- Usually 2 to 6 decisions. Order them so a decision comes after the ones it depends on.
+- door: 3 = one-way (redo most of the work to undo), 2 = heavy (days to undo), 1 = two-way (an afternoon).
+- owner: "you" when the right answer depends on the person's goals, users, money, risk, or taste.
+  "agent" when a competent practitioner would pick the same sensible default without asking.
+- mode: "ask" for a one-way or heavy door owned by the person; "default" when a safe default exists that the
+  person can review later; "log" for two-way doors the agent can just make.
+- default: the safe default in a few plain words. why: one plain sentence on why it matters for this task.
+
+Reply with JSON only:
+{"task_summary": str, "decisions": [{"id": "kebab-case", "title": "plain verb phrase", "door": 1|2|3,
+  "owner": "you"|"agent", "mode": "ask"|"default"|"log", "default": str, "why": str, "depends_on": [ids]}]}"""
+
+DRAFT_SYSTEM = """You are Hoist. You help a person make one decision that an AI agent is about to make for them and
+that is hard to undo. The person is smart but may not know the field. Write the way a patient expert explains
+something to a friend: short sentences, plain words, no hype, no marketing adjectives, no scores or percentages.
+
+Contract (reply with JSON only):
+{"question": "the decision as a plain question about their project, not about product names",
+ "why_now": "one sentence: why this has to be decided now",
+ "undo": "one sentence: what undoing it later would involve",
+ "door": 1|2|3,
+ "questions": [{"id": "kebab-case", "text": "...", "why": "one sentence: what the answer changes",
+   "beginner_note": "one sentence explaining any term in the question, or empty",
+   "answers": [{"label": "short answer", "effects": [{"option": "option id", "dir": "favors"|"against", "reason": "short"}]}]}],
+ "options": [{"id": "kebab-case", "name": "...", "summary": "one line",
+   "good": [{"when": "now"|"later", "text": "..."}], "bad": [{"when": "now"|"later", "text": "..."}],
+   "learn": {"what": "two plain sentences", "living_with": "two sentences on what day-to-day life with it is like",
+     "terms": [{"term": "...", "meaning": "one line"}], "docs_url": "official documentation home page, or empty if unsure"},
+   "ruled_out": "" or "reason it cannot work here"}],
+ "default_option": "option id", "default_reason": "one sentence",
+ "agent_pick": "option id or empty",
+ "evidence": [{"source": "file name" | "task" | "inferred", "detail": "..."}]}
+
+Rules for questions (at most 3):
+- Ask about the person's situation, plans, constraints, or preferences: things they know without expertise.
+- Never ask them to pick a product or technology. Never ask for numbers they cannot know.
+- Each question must change which option fits. Skip anything the evidence already answers.
+- 2 to 4 answers each. Every answer lists at least one effect with a reason.
+Rules for options:
+- 2 to 4 options that could really work, at the same level (compare like with like). Include the agent's pick.
+- Put options that cannot work given the evidence in ruled_out with the reason instead of leaving them as weak choices.
+- Every option has at least one bad item and at least one item about later.
+- terms: up to 4 terms the option's text uses that a newcomer may not know."""
+
+
+def project_context(root, task, limit=9000):
+    import hoist_audit
+    parts = [f"Task: {task}", f"Project folder: {root.name}"]
+    recs = [p for p in sorted(records_dir(root).glob("[0-9][0-9][0-9][0-9]-*.md"))]
+    if recs:
+        parts.append("Recorded decisions:\n" + "\n".join(f"- {p.read_text().split(chr(10) + '# ', 1)[-1].splitlines()[0]}" for p in recs))
+    parts.append(hoist_audit.pack(root)[:limit])
+    return "\n\n".join(parts)
+
+
+def muse_json(system, prompt, label, max_output=8000):
+    import hoist_audit
+    text, finish = hoist_audit.ask_muse(system, prompt, label, max_output=max_output)
+    if finish != "stop":
+        sys.exit(f"Muse Spark stopped early (finish reason: {finish}). Run the command again.")
+    return hoist_audit.parse(text)
+
+
+def check_draft(d):
+    """Quality rules from the ADR guidance; returns problems in plain words (empty = passes)."""
+    problems = []
+    opts = d.get("options") or []
+    ids = {o.get("id") for o in opts}
+    viable = [o for o in opts if not o.get("ruled_out")]
+    if not 2 <= len(viable) <= 4:
+        problems.append(f"needs 2 to 4 workable options, has {len(viable)}")
+    for o in viable:
+        if not o.get("bad"):
+            problems.append(f"option '{o.get('id')}' has no downside")
+        if not any(x.get("when") == "later" for x in (o.get("good") or []) + (o.get("bad") or [])):
+            problems.append(f"option '{o.get('id')}' says nothing about later")
+        if not (o.get("learn") or {}).get("what"):
+            problems.append(f"option '{o.get('id')}' has no plain explanation")
+    qs = d.get("questions") or []
+    if len(qs) > 3:
+        problems.append(f"asks {len(qs)} questions; at most 3")
+    for q in qs:
+        if not 2 <= len(q.get("answers") or []) <= 4:
+            problems.append(f"question '{q.get('id')}' needs 2 to 4 answers")
+        for a in q.get("answers") or []:
+            effects = a.get("effects") or []
+            if not effects:
+                problems.append(f"answer '{a.get('label')}' changes nothing")
+            for e in effects:
+                if e.get("option") not in ids:
+                    problems.append(f"answer '{a.get('label')}' points at unknown option '{e.get('option')}'")
+    if d.get("default_option") not in {o.get("id") for o in viable}:
+        problems.append("default_option is not a workable option")
+    text = json.dumps(d).lower()
+    for w in ("%", " score", "best-in-class", "industry-leading", "seamless", "blazing"):
+        if w in text:
+            problems.append(f"uses '{w.strip()}': no scores or marketing words")
+    for o in opts:  # keep only docs links that answer
+        url = (o.get("learn") or {}).get("docs_url") or ""
+        if url and not link_ok(url):
+            o["learn"]["docs_url"] = ""
+    return problems
+
+
+def link_ok(url):
+    if not url.startswith("https://"):
+        return False
+    try:
+        req = urllib.request.Request(url, method="HEAD", headers={"User-Agent": "hoist"})
+        with urllib.request.urlopen(req, timeout=5) as r:
+            return r.status < 400
+    except Exception:
+        return False
+
+
+def apply_budget(plan):
+    """Decision fatigue: ask about at most MAX_ASK decisions; the rest get safe defaults the person can review."""
+    asks = [d for d in plan.get("decisions", []) if d.get("mode") == "ask"]
+    asks.sort(key=lambda d: -int(d.get("door", 2)))
+    for d in asks[MAX_ASK:]:
+        d["mode"], d["budget_note"] = "default", f"over the {MAX_ASK}-question budget; default recorded for review"
+    return plan
+
+
+def plan(task, project):
+    root = Path(project).resolve()
+    p = apply_budget(muse_json(PLAN_SYSTEM, project_context(root, task), f"plan:{root.name}", max_output=4000))
+    (root / ".hoist").mkdir(exist_ok=True)
+    (root / ".hoist" / "plan.json").write_text(json.dumps({"task": task, **p}, indent=2))
+    print(f"\n{p.get('task_summary', task)}\n")
+    for label, mode in (("Ask you", "ask"), ("Default, review later", "default"), ("Agent's call, logged", "log")):
+        rows = [d for d in p["decisions"] if d.get("mode") == mode]
+        if rows:
+            print(label)
+            for d in rows:
+                print(f"  - {d['title']} ({DOOR_WORDS.get(int(d.get('door', 2)), '')})"
+                      + (f"\n      default: {d['default']}" if mode != "ask" else "") + f"\n      why: {d['why']}"
+                      + (f"\n      note: {d['budget_note']}" if d.get("budget_note") else ""))
+            print()
+
+
+def draft(title, task, project):
+    root = Path(project).resolve()
+    prompt = f"Decision to draft: {title}\n\n{project_context(root, task)}"
+    d = muse_json(DRAFT_SYSTEM, prompt, f"draft:{root.name}")
+    problems = check_draft(d)
+    if problems:  # one repair round, then report honestly
+        print(f"Quality check failed ({len(problems)}): {'; '.join(problems)}. Asking Muse Spark to fix it.", file=sys.stderr)
+        d = muse_json(DRAFT_SYSTEM, prompt + "\n\nYour last draft broke these rules; fix them:\n- " + "\n- ".join(problems)
+                      + "\n\nLast draft:\n" + json.dumps(d), f"draft-fix:{root.name}")
+        problems = check_draft(d)
+    out = root / ".hoist" / "drafts"; out.mkdir(parents=True, exist_ok=True)
+    slug = re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")[:50]
+    (out / f"{slug}.json").write_text(json.dumps({"title": title, "task": task, "problems": problems, **d}, indent=2))
+    print(f"\n{d.get('question')}\n  why now: {d.get('why_now')}\n  undo:    {d.get('undo')}")
+    for q in d.get("questions", []):
+        print(f"\n  Q: {q['text']}\n     ({q.get('why')})" + (f"\n     new to this: {q['beginner_note']}" if q.get("beginner_note") else ""))
+        for a in q.get("answers", []):
+            print(f"     - {a['label']}: " + "; ".join(f"{e['dir']} {e['option']} ({e['reason']})" for e in a.get("effects", [])))
+    for o in d.get("options", []):
+        tag = f"  [ruled out: {o['ruled_out']}]" if o.get("ruled_out") else ""
+        print(f"\n  OPTION {o['name']}: {o.get('summary')}{tag}")
+        for g in o.get("good", []): print(f"     + ({g['when']}) {g['text']}")
+        for b in o.get("bad", []): print(f"     - ({b['when']}) {b['text']}")
+        lrn = o.get("learn") or {}
+        print(f"     learn: {lrn.get('what', '')}" + (f"\n     docs: {lrn['docs_url']}" if lrn.get("docs_url") else ""))
+    print(f"\n  default if you don't mind: {d.get('default_option')} ({d.get('default_reason')})")
+    print(f"  quality check: {'passed' if not problems else 'still failing: ' + '; '.join(problems)}")
+    print(f"  saved: {(out / f'{slug}.json').relative_to(root)}")
+
+
 # ---------- install ----------
 def install(project):
     root = Path(project).resolve()
@@ -315,11 +495,19 @@ def main():
     sub.add_parser("gate", help="Muse Code hook entry point (payload on stdin)")
     w = sub.add_parser("wait", help="Wait for a decision, then print the outcome")
     w.add_argument("id", nargs="?", default=None, help="Decision ID; default: the open one"); w.add_argument("project", nargs="?", default=".")
+    pl = sub.add_parser("plan", help="Muse Spark: list the lasting decisions a task will force")
+    pl.add_argument("task"); pl.add_argument("project", nargs="?", default=".")
+    dr = sub.add_parser("draft", help="Muse Spark: write one decision for the person to make")
+    dr.add_argument("title"); dr.add_argument("--task", default=""); dr.add_argument("project", nargs="?", default=".")
     args = ap.parse_args()
     if args.cmd == "install":
         install(args.project)
     elif args.cmd == "serve":
         serve(args.project)
+    elif args.cmd == "plan":
+        plan(args.task, args.project)
+    elif args.cmd == "draft":
+        draft(args.title, args.task, args.project)
     elif args.cmd == "gate":
         sys.exit(gate())
     else:
