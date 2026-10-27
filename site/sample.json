@@ -29,263 +29,586 @@
   "task": "Add user accounts with saved projects",
   "plan": {
    "task": "Add user accounts with saved projects",
-   "task_summary": "Add user accounts with saved projects to existing Express app 'fieldnotes' - currently minimal, no auth or DB chosen yet.",
+   "task_summary": "Add user accounts with saved projects to neutral-app (currently just an Express starter called fieldnotes with no auth or DB). Forces choices about where user data lives, how login works, and what a 'saved project' means.",
    "profile": [
     {
-     "id": "intended-audience",
-     "text": "Who is this app for?",
-     "why": "Determines how simple or robust auth, sharing, and scaling needs to be.",
+     "id": "primary-use-context",
+     "text": "How will people mainly use this app?",
+     "why": "Determines if we need offline support, simple personal auth, or more robust security.",
      "beginner_note": "",
      "answers": [
-      "Just me / personal use",
-      "Small group of known people",
-      "Public internet - anyone can sign up"
+      "Personal tool I use alone on one device",
+      "Personal tool I want synced across my devices",
+      "Small team / friends sharing projects"
      ],
+     "assumed": "Personal tool I want synced across my devices",
+     "basis": "Task says 'saved projects' implying multi-device persistence, no mention of team features yet.",
      "used_by": [
-      "auth-approach",
-      "project-ownership-model",
-      "data-store"
+      "persistence-layer",
+      "authentication-mechanism",
+      "saved-project-schema"
      ]
     },
     {
-     "id": "project-sensitivity",
-     "text": "How private or sensitive are the saved projects?",
-     "why": "Affects security requirements, session handling, and data deletion needs.",
-     "beginner_note": "",
+     "id": "account-longevity",
+     "text": "What should happen to projects if someone stops using the app?",
+     "why": "This drives retention policy, whether we need soft-delete, export, and how seriously we take data durability.",
+     "beginner_note": "Retention = how long we keep your data after you stop using or delete account.",
      "answers": [
-      "Not sensitive - casual notes",
-      "Private work I wouldn't want others to see",
-      "Sensitive / must be properly protected"
+      "Keep projects indefinitely until they delete them",
+      "Okay to delete inactive accounts after a while to save costs",
+      "Projects are work-critical, need export and backup"
      ],
+     "assumed": "Keep projects indefinitely until they delete them",
+     "basis": "No cost constraints mentioned and docs/ folder suggests notes - people expect notes to persist.",
      "used_by": [
-      "session-handling",
-      "project-ownership-model",
-      "data-store"
+      "persistence-layer",
+      "account-deletion-policy",
+      "saved-project-schema"
      ]
     },
     {
-     "id": "future-plans",
-     "text": "What are your plans for growing or sharing this app?",
-     "why": "Choices like persistence and auth are one-way if you later need multi-device or team features.",
-     "beginner_note": "Think about whether you'll keep this local or want others to access it online.",
+     "id": "sharing-needs",
+     "text": "Do saved projects ever need to be shared or public?",
+     "why": "Sharing changes the ownership model from private-only to permissions/roles, which is hard to retrofit.",
+     "beginner_note": "",
      "answers": [
-      "Keep it simple and local for now",
-      "Might put it online for others later",
-      "Plan to grow into a collaborative product"
+      "No, private to each user only",
+      "Yes, share a link view-only later",
+      "Yes, collaborate and edit together"
      ],
+     "assumed": "No, private to each user only",
+     "basis": "Task only says 'user accounts with saved projects' with no mention of sharing.",
      "used_by": [
-      "data-store",
-      "project-ownership-model",
-      "auth-approach"
+      "saved-project-schema",
+      "authentication-mechanism"
      ]
     }
    ],
    "decisions": [
     {
-     "id": "auth-approach",
-     "title": "Choose how users sign up and sign in",
-     "scope": "Covers identity method (password, magic link, external login, etc) and what user data is collected. Leaves storage tech and session format to other decisions.",
+     "id": "persistence-layer",
+     "title": "Choose persistence for users and projects",
+     "scope": "What database/storage holds users and projects, and where it runs (file, managed DB, etc). Everything else depends on this.",
      "door": 3,
      "owner": "you",
      "mode": "ask",
-     "default": "email + password with hashed passwords",
-     "why": "Login method dictates UX, security obligations, and migration cost - changing it later forces all users to re-enroll.",
+     "default": "Managed Postgres with Prisma/Drizzle",
+     "why": "Moving user data later requires migration and downtime; hosting choice also locks cost and backup model.",
      "depends_on": []
     },
     {
-     "id": "data-store",
-     "title": "Choose where user accounts and projects are persisted",
-     "scope": "Covers database or file storage choice and table/schema shape for users and projects. Leaves hosting provider and session mechanism to others.",
-     "door": 3,
+     "id": "authentication-mechanism",
+     "title": "Choose authentication mechanism",
+     "scope": "How users sign up and log in (password, magic link, OAuth provider), and password storage rules. Not session cookie format.",
+     "door": 2,
      "owner": "you",
      "mode": "ask",
-     "default": "SQLite file in project with users and projects tables",
-     "why": "Persistence underpins backups, queries, and portability - switching DBs later requires data migration and code rewrite.",
+     "default": "Email + password with secure hashing, add OAuth later",
+     "why": "Auth UX affects signup friction and recovery; switching methods forces all users to re-authenticate.",
      "depends_on": [
-      "auth-approach"
+      "persistence-layer"
      ]
     },
     {
-     "id": "session-handling",
-     "title": "Choose session and authentication state mechanism",
-     "scope": "Covers how logged-in state is maintained (server cookie session vs token), expiry, and logout/revocation. Leaves auth method itself to other decision.",
+     "id": "saved-project-schema",
+     "title": "Define saved project model and ownership",
+     "scope": "What a project contains, ownership vs sharing, limits per user, versioning/history. Not how it's stored.",
+     "door": 2,
+     "owner": "you",
+     "mode": "ask",
+     "default": "Projects owned by one user, private, JSON blob + metadata, limit 100 per user",
+     "why": "Defines API shape and access checks; changing from private to shared later rewrites all permission logic.",
+     "depends_on": [
+      "persistence-layer"
+     ]
+    },
+    {
+     "id": "session-strategy",
+     "title": "Choose session handling and security",
+     "scope": "How login persists across requests (cookies vs tokens), expiry, refresh, and CSRF/XSS protections.",
      "door": 2,
      "owner": "agent",
      "mode": "default",
-     "default": "httpOnly cookie sessions with express-session",
-     "why": "Affects security against XSS/CSRF and how logout works across devices.",
+     "default": "HttpOnly secure cookie sessions with 30d expiry",
+     "why": "Impacts security and mobile/web compatibility, but can be swapped with a careful migration.",
      "depends_on": [
-      "auth-approach",
-      "data-store"
+      "authentication-mechanism"
      ]
     },
     {
-     "id": "project-ownership-model",
-     "title": "Define project ownership and access rules",
-     "scope": "Covers what a 'saved project' contains, 1 owner vs shared, and permissions for view/edit. Leaves UI design to later.",
+     "id": "account-deletion-policy",
+     "title": "Decide account deletion and data retention policy",
+     "scope": "What delete does, grace period, hard delete vs anonymize, and GDPR/export handling.",
      "door": 2,
      "owner": "you",
-     "mode": "ask",
-     "default": "private projects owned by single user, no sharing in v1",
-     "why": "Adding sharing/collaboration after launch requires a new permission system that is hard to retrofit without breaking existing data.",
+     "mode": "default",
+     "default": "Soft delete 30 days then hard delete, with export on request",
+     "why": "Legal commitment to users; changing it later risks accidental data loss or non-compliance.",
      "depends_on": [
-      "data-store"
-     ]
+      "persistence-layer",
+      "saved-project-schema"
+     ],
+     "budget_note": "over the 3-question budget; default recorded for review"
     }
    ]
   },
   "drafts": {
-   "auth-approach": {
-    "id": "auth-approach",
-    "title": "Choose how users sign up and sign in",
+   "persistence-layer": {
+    "id": "persistence-layer",
+    "title": "Choose persistence for users and projects",
     "task": "Add user accounts with saved projects",
     "problems": [],
-    "question": "How should users create accounts and sign in?",
-    "why_now": "Account creation touches registration flow, stored data, and login UI that other work will build on.",
-    "undo": "Changing method later means migrating users, resetting credentials, and rewriting login screens.",
-    "assumes": "User records will be in SQLite by default and login state will use httpOnly cookie sessions by default.",
+    "question": "Where should user accounts and saved projects be stored so they persist across devices?",
+    "why_now": "Every other decision about login, sessions, and project data needs a place to save data.",
+    "undo": "Switching the database later means exporting all users and projects and rewriting all data access code.",
+    "assumes": "Takes as given that projects are private to one user and auth will be email + password with secure hashing.",
     "door": 2,
+    "analogy": "It's like picking where to keep important notebooks \u2014 a loose pile on the desk is quick now but hard to trust later, a personal binder is portable, a library cabinet is built to keep them forever.",
+    "risks": [
+     "File storage can corrupt with concurrent writes from multiple users",
+     "Losing user data would break trust when people expect projects to stay until deleted",
+     "Picking a heavy managed service too early adds ops work for a simple app"
+    ],
     "profile_effects": [
      {
-      "profile_id": "intended-audience",
+      "profile_id": "primary-use-context",
       "answers": [
        {
-        "label": "Just me / personal use",
+        "label": "Personal tool I use alone on one device",
         "effects": [
          {
-          "option": "magic-link-email",
+          "option": "file-json",
           "dir": "favors",
-          "reason": "no password to remember for solo use"
+          "reason": "Single-device use can live with a local file"
          },
          {
-          "option": "email-password",
+          "option": "managed-postgres",
           "dir": "against",
-          "reason": "password management overhead unnecessary"
+          "reason": "Hosted DB is overkill for one device"
          }
         ]
        },
        {
-        "label": "Small group of known people",
+        "label": "Personal tool I want synced across my devices",
         "effects": [
          {
-          "option": "magic-link-email",
-          "dir": "favors",
-          "reason": "low friction for small trusted group"
+          "option": "file-json",
+          "dir": "against",
+          "reason": "File on one server does not sync safely across devices"
          },
          {
-          "option": "oauth-only",
+          "option": "sqlite-embedded",
           "dir": "favors",
-          "reason": "people already have Google/GitHub accounts"
+          "reason": "Single file DB handles multi-device writes reliably"
+         },
+         {
+          "option": "managed-postgres",
+          "dir": "favors",
+          "reason": "Central DB supports sync across devices"
          }
         ]
        },
        {
-        "label": "Public internet - anyone can sign up",
+        "label": "Small team / friends sharing projects",
         "effects": [
          {
-          "option": "email-password",
-          "dir": "favors",
-          "reason": "most users expect password login for public apps"
+          "option": "file-json",
+          "dir": "against",
+          "reason": "Concurrent team writes will corrupt a plain file"
          },
          {
-          "option": "oauth-only",
+          "option": "managed-postgres",
           "dir": "favors",
-          "reason": "reduces fake accounts and password support load"
+          "reason": "Built for multiple users writing at once"
          }
         ]
        }
       ]
      },
      {
-      "profile_id": "project-sensitivity",
+      "profile_id": "account-longevity",
       "answers": [
        {
-        "label": "Not sensitive - casual notes",
+        "label": "Keep projects indefinitely until they delete them",
         "effects": [
          {
-          "option": "magic-link-email",
+          "option": "file-json",
+          "dir": "against",
+          "reason": "File has no durability guarantees for indefinite keep"
+         },
+         {
+          "option": "sqlite-embedded",
           "dir": "favors",
-          "reason": "light security matches light data"
+          "reason": "Durable on disk with simple backup"
+         },
+         {
+          "option": "managed-postgres",
+          "dir": "favors",
+          "reason": "Designed for long-term retention"
          }
         ]
        },
        {
-        "label": "Private work I wouldn't want others to see",
+        "label": "Okay to delete inactive accounts after a while to save costs",
         "effects": [
          {
-          "option": "email-password",
+          "option": "file-json",
           "dir": "favors",
-          "reason": "persistent login expected for private work"
-         },
-         {
-          "option": "magic-link-email",
-          "dir": "against",
-          "reason": "email account compromise equals app compromise"
+          "reason": "Cheap to drop files to save space"
          }
         ]
        },
        {
-        "label": "Sensitive / must be properly protected",
+        "label": "Projects are work-critical, need export and backup",
         "effects": [
          {
-          "option": "email-password",
+          "option": "file-json",
           "dir": "against",
-          "reason": "needs correct hashing and breach protection"
+          "reason": "No backup or transactional guarantees"
          },
          {
-          "option": "oauth-only",
+          "option": "managed-postgres",
           "dir": "favors",
-          "reason": "delegates protection to mature provider"
+          "reason": "Best tooling for backups and export"
          }
         ]
        }
       ]
      },
      {
-      "profile_id": "future-plans",
+      "profile_id": "sharing-needs",
       "answers": [
        {
-        "label": "Keep it simple and local for now",
+        "label": "No, private to each user only",
+        "effects": [
+         {
+          "option": "sqlite-embedded",
+          "dir": "favors",
+          "reason": "Simple private ownership maps well to single DB file"
+         }
+        ]
+       },
+       {
+        "label": "Yes, share a link view-only later",
+        "effects": [
+         {
+          "option": "managed-postgres",
+          "dir": "favors",
+          "reason": "Easier to add share links and indexes later"
+         }
+        ]
+       },
+       {
+        "label": "Yes, collaborate and edit together",
+        "effects": [
+         {
+          "option": "file-json",
+          "dir": "against",
+          "reason": "Cannot handle joint edits"
+         },
+         {
+          "option": "managed-postgres",
+          "dir": "favors",
+          "reason": "Handles concurrent edits and permissions"
+         }
+        ]
+       }
+      ]
+     }
+    ],
+    "questions": [],
+    "options": [
+     {
+      "id": "file-json",
+      "name": "JSON files on server disk",
+      "plain_name": "loose notes on desk",
+      "analogy": "Keeping every user and project as loose papers on your desk \u2014 fast to grab, but they scatter if two people grab at once.",
+      "story": {
+       "now": "You write users.json and projects.json this week with no new dependencies.",
+       "later": "In 6 months you are fixing race conditions, file locks, and manual cleanup when disk fills."
+      },
+      "summary": "Zero setup, but unsafe for concurrent writes and long retention.",
+      "good": [
+       {
+        "when": "now",
+        "text": "No database to install, works with just Express"
+       }
+      ],
+      "bad": [
+       {
+        "when": "later",
+        "text": "Corruption risk when two devices save at same time, hard to query users"
+       },
+       {
+        "when": "later",
+        "text": "No transaction safety for indefinite storage expectation"
+       }
+      ],
+      "learn": {
+       "what": "A JSON file stores all data as text on disk. The app reads the whole file into memory and writes it back on each change.",
+       "living_with": "You manage file paths and backups yourself. Every server restart or deploy must keep the same disk or data is lost.",
+       "terms": [
+        {
+         "term": "JSON file",
+         "meaning": "A text file holding structured data"
+        },
+        {
+         "term": "Concurrent write",
+         "meaning": "Two saves happening at the same moment"
+        }
+       ],
+       "docs_url": ""
+      },
+      "check_current": "",
+      "ruled_out": ""
+     },
+     {
+      "id": "sqlite-embedded",
+      "name": "SQLite embedded database",
+      "plain_name": "personal binder with sleeves",
+      "analogy": "Keeping everything in one organized binder on your shelf \u2014 still yours to carry, but pages don't scatter and you can find things fast.",
+      "story": {
+       "now": "You add one library and one db file, tables for users and projects work right away.",
+       "later": "In 6 months you still have one file to back up, and queries for a user's projects are easy and safe."
+      },
+      "summary": "Single-file durability with real transactions, fits synced personal use.",
+      "good": [
+       {
+        "when": "now",
+        "text": "One dependency, no separate server to run"
+       },
+       {
+        "when": "later",
+        "text": "Handles concurrent saves safely and keeps data indefinitely"
+       }
+      ],
+      "bad": [
+       {
+        "when": "later",
+        "text": "Need to move to managed DB if you add real-time collaboration later"
+       }
+      ],
+      "learn": {
+       "what": "SQLite is a full database stored as one file on your server. It gives you tables, indexes, and transactions without a separate database server.",
+       "living_with": "You check the db file into backup, run migrations with a script. Day-to-day you query it like any database but deploy still just copies a file.",
+       "terms": [
+        {
+         "term": "SQLite",
+         "meaning": "Database engine that lives in a single file"
+        },
+        {
+         "term": "Migration",
+         "meaning": "Small script that updates database structure"
+        }
+       ],
+       "docs_url": "https://www.sqlite.org/docs.html"
+      },
+      "check_current": "",
+      "ruled_out": ""
+     },
+     {
+      "id": "managed-postgres",
+      "name": "Managed Postgres",
+      "plain_name": "library filing cabinet",
+      "analogy": "Storing notebooks in a library filing system \u2014 someone else maintains the cabinet, and anyone can find their stuff, but you rent the space.",
+      "story": {
+       "now": "You provision a hosted Postgres and wire connection strings and env vars this week.",
+       "later": "In 6 months backups, sharing, and scaling are easy, but you are paying and managing a remote service for a small app."
+      },
+      "summary": "Best for teams and sharing, adds cost and ops overhead now.",
+      "good": [
+       {
+        "when": "later",
+        "text": "Ready for sharing links and collaboration if needs grow"
+       },
+       {
+        "when": "later",
+        "text": "Strongest backup and retention tools"
+       }
+      ],
+      "bad": [
+       {
+        "when": "now",
+        "text": "Adds hosting, secrets, and network setup before you can save a project"
+       },
+       {
+        "when": "later",
+        "text": "Ongoing cost even when app is idle"
+       }
+      ],
+      "learn": {
+       "what": "Postgres is a separate database server that your app connects to over the network. Managed means a provider runs the server for you.",
+       "living_with": "You store a DATABASE_URL secret, run migrations on deploy. You watch connection limits and pay for storage and uptime.",
+       "terms": [
+        {
+         "term": "Postgres",
+         "meaning": "A widely used relational database server"
+        },
+        {
+         "term": "Managed",
+         "meaning": "Hosted and operated by a cloud provider"
+        }
+       ],
+       "docs_url": "https://www.postgresql.org/docs/"
+      },
+      "check_current": "If you pick a Postgres host, confirm its free tier, storage limit, and connection string format are still current.",
+      "ruled_out": ""
+     }
+    ],
+    "default_option": "sqlite-embedded",
+    "default_reason": "Assumed need is synced personal use with indefinite keep and private projects, which fits a durable single-file DB without managed cost.",
+    "agent_pick": "",
+    "evidence": [
+     {
+      "source": "package.json",
+      "detail": "Only express dependency, no database chosen yet"
+     },
+     {
+      "source": "task",
+      "detail": "Add user accounts with saved projects implies cross-device persistence"
+     },
+     {
+      "source": "profile",
+      "detail": "Assumed primary-use-context is synced across my devices"
+     },
+     {
+      "source": "profile",
+      "detail": "Assumed account-longevity is keep indefinitely until delete"
+     },
+     {
+      "source": "profile",
+      "detail": "Assumed sharing-needs is private to each user only"
+     }
+    ]
+   },
+   "authentication-mechanism": {
+    "id": "authentication-mechanism",
+    "title": "Choose authentication mechanism",
+    "task": "Add user accounts with saved projects",
+    "problems": [],
+    "question": "How should users prove who they are to sign up and log in?",
+    "why_now": "This sets password storage and login flow that other parts like project ownership will rely on.",
+    "undo": "Changing it later means migrating passwords, resetting all users, and updating every login screen.",
+    "assumes": "Uses sqlite-embedded for storage and private single-owner projects as defaults from other decisions.",
+    "door": 2,
+    "analogy": "Choosing how users get into their house - a personal key they make, a one-time code mailed each time, or using the building's master key.",
+    "risks": [
+     "Storing passwords badly and leaking user accounts",
+     "Making login too annoying causes people to not save projects",
+     "Adding external login later is hard if accounts are not linked"
+    ],
+    "profile_effects": [
+     {
+      "profile_id": "primary-use-context",
+      "answers": [
+       {
+        "label": "Personal tool I use alone on one device",
+        "effects": [
+         {
+          "option": "password-local",
+          "dir": "favors",
+          "reason": "Simple local login is enough for one device"
+         }
+        ]
+       },
+       {
+        "label": "Personal tool I want synced across my devices",
+        "effects": [
+         {
+          "option": "password-local",
+          "dir": "favors",
+          "reason": "Password works on any device without email wait"
+         },
+         {
+          "option": "oauth-google",
+          "dir": "favors",
+          "reason": "One click works across all devices"
+         }
+        ]
+       },
+       {
+        "label": "Small team / friends sharing projects",
+        "effects": [
+         {
+          "option": "oauth-google",
+          "dir": "favors",
+          "reason": "People already know each other by email provider accounts"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "profile_id": "sharing-needs",
+      "answers": [
+       {
+        "label": "No, private to each user only",
+        "effects": [
+         {
+          "option": "password-local",
+          "dir": "favors",
+          "reason": "No need to prove identity to others"
+         }
+        ]
+       },
+       {
+        "label": "Yes, share a link view-only later",
+        "effects": [
+         {
+          "option": "oauth-google",
+          "dir": "favors",
+          "reason": "Stable identity helps with shared links"
+         }
+        ]
+       },
+       {
+        "label": "Yes, collaborate and edit together",
+        "effects": [
+         {
+          "option": "oauth-google",
+          "dir": "favors",
+          "reason": "Provider identity needed for collaboration"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "profile_id": "account-longevity",
+      "answers": [
+       {
+        "label": "Keep projects indefinitely until they delete them",
+        "effects": [
+         {
+          "option": "password-local",
+          "dir": "favors",
+          "reason": "Password stays valid indefinitely with hash"
+         },
+         {
+          "option": "magic-link-email",
+          "dir": "against",
+          "reason": "Depends on email still working later"
+         }
+        ]
+       },
+       {
+        "label": "Okay to delete inactive accounts after a while to save costs",
         "effects": [
          {
           "option": "magic-link-email",
           "dir": "favors",
-          "reason": "least code to keep it local"
-         },
-         {
-          "option": "oauth-only",
-          "dir": "against",
-          "reason": "requires internet callback setup even locally"
+          "reason": "No password to keep securely"
          }
         ]
        },
        {
-        "label": "Might put it online for others later",
+        "label": "Projects are work-critical, need export and backup",
         "effects": [
          {
-          "option": "email-password",
-          "dir": "favors",
-          "reason": "works offline and online without external deps"
-         },
-         {
-          "option": "oauth-only",
+          "option": "oauth-google",
           "dir": "against",
-          "reason": "needs domain verification before going live"
-         }
-        ]
-       },
-       {
-        "label": "Plan to grow into a collaborative product",
-        "effects": [
-         {
-          "option": "oauth-only",
-          "dir": "favors",
-          "reason": "easier to trust identities for sharing later"
-         },
-         {
-          "option": "email-password",
-          "dir": "favors",
-          "reason": "allows any email domain, not locked to provider"
+          "reason": "External provider outage would block critical access"
          }
         ]
        }
@@ -294,33 +617,53 @@
     ],
     "questions": [
      {
-      "id": "email-access-reliability",
-      "text": "Will everyone who uses this reliably get emails quickly?",
-      "why": "Magic link login fails if email is slow or not checked often",
-      "beginner_note": "Magic link means we email you a one-time link to log in instead of a password.",
+      "id": "login-comfort",
+      "text": "What do you expect users to tolerate for logging in?",
+      "why": "This directly picks between remembering a password, checking email, or using an outside account.",
+      "beginner_note": "",
       "answers": [
        {
-        "label": "Yes, email is fast and checked",
+        "label": "Remember one password for this app",
         "effects": [
          {
-          "option": "magic-link-email",
+          "option": "password-local",
           "dir": "favors",
-          "reason": "email delivery works for login flow"
+          "reason": "Matches their expectation"
+         },
+         {
+          "option": "magic-link-email",
+          "dir": "against",
+          "reason": "They prefer not to check email"
          }
         ]
        },
        {
-        "label": "Not sure / email can be spotty",
+        "label": "No passwords, just click a link in email each time",
         "effects": [
          {
           "option": "magic-link-email",
-          "dir": "against",
-          "reason": "login would be blocked by email delays"
+          "dir": "favors",
+          "reason": "No password to forget"
          },
          {
-          "option": "email-password",
+          "option": "password-local",
+          "dir": "against",
+          "reason": "They do not want to manage passwords"
+         }
+        ]
+       },
+       {
+        "label": "Use their Google / Apple account to log in",
+        "effects": [
+         {
+          "option": "oauth-google",
           "dir": "favors",
-          "reason": "no dependency on email delivery"
+          "reason": "They trust external provider"
+         },
+         {
+          "option": "password-local",
+          "dir": "against",
+          "reason": "They prefer not to create new password"
          }
         ]
        }
@@ -329,40 +672,50 @@
     ],
     "options": [
      {
-      "id": "email-password",
-      "name": "Email + password",
-      "summary": "Users sign up with email and choose a password you store hashed",
+      "id": "password-local",
+      "name": "Email + password with secure hashing",
+      "plain_name": "personal key you make",
+      "analogy": "Like giving each user their own house key they cut themselves - you just need a safe box to store a copy of the pattern.",
+      "story": {
+       "now": "This week you add a signup form and a users table with hashed passwords.",
+       "later": "In 6 months users log in on any device with the same password, but you handle resets and secure storage."
+      },
+      "summary": "Classic login, full control, you store passwords safely hashed.",
       "good": [
        {
         "when": "now",
-        "text": "Familiar flow, works without external services"
+        "text": "Works offline with sqlite and no outside service"
        },
        {
         "when": "later",
-        "text": "Easy to add password reset and email verification later"
+        "text": "Familiar to users for synced personal tool that keeps data indefinitely"
        }
       ],
       "bad": [
        {
         "when": "now",
-        "text": "You must hash passwords correctly and handle reset flow"
+        "text": "You must implement hashing, strength rules, and reset flow"
        },
        {
         "when": "later",
-        "text": "You own breach risk and support for forgotten passwords"
+        "text": "If breached badly, user passwords are at risk"
        }
       ],
       "learn": {
-       "what": "You collect email and a password hash. On login you compare the hash using a slow hashing function. Sessions are then created separately.",
-       "living_with": "You manage password rules, reset emails, and secure storage. Users can log in even if email is down, after initial signup.",
+       "what": "User gives email and password. Server hashes password with bcrypt or argon2 and stores the hash, never the plain text. Login checks the hash.",
+       "living_with": "You maintain a password reset email and lockout. Day to day users just type their password, no extra emails.",
        "terms": [
         {
-         "term": "password hash",
-         "meaning": "One-way scrambled version of password that can't be reversed"
+         "term": "hashing",
+         "meaning": "One-way scrambling of password so you cannot reverse it"
+        },
+        {
+         "term": "bcrypt/argon2",
+         "meaning": "Standard slow hashing methods that make guessing hard"
         },
         {
          "term": "salt",
-         "meaning": "Random data added before hashing to make each hash unique"
+         "meaning": "Random data mixed in so two same passwords look different"
         }
        ],
        "docs_url": "https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html"
@@ -372,39 +725,45 @@
      },
      {
       "id": "magic-link-email",
-      "name": "Magic link via email",
-      "summary": "No passwords; users get a one-time login link sent to their email",
+      "name": "Passwordless magic link by email",
+      "plain_name": "one time code by mail",
+      "analogy": "Like mailing a new temporary key each time they want in - no key to remember, but you wait for mail and need mailbox to work.",
+      "story": {
+       "now": "This week you skip password storage and only send login links via email.",
+       "later": "In 6 months users complain about email delays on new devices and you depend on email delivery forever."
+      },
+      "summary": "No passwords stored, login via emailed link each time.",
       "good": [
        {
         "when": "now",
-        "text": "No password storage or hashing code needed"
+        "text": "No password storage risk or reset logic to build"
        },
        {
         "when": "later",
-        "text": "Collects only email, minimal personal data"
+        "text": "No passwords to leak if database is stolen"
        }
       ],
       "bad": [
        {
         "when": "now",
-        "text": "Login depends on email delivery and link expiry handling"
+        "text": "Needs working email service to log anyone in"
        },
        {
         "when": "later",
-        "text": "Harder to support API clients or long-lived offline login"
+        "text": "Annoying for multi-device personal use, link expires and email must work years later"
        }
       ],
       "learn": {
-       "what": "User enters email, you create a short-lived token and email a link containing it. Clicking the link proves ownership and creates a session.",
-       "living_with": "Each login needs inbox access. You need an email sending service and to handle expired or reused links.",
+       "what": "User enters email, server creates a short-lived token and emails a link. Clicking the link proves ownership and logs them in.",
+       "living_with": "You manage email deliverability and token expiry. Users check inbox every login instead of typing password.",
        "terms": [
         {
          "term": "magic link",
-         "meaning": "Single-use URL that logs you in when clicked"
+         "meaning": "A login URL with a secret token that works once"
         },
         {
          "term": "token expiry",
-         "meaning": "Time after which the link no longer works"
+         "meaning": "How long the login link stays valid before it stops working"
         }
        ],
        "docs_url": ""
@@ -413,524 +772,287 @@
       "ruled_out": ""
      },
      {
-      "id": "oauth-only",
-      "name": "External login only (Google/GitHub)",
-      "summary": "Users sign in with existing provider, you store provider ID and email",
+      "id": "oauth-google",
+      "name": "Sign in with OAuth provider (Google)",
+      "plain_name": "use building master key",
+      "analogy": "Like using the apartment building's master system - you don't cut keys, the building office validates who they are.",
+      "story": {
+       "now": "This week you register with Google and add OAuth library, less password code.",
+       "later": "In 6 months login is easy across devices but you depend on Google and need handling for provider outage."
+      },
+      "summary": "Delegate login to Google/Apple, no passwords stored locally.",
       "good": [
        {
         "when": "now",
-        "text": "No password handling, provider handles security"
+        "text": "No password storage or reset flow to build"
        },
        {
         "when": "later",
-        "text": "Trusted email verification and often profile data included"
+        "text": "Users get one-click login on any device for synced use"
        }
       ],
       "bad": [
        {
         "when": "now",
-        "text": "Needs OAuth app registration and internet callback URLs"
+        "text": "Requires internet and developer account with Google, more setup"
        },
        {
         "when": "later",
-        "text": "Locked to provider availability and user must have account there"
+        "text": "If provider blocks or changes rules, all users cannot get to private projects"
        }
       ],
       "learn": {
-       "what": "You redirect to a provider like Google. After approval, provider returns an ID and email you use to find or create local user.",
-       "living_with": "You configure client IDs, handle callback routes, and deal with provider outages. No local passwords to reset.",
+       "what": "App redirects to provider, provider authenticates user and returns an ID token. App creates local account linked to provider ID.",
+       "living_with": "You keep provider keys and handle account linking. Users trust provider, but lose access if they lose provider account.",
        "terms": [
         {
          "term": "OAuth",
-         "meaning": "Standard for letting users sign in via another service"
+         "meaning": "Standard way to let another service prove who the user is"
         },
         {
-         "term": "callback URL",
-         "meaning": "Address provider redirects back to after login"
+         "term": "ID token",
+         "meaning": "Signed proof from provider that says which user this is"
         }
        ],
        "docs_url": "https://developers.google.com/identity/protocols/oauth2"
       },
-      "check_current": "If choosing OAuth, confirm the provider's registration steps and free tier are still current before relying on it",
+      "check_current": "If choosing this, confirm Google OAuth consent screen pricing and requirements are still free for your use case.",
       "ruled_out": ""
      }
     ],
-    "default_option": "email-password",
-    "default_reason": "Works with default SQLite store and cookie sessions, no external email or OAuth setup required for v1.",
+    "default_option": "password-local",
+    "default_reason": "Best match for private synced tool with indefinite retention and sqlite default, no external dependencies.",
     "agent_pick": "",
     "evidence": [
      {
       "source": "package.json",
-      "detail": "only express installed, no auth library chosen yet"
-     },
-     {
-      "source": "task",
-      "detail": "task is Add user accounts with saved projects, so sign-up/sign-in needed"
-     },
-     {
-      "source": "inferred",
-      "detail": "no existing users table, so auth method still open"
-     }
-    ]
-   },
-   "data-store": {
-    "id": "data-store",
-    "title": "Choose where user accounts and projects are persisted",
-    "task": "Add user accounts with saved projects",
-    "problems": [],
-    "question": "Where should user accounts and saved projects be stored?",
-    "why_now": "You need a place to save users and projects before you can implement sign-up and saving.",
-    "undo": "Changing storage later means exporting data and rewriting queries and migrations.",
-    "assumes": "Auth will be email-password and projects are private to one owner, with cookie sessions.",
-    "door": 2,
-    "profile_effects": [
-     {
-      "profile_id": "intended-audience",
-      "answers": [
-       {
-        "label": "Just me / personal use",
-        "effects": [
-         {
-          "option": "json-files",
-          "dir": "favors",
-          "reason": "single user does not need server DB"
-         },
-         {
-          "option": "sqlite-file",
-          "dir": "favors",
-          "reason": "simple local file, no ops"
-         }
-        ]
-       },
-       {
-        "label": "Small group of known people",
-        "effects": [
-         {
-          "option": "sqlite-file",
-          "dir": "favors",
-          "reason": "handles few users with relations and no server"
-         },
-         {
-          "option": "managed-postgres",
-          "dir": "against",
-          "reason": "adds hosting and cost for small group"
-         }
-        ]
-       },
-       {
-        "label": "Public internet - anyone can sign up",
-        "effects": [
-         {
-          "option": "managed-postgres",
-          "dir": "favors",
-          "reason": "designed for many users and concurrent writes"
-         },
-         {
-          "option": "json-files",
-          "dir": "against",
-          "reason": "unsafe for concurrent public writes"
-         }
-        ]
-       }
-      ]
-     },
-     {
-      "profile_id": "project-sensitivity",
-      "answers": [
-       {
-        "label": "Not sensitive - casual notes",
-        "effects": [
-         {
-          "option": "json-files",
-          "dir": "favors",
-          "reason": "low stakes tolerates simple file"
-         }
-        ]
-       },
-       {
-        "label": "Private work I wouldn't want others to see",
-        "effects": [
-         {
-          "option": "sqlite-file",
-          "dir": "favors",
-          "reason": "file permissions and queryable access control"
-         },
-         {
-          "option": "json-files",
-          "dir": "against",
-          "reason": "hard to enforce ownership checks"
-         }
-        ]
-       },
-       {
-        "label": "Sensitive / must be properly protected",
-        "effects": [
-         {
-          "option": "managed-postgres",
-          "dir": "favors",
-          "reason": "better access controls and backup options"
-         },
-         {
-          "option": "json-files",
-          "dir": "against",
-          "reason": "no atomicity or secure deletion"
-         }
-        ]
-       }
-      ]
-     },
-     {
-      "profile_id": "future-plans",
-      "answers": [
-       {
-        "label": "Keep it simple and local for now",
-        "effects": [
-         {
-          "option": "sqlite-file",
-          "dir": "favors",
-          "reason": "zero setup, stays local"
-         },
-         {
-          "option": "json-files",
-          "dir": "favors",
-          "reason": "simplest for local only"
-         }
-        ]
-       },
-       {
-        "label": "Might put it online for others later",
-        "effects": [
-         {
-          "option": "sqlite-file",
-          "dir": "favors",
-          "reason": "easy to ship, migratable to hosted later"
-         },
-         {
-          "option": "managed-postgres",
-          "dir": "favors",
-          "reason": "works unchanged when deployed"
-         }
-        ]
-       },
-       {
-        "label": "Plan to grow into a collaborative product",
-        "effects": [
-         {
-          "option": "managed-postgres",
-          "dir": "favors",
-          "reason": "scales to sharing and team queries"
-         },
-         {
-          "option": "json-files",
-          "dir": "against",
-          "reason": "rewrite needed for collaboration"
-         }
-        ]
-       }
-      ]
-     }
-    ],
-    "questions": [],
-    "options": [
-     {
-      "id": "sqlite-file",
-      "name": "SQLite file with two tables",
-      "summary": "One local file holding users and projects tables with foreign keys.",
-      "good": [
-       {
-        "when": "now",
-        "text": "No server to run, works with just Express and a driver"
-       },
-       {
-        "when": "later",
-        "text": "Easy to back up by copying file and to migrate to Postgres later"
-       }
-      ],
-      "bad": [
-       {
-        "when": "now",
-        "text": "Need to add better-sqlite3 or sqlite3 dependency and write migrations"
-       },
-       {
-        "when": "later",
-        "text": "Writes are single-writer, not ideal for heavy concurrent public use"
-       }
-      ],
-      "learn": {
-       "what": "SQLite is a relational database stored in a single file. You create tables for users (id, email, password_hash) and projects (id, user_id, data) and use SQL queries.",
-       "living_with": "You check in migration scripts, not the DB file. Day to day you query with SQL and the file lives in your project data folder.",
-       "terms": [
-        {
-         "term": "Migration",
-         "meaning": "A script that creates or changes tables safely"
-        },
-        {
-         "term": "Foreign key",
-         "meaning": "A column that links a project to its owner user"
-        }
-       ],
-       "docs_url": "https://www.sqlite.org/docs.html"
-      },
-      "check_current": "",
-      "ruled_out": ""
-     },
-     {
-      "id": "json-files",
-      "name": "JSON files on disk",
-      "summary": "Save users.json and projects.json, read/write with fs.",
-      "good": [
-       {
-        "when": "now",
-        "text": "Zero dependencies, you already have file system"
-       },
-       {
-        "when": "later",
-        "text": "Easy to inspect files directly for debugging"
-       }
-      ],
-      "bad": [
-       {
-        "when": "now",
-        "text": "No atomic writes or queries, risk of corrupt file on crash"
-       },
-       {
-        "when": "later",
-        "text": "Hard to enforce ownership, search, or scale beyond one user"
-       }
-      ],
-      "learn": {
-       "what": "You store all users in one JSON file and all projects in another. Node reads the file into memory, edits it, writes it back.",
-       "living_with": "You manage locking yourself and watch for file bloat. Backups are file copies and edits have no history.",
-       "terms": [
-        {
-         "term": "Atomic write",
-         "meaning": "An operation that fully succeeds or fails, no half-written state"
-        }
-       ],
-       "docs_url": "https://nodejs.org/api/fs.html"
-      },
-      "check_current": "",
-      "ruled_out": ""
-     },
-     {
-      "id": "managed-postgres",
-      "name": "Managed Postgres database",
-      "summary": "External Postgres service holding users and projects tables.",
-      "good": [
-       {
-        "when": "now",
-        "text": "Proper relations, concurrent writes, ready for online hosting"
-       },
-       {
-        "when": "later",
-        "text": "Scales to public sign-up and sharing without rewriting storage"
-       }
-      ],
-      "bad": [
-       {
-        "when": "now",
-        "text": "Requires connection string, hosted service setup, and network access"
-       },
-       {
-        "when": "later",
-        "text": "You pay for hosting and manage backups and credentials outside code"
-       }
-      ],
-      "learn": {
-       "what": "Postgres is a separate database server. Your app connects over a URL and stores users and projects in tables with SQL.",
-       "living_with": "You need env vars for connection, run migrations on deploy, and monitor the external service uptime.",
-       "terms": [
-        {
-         "term": "Connection string",
-         "meaning": "URL containing host, user, password for the database"
-        },
-        {
-         "term": "Managed",
-         "meaning": "Database run by a provider, not by your app code"
-        }
-       ],
-       "docs_url": "https://www.postgresql.org/docs/"
-      },
-      "check_current": "",
-      "ruled_out": ""
-     }
-    ],
-    "default_option": "sqlite-file",
-    "default_reason": "Gives relational ownership checks with no server, matches local Express setup and migrates easily.",
-    "agent_pick": "",
-    "evidence": [
-     {
-      "source": "package.json",
-      "detail": "Only express dependency, no DB driver yet, simple node start script"
-     },
-     {
-      "source": "task",
-      "detail": "Task is add user accounts with saved projects, requires persistence choice"
+      "detail": "Express 4.21.2 app, no auth library chosen yet"
      },
      {
       "source": "profile",
-      "detail": "Audience, sensitivity, and future plans affect whether local file or hosted DB is right"
+      "detail": "Assumed primary-use-context is personal synced across devices, sharing is private only, longevity is keep indefinitely"
      },
      {
-      "source": "inferred",
-      "detail": "No existing data folder or ORM config found, greenfield storage decision"
+      "source": "task",
+      "detail": "Add user accounts with saved projects implies own auth and ownership required"
      }
     ]
    },
-   "project-ownership-model": {
-    "id": "project-ownership-model",
-    "title": "Define project ownership and access rules",
+   "saved-project-schema": {
+    "id": "saved-project-schema",
+    "title": "Define saved project model and ownership",
     "task": "Add user accounts with saved projects",
     "problems": [],
-    "question": "How should projects be owned and who can access them?",
-    "why_now": "The database tables and permission checks need an ownership model before saving projects.",
-    "undo": "Changing it later means migrating project data and rewriting access checks.",
-    "assumes": "Assumes email-password login, sqlite-file storage, and cookie sessions from other decisions.",
+    "question": "What should a saved project be and who can see it?",
+    "why_now": "Ownership, sharing, and history shape the database tables and permissions for every future feature.",
+    "undo": "Changing from private-only to shared or adding version history later requires migrating all projects and rewriting access checks.",
+    "assumes": "Storage runs in sqlite-embedded and login is password-local unless decided otherwise.",
     "door": 2,
+    "analogy": "Deciding if each notebook has one owner and stays private, or can be lent out, is like choosing a filing cabinet - cheap to label now, expensive to re-sort later.",
+    "risks": [
+     "Adding sharing later breaks privacy expectations if model was private-only",
+     "Unlimited history grows storage when users keep projects indefinitely",
+     "No per-user limits lets one account fill the disk"
+    ],
     "profile_effects": [
      {
-      "profile_id": "intended-audience",
+      "profile_id": "primary-use-context",
       "answers": [
        {
-        "label": "Just me / personal use",
+        "label": "Personal tool I use alone on one device",
         "effects": [
          {
-          "option": "single-owner-private",
+          "option": "private-simple",
           "dir": "favors",
-          "reason": "No need for sharing logic if only you use it"
+          "reason": "Single device needs only simple ownership, no sync conflicts"
          }
         ]
        },
        {
-        "label": "Small group of known people",
+        "label": "Personal tool I want synced across my devices",
         "effects": [
          {
-          "option": "owner-with-collaborators",
+          "option": "private-versioned",
           "dir": "favors",
-          "reason": "Known group often wants to co-edit same project"
+          "reason": "Synced use benefits from version history to recover overwritten changes"
          }
         ]
        },
        {
-        "label": "Public internet - anyone can sign up",
+        "label": "Small team / friends sharing projects",
         "effects": [
          {
-          "option": "single-owner-private",
+          "option": "shared-collab",
           "dir": "favors",
-          "reason": "Private by default prevents leaking between strangers"
+          "reason": "Team use needs owner plus collaborators model"
          }
         ]
        }
       ]
      },
      {
-      "profile_id": "project-sensitivity",
+      "profile_id": "account-longevity",
       "answers": [
        {
-        "label": "Not sensitive - casual notes",
+        "label": "Keep projects indefinitely until they delete them",
         "effects": [
          {
-          "option": "single-owner-can-share-read",
+          "option": "private-simple",
           "dir": "favors",
-          "reason": "Low sensitivity makes link sharing acceptable"
+          "reason": "Indefinite keep is simpler without history growing forever"
+         },
+         {
+          "option": "private-versioned",
+          "dir": "against",
+          "reason": "Indefinite history grows too much without limits or pruning"
          }
         ]
        },
        {
-        "label": "Private work I wouldn't want others to see",
+        "label": "Okay to delete inactive accounts after a while to save costs",
         "effects": [
          {
-          "option": "single-owner-private",
+          "option": "private-simple",
           "dir": "favors",
-          "reason": "Strict owner-only avoids accidental exposure"
+          "reason": "Simple model cheaper to clean up"
          }
         ]
        },
        {
-        "label": "Sensitive / must be properly protected",
+        "label": "Projects are work-critical, need export and backup",
         "effects": [
          {
-          "option": "single-owner-private",
+          "option": "private-versioned",
           "dir": "favors",
-          "reason": "Simple owner-only is easier to secure"
+          "reason": "Critical work needs history to restore past versions"
          }
         ]
        }
       ]
      },
      {
-      "profile_id": "future-plans",
+      "profile_id": "sharing-needs",
       "answers": [
        {
-        "label": "Keep it simple and local for now",
+        "label": "No, private to each user only",
         "effects": [
          {
-          "option": "single-owner-private",
+          "option": "private-simple",
           "dir": "favors",
-          "reason": "Least code and schema for simple local use"
+          "reason": "Private-only matches simple ownership"
+         },
+         {
+          "option": "shared-collab",
+          "dir": "against",
+          "reason": "Sharing adds complexity not needed"
          }
         ]
        },
        {
-        "label": "Might put it online for others later",
+        "label": "Yes, share a link view-only later",
         "effects": [
          {
-          "option": "single-owner-can-share-read",
+          "option": "shared-collab",
           "dir": "favors",
-          "reason": "Share links add value without full team system"
+          "reason": "Link sharing needs permissions model"
          }
         ]
        },
        {
-        "label": "Plan to grow into a collaborative product",
+        "label": "Yes, collaborate and edit together",
         "effects": [
          {
-          "option": "owner-with-collaborators",
+          "option": "shared-collab",
           "dir": "favors",
-          "reason": "Collaboration needs explicit roles from start"
+          "reason": "Collaboration requires owner plus editors"
          }
         ]
        }
       ]
      }
     ],
-    "questions": [],
+    "questions": [
+     {
+      "id": "need-past-versions",
+      "text": "Have you ever wished you could get back an older version of a project after you changed it?",
+      "why": "Determines if we should keep history for each project or just the current version.",
+      "beginner_note": "",
+      "answers": [
+       {
+        "label": "No, just need the current version",
+        "effects": [
+         {
+          "option": "private-simple",
+          "dir": "favors",
+          "reason": "No history needed keeps model light"
+         }
+        ]
+       },
+       {
+        "label": "Yes, sometimes I overwrite and want it back",
+        "effects": [
+         {
+          "option": "private-versioned",
+          "dir": "favors",
+          "reason": "Version history lets you roll back"
+         }
+        ]
+       },
+       {
+        "label": "Yes, and I want to see who changed what",
+        "effects": [
+         {
+          "option": "shared-collab",
+          "dir": "favors",
+          "reason": "Audit history needed for collaboration"
+         }
+        ]
+       }
+      ]
+     }
+    ],
     "options": [
      {
-      "id": "single-owner-private",
-      "name": "One owner, private only",
-      "summary": "Each saved project belongs to one user, only that user can view or edit.",
+      "id": "private-simple",
+      "name": "One owner, private, current version only, with per-user limit",
+      "plain_name": "private notebook with one owner",
+      "analogy": "Like a private notebook on your shelf - only you have the key, you only see the last page you wrote, and you have a limit on how many notebooks fit.",
+      "story": {
+       "now": "Saving a project this week creates a record with your user id as owner and only you can list it.",
+       "later": "In 6 months you have a clean list of your projects and cannot accidentally share them, but you cannot undo an overwrite."
+      },
+      "summary": "Each project has one owner, private, no history, capped per user.",
       "good": [
        {
         "when": "now",
-        "text": "Simple schema: projects table has owner_id only"
+        "text": "Simplest to build and check - one ownership check everywhere"
        },
        {
         "when": "later",
-        "text": "Least risk of leaking data to other users"
+        "text": "Predictable storage since no history grows when kept indefinitely"
        }
       ],
       "bad": [
        {
         "when": "now",
-        "text": "No way to show a project to someone else"
+        "text": "No way to recover past version if you overwrite"
        },
        {
         "when": "later",
-        "text": "Adding sharing later requires new tables and UI"
+        "text": "Adding share links later means changing ownership model"
        }
       ],
       "learn": {
-       "what": "A saved project is a record with owner_id, title, content, timestamps. Ownership is checked on every read and write: if logged-in user id != owner_id, deny.",
-       "living_with": "You log in and only see your projects. There is no share button. Support is just checking logs for owner mismatch.",
+       "what": "A saved project is a record with id, ownerUserId, title, content, createdAt, updatedAt. Ownership is a strict foreign key - only that user can read or write it. No share table exists.",
+       "living_with": "You list only your projects. Daily code always checks owner equals logged-in user. Deleting account deletes projects after grace period. You enforce a limit like 100 projects per user.",
        "terms": [
         {
-         "term": "owner_id",
-         "meaning": "User id stored on project to say who owns it"
+         "term": "ownership",
+         "meaning": "Which user id is allowed to access the project"
         },
         {
-         "term": "access check",
-         "meaning": "Code that blocks request if user is not allowed"
+         "term": "per-user limit",
+         "meaning": "Max number of projects one account can create"
         }
        ],
        "docs_url": ""
@@ -939,40 +1061,46 @@
       "ruled_out": ""
      },
      {
-      "id": "single-owner-can-share-read",
-      "name": "One owner, plus view-only share link",
-      "summary": "One owner controls edit, but can create a random link that lets others view read-only.",
+      "id": "private-versioned",
+      "name": "One owner, private, with version history, with per-user limit",
+      "plain_name": "private notebook that keeps old pages",
+      "analogy": "Like a private notebook where you keep every old draft tucked behind the current page - still only your key, but thicker over time.",
+      "story": {
+       "now": "Saving a project stores the new version and keeps the old one as history you can list.",
+       "later": "In 6 months you can restore yesterday's version after a bad edit, but your storage is larger and you need pruning rules."
+      },
+      "summary": "Private single-owner projects that store a short history of versions.",
       "good": [
        {
-        "when": "now",
-        "text": "Enables sharing without accounts for viewers"
+        "when": "later",
+        "text": "You can restore past content, good for synced devices overwriting each other"
        },
        {
-        "when": "later",
-        "text": "Easy upgrade path to full collaborators later"
+        "when": "now",
+        "text": "Still private-only so permissions stay simple"
        }
       ],
       "bad": [
        {
-        "when": "now",
-        "text": "Need to generate and store share tokens and handle revocation"
+        "when": "later",
+        "text": "History grows forever unless you add limits, costly when kept indefinitely"
        },
        {
-        "when": "later",
-        "text": "Link can leak if forwarded, need to explain security"
+        "when": "now",
+        "text": "More data to write on every save"
        }
       ],
       "learn": {
-       "what": "Project still has one owner_id. Extra field share_token holds a random unguessable string. GET /p/:token shows read-only view without login.",
-       "living_with": "Owner sees a Share button to copy link and revoke it. Viewers cannot edit. You manage expired or leaked links.",
+       "what": "Project has a versions table with projectId, version number, content snapshot, and timestamp. Current view reads latest version. History is read-only list. You cap history, for example last 20 versions.",
+       "living_with": "Save creates new version row. List projects reads current. Restore copies old version to new version. You need background job to prune old versions.",
        "terms": [
         {
-         "term": "share_token",
-         "meaning": "Long random code in URL that grants read-only access"
+         "term": "version history",
+         "meaning": "List of past saved states of the same project"
         },
         {
-         "term": "read-only",
-         "meaning": "Can view content but cannot change or delete"
+         "term": "pruning",
+         "meaning": "Deleting old versions to control storage size"
         }
        ],
        "docs_url": ""
@@ -981,40 +1109,46 @@
       "ruled_out": ""
      },
      {
-      "id": "owner-with-collaborators",
-      "name": "Owner plus explicit collaborators",
-      "summary": "One owner plus a list of other users with viewer or editor roles per project.",
+      "id": "shared-collab",
+      "name": "Owner plus shared access roles, with version history and limits",
+      "plain_name": "shared folder with owner and guests",
+      "analogy": "Like a shared folder where you are the owner and can give others a view key or edit key, and every change leaves a dated note of who did it.",
+      "story": {
+       "now": "You create a project as owner and add a table for shares and roles, plus version history from day one.",
+       "later": "In 6 months you can support view links and team editing, but every request must check roles and audit logs."
+      },
+      "summary": "Projects have owner plus collaborators with viewer/editor roles and full history.",
       "good": [
        {
-        "when": "now",
-        "text": "Supports team workflows from day one"
+        "when": "later",
+        "text": "Ready for link sharing and collaboration without remodel"
        },
        {
-        "when": "later",
-        "text": "Granular roles make future paid or team features easier"
+        "when": "now",
+        "text": "Version history with user id shows who changed what"
        }
       ],
       "bad": [
        {
         "when": "now",
-        "text": "Requires join table for memberships and role checks on every request"
+        "text": "Most code to write - role checks, invites, link tokens"
        },
        {
         "when": "later",
-        "text": "More complex invite, removal, and leaving logic to maintain"
+        "text": "Privacy risk if default changes and private projects become discoverable"
        }
       ],
       "learn": {
-       "what": "You have projects, users, and project_members table with project_id, user_id, role. Owner role can add/remove members. Checks allow view if member, edit if editor or owner.",
-       "living_with": "Project settings show member list and invite by email. Every edit path checks role. You handle invite errors and removed users.",
+       "what": "Project has ownerId plus a memberships table with projectId, userId, role like viewer or editor. Optional shareLinks table for public links. Versions include editedBy user id.",
+       "living_with": "Every read checks if you are owner or member or have valid link. Every write checks editor role. You need UI to manage members and revoke links.",
        "terms": [
-        {
-         "term": "collaborator",
-         "meaning": "Another user added to a project with permission"
-        },
         {
          "term": "role",
-         "meaning": "Label like viewer or editor that decides what someone can do"
+         "meaning": "What a person can do: view or edit"
+        },
+        {
+         "term": "membership",
+         "meaning": "Link between a user and a project that grants access"
         }
        ],
        "docs_url": ""
@@ -1023,29 +1157,33 @@
       "ruled_out": ""
      }
     ],
-    "default_option": "single-owner-private",
-    "default_reason": "Safest and simplest starting point for saved projects when sharing requirements are unknown.",
+    "default_option": "private-simple",
+    "default_reason": "Task says saved projects for user accounts with no sharing mentioned, and keeping only current version fits indefinite keep without history bloat.",
     "agent_pick": "",
     "evidence": [
      {
       "source": "package.json",
-      "detail": "express app with no auth or storage yet - ownership model needed before tables"
+      "detail": "App named fieldnotes, express based, no existing auth or project model"
      },
      {
       "source": "task",
-      "detail": "Task is add user accounts with saved projects, requires defining project ownership"
+      "detail": "Add user accounts with saved projects, no sharing mentioned"
      },
      {
       "source": "profile",
-      "detail": "Audience, sensitivity, and future plans affect whether sharing and roles are needed"
+      "detail": "Assumed sync across devices, keep indefinitely, private only per basis"
+     },
+     {
+      "source": "inferred",
+      "detail": "No docs mention team roles, so private ownership is expected default"
      }
     ]
    }
   },
   "drafted": [
-   "auth-approach",
-   "data-store",
-   "project-ownership-model"
+   "persistence-layer",
+   "authentication-mechanism",
+   "saved-project-schema"
   ],
   "total": 3
  }

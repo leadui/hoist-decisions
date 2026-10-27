@@ -293,6 +293,7 @@ def make_handler(root):
                 if not ses:
                     return self.send(404, {"error": "No session."})
                 ses["profile_answers"].update(body.get("profile_answers", {}))
+                ses.setdefault("confirmed", {}).update({k: v for k, v in (body.get("confirmed") or {}).items() if v in ("confirmed", "changed")})
                 for k, v in (body.get("answers") or {}).items():
                     ses["answers"].setdefault(k, {}).update(v)
                 save_session(root, ses)
@@ -305,7 +306,8 @@ def make_handler(root):
                 slug = re.sub(r"[^a-z0-9-]+", "-", str(body.get("slug", "decision")).lower()).strip("-")[:60] or "decision"
                 name = f"{next_id(root)}-{slug}.md"
                 (records_dir(root) / name).write_text(str(body.get("markdown", "")))
-                ses["outcomes"][m.group(1)] = {"choice": body.get("choice"), "mode": body.get("mode"), "record": f"docs/decisions/{name}"}
+                ses["outcomes"][m.group(1)] = {"choice": body.get("choice"), "mode": body.get("mode"), "record": f"docs/decisions/{name}",
+                                               "note": str(body.get("note") or "")[:500]}
                 save_session(root, ses)
                 return self.send(200, session_state(root))
             m = re.fullmatch(r"/api/decisions/(\d{4})", self.path)
@@ -399,7 +401,7 @@ def wait_session(root):
             print(f"- {d['title']}: not decided yet; keep it easy to replace ({o['record']})")
         elif o and o.get("choice"):
             name = next((x["name"] for x in dr.get("options", []) if x["id"] == o["choice"]), o["choice"])
-            print(f"- {d['title']}: {name} ({o['record']})")
+            print(f"- {d['title']}: {name} ({o['record']})" + (f"\n    Condition from the user: {o['note']}" if o.get("note") else ""))
         else:
             print(f"- {d['title']}: default, {d.get('default')}")
     print("Hoist: these are the user's decisions for this task. Follow them exactly, ignore any earlier form answers, "
@@ -434,11 +436,14 @@ so the person is never asked the same thing twice. Rules:
   Never ask for numbers they cannot know. No invented scenarios.
 - Each one must matter to at least one "ask" decision; list which in used_by.
 - 2 to 4 short answers each, plus beginner_note (one sentence explaining any term, or empty).
+- assumed: the person will see your guess first and only correct it if it's wrong, so guess honestly from the
+  evidence; when the evidence says nothing, pick the most common case and say so in basis.
 
 Reply with JSON only:
 {"task_summary": str,
  "profile": [{"id": "kebab-case", "text": str, "why": "one sentence: what it changes", "beginner_note": str,
-   "answers": [str], "used_by": [decision ids]}],
+   "answers": [str], "assumed": "the answer you think most likely, copied exactly from answers",
+   "basis": "one short sentence: what in the task or project makes you assume it", "used_by": [decision ids]}],
  "decisions": [{"id": "kebab-case", "title": "plain verb phrase", "scope": "one sentence: what this decision covers and what it leaves to others",
    "door": 1|2|3, "owner": "you"|"agent", "mode": "ask"|"default"|"log", "default": str, "why": str, "depends_on": [ids]}]}"""
 
@@ -456,12 +461,17 @@ Contract (reply with JSON only):
  "undo": "one sentence: what undoing it later would involve",
  "assumes": "one sentence on what this takes as given from other decisions, or empty",
  "door": 1|2|3,
+ "analogy": "one everyday sentence that captures the shape of this decision: what is cheap now and expensive to change later",
+ "risks": ["what the agent is watching out for in this decision, one short sentence each, at most 3"],
  "profile_effects": [{"profile_id": "id from the profile", "answers": [{"label": "exact answer text from the profile",
    "effects": [{"option": "option id", "dir": "favors"|"against", "reason": "short"}]}]}],
  "questions": [{"id": "kebab-case", "text": "...", "why": "one sentence: what the answer changes",
    "beginner_note": "one sentence explaining any term in the question, or empty",
    "answers": [{"label": "short answer", "effects": [{"option": "option id", "dir": "favors"|"against", "reason": "short"}]}]}],
- "options": [{"id": "kebab-case", "name": "...", "summary": "one line",
+ "options": [{"id": "kebab-case", "name": "...", "plain_name": "2 to 5 everyday words, no technical terms",
+   "analogy": "one sentence comparing this option to something from everyday life, matching how the trade-off works",
+   "story": {"now": "one sentence: what it is like this week", "later": "one sentence: what it is like in 6 months"},
+   "summary": "one line",
    "good": [{"when": "now"|"later", "text": "..."}], "bad": [{"when": "now"|"later", "text": "..."}],
    "learn": {"what": "two plain sentences describing what it is and how it works", "living_with": "two sentences on what day-to-day life with it is like",
      "terms": [{"term": "...", "meaning": "one line"}], "docs_url": "official documentation home page, or empty if unsure"},
@@ -485,6 +495,13 @@ Rules for options:
 - Put options that cannot work given the evidence in ruled_out with the reason instead of leaving them as weak choices.
 - Every option has at least one bad item and at least one item about later.
 - learn describes the option itself. Never write "you will learn".
+Rules for analogies and stories:
+- An analogy maps how the trade-off works (what is shared, what is expensive to move, who maintains it), using
+  everyday objects (filing cabinets, notebooks, keys, shops). Never use a technical word in an analogy or a plain_name.
+- Use one family of analogies across the options, so they compare (for example: a shared cabinet, a notebook each,
+  a box of loose cards).
+- story.now and story.later describe what living with it is like for this person, not features. Later is honest
+  about the cost.
 - terms: up to 4 terms the option's text uses that a newcomer may not know."""
 
 
@@ -551,6 +568,8 @@ def check_draft(d, profile=None):
             problems.append(f"option '{o.get('id')}' says nothing about later")
         if not (o.get("learn") or {}).get("what"):
             problems.append(f"option '{o.get('id')}' has no plain explanation")
+        if not (o.get("plain_name") and o.get("analogy") and (o.get("story") or {}).get("now") and (o.get("story") or {}).get("later")):
+            problems.append(f"option '{o.get('id')}' needs plain_name, analogy, and story now/later")
     qs = d.get("questions") or []
     if len(qs) > 3:
         problems.append(f"asks {len(qs)} questions; at most 3")
@@ -564,9 +583,12 @@ def check_draft(d, profile=None):
             for e in effects:
                 if e.get("option") not in ids:
                     problems.append(f"answer '{a.get('label')}' points at unknown option '{e.get('option')}'")
+    if not d.get("analogy"):
+        problems.append("the decision needs an everyday analogy")
     if d.get("default_option") not in {o.get("id") for o in viable}:
         problems.append("default_option is not a workable option")
-    asked = " ".join([str(d.get("question", ""))] + [str(q.get("text", "")) for q in d.get("questions") or []]
+    asked = " ".join([str(d.get("question", "")), str(d.get("analogy", ""))]
+                     + [str(o.get("plain_name", "")) + " " + str(o.get("analogy", "")) for o in d.get("options") or []] + [str(q.get("text", "")) for q in d.get("questions") or []]
                      + [str(a.get("label", "")) for q in d.get("questions") or [] for a in q.get("answers") or []]).lower()
     named = sorted({b for b in VENDORS if re.search(r"\b" + re.escape(b) + r"\b", asked)})
     if named:
