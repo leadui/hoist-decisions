@@ -1,0 +1,14 @@
+{
+  "project": "fieldnotes",
+  "live": false,
+  "decisions": [
+    {"id": "0004", "kind": "database", "status": "open", "created": "2026-10-27 10:35", "agent": "Muse Code",
+     "task": "Add user accounts with saved projects", "agent_pick": "mongo",
+     "trigger": {"package": "mongoose", "tool": "edit_file"},
+     "facts": {"host": 0}, "fact_sources": {"host": "vercel.json"}, "answers": {}}
+  ],
+  "records": [
+    {"file": "0001-use-typescript.md", "markdown": "---\nstatus: accepted\ndate: 2026-10-20\ndoor: one-way\nproposed-by: project owner\ndeciders: project owner\nconfidence: high\n---\n# Use TypeScript for the app and server\n\n> **Decision:** Use TypeScript everywhere. **Because** the team already writes it and the Next.js starter uses it. **Accepted cost:** a build step and type errors to fix before shipping. **Revisit if** the team moves to another language.\n\n## Context and Problem Statement\nWhich language should fieldnotes be written in?\n\n## Decision Drivers\n- The team writes TypeScript every day (your answer)\n- Next.js starter (seen in package.json)\n\n## Considered Options\n1. TypeScript\n2. JavaScript\n\n## Decision Outcome\nChosen: TypeScript, because the team already writes it and errors show up before users see them.\n\n### Consequences\n- Good, because type errors show up before users see them.\n- Bad, because there is a build step to keep working.\n\n## More Information\n- Confidence: high; every driver is seen in the repo or answered.\n"},
+    {"file": "0003-host-on-vercel.md", "markdown": "---\nstatus: accepted\ndate: 2026-10-22\ndoor: heavy\nproposed-by: project owner\ndeciders: project owner\nconfidence: high\ndepends-on: [0001-use-typescript]\n---\n# Host the app on Vercel\n\n> **Decision:** Host on Vercel. **Because** it deploys a Next.js app on every push with nothing to run. **Accepted cost:** functions don't keep files, and costs grow with traffic. **Revisit if** the app needs long-running jobs or a disk.\n\n## Context and Problem Statement\nWhere should fieldnotes run?\n\n## Decision Drivers\n- Nobody wants to run servers (your answer)\n- vercel.json in the repo (seen)\n\n## Considered Options\n1. Vercel\n2. A container on Fly.io\n\n## Decision Outcome\nChosen: Vercel, because it deploys on every push with nothing to run.\n\n### Consequences\n- Good, because previews come with every pull request.\n- Bad, because functions don't keep files between requests.\n- Bad, because costs grow with traffic.\n\n## More Information\n- Confidence: high.\n"}
+  ]
+}

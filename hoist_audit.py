@@ -140,7 +140,7 @@ def call_muse(prompt, args):
                   "in": u.prompt_tokens, "out": u.completion_tokens, "usd": round(usd, 5)})
     print(f"Muse Spark: {u.prompt_tokens:,} in / {u.completion_tokens:,} out · ${usd:.4f} · {time.time()-t:.0f}s · "
           f"total spent via hoist ${led['total_usd']:.2f} of ${args.budget:.2f} budget")
-    return resp.choices[0].message.content or ""
+    return resp.choices[0].message.content or "", resp.choices[0].finish_reason
 
 
 def parse(text):
@@ -218,7 +218,8 @@ def main():
         root = Path(tmp)
     else:
         root = Path(args.target).resolve()
-    out = Path(args.out) if args.out else (Path.cwd() / "hoist-out" / root.name if tmp else root / "docs" / "decisions")
+    name = re.sub(r"\.git$", "", args.target.rstrip("/").split("/")[-1].split(":")[-1]) if tmp else root.name
+    out = Path(args.out) if args.out else (Path.cwd() / "hoist-out" / name if tmp else root / "docs" / "decisions")
 
     if args.from_json:
         n = write_outputs(parse(Path(args.from_json).read_text()), out)
@@ -241,8 +242,12 @@ def main():
     if spent + worst > args.budget:
         sys.exit(f"Stopped: this call could push hoist's total past the ${args.budget:.2f} budget.")
 
-    raw = call_muse(prompt, args)
-    save = Path.cwd() / ".hoist" / "last_response.json"; save.parent.mkdir(exist_ok=True); save.write_text(raw)
+    raw, finish = call_muse(prompt, args)
+    runs = Path.cwd() / ".hoist" / "responses"; runs.mkdir(parents=True, exist_ok=True)
+    save = runs / f"{time.strftime('%Y%m%d-%H%M%S')}-{name}.json"; save.write_text(raw)
+    (Path.cwd() / ".hoist" / "last_response.json").write_text(raw)
+    if finish != "stop":
+        sys.exit(f"Muse Spark stopped early (finish reason: {finish}). Nothing was written; raw reply saved to {save}. Run again, or raise --max-output if the reason is 'length'.")
     try:
         n = write_outputs(parse(raw), out)
     except (ValueError, KeyError) as e:
