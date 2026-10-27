@@ -123,6 +123,8 @@ def gate():
         (root / ".hoist").mkdir(exist_ok=True)
         (root / ".hoist" / "last_task.txt").write_text(payload.get("prompt", ""))
         return 0
+    if event == "PostToolBatch":
+        return questionnaire_handoff(payload, root)
     if event != "PreToolUse":
         return 0
     hit = match_catalog(added_packages(payload, root))
@@ -154,6 +156,59 @@ def gate():
     return block(f"Hoist: paused for a lasting decision ({k['title'].lower()}). The user is deciding at {page}. "
                  f"Do not add `{pkg}` or pick another option yourself. Run `{wait_cmd}` now and let it finish: "
                  "it waits for the user and prints what they chose. Then follow that and continue the original task.")
+
+
+# ---------- the agent's questionnaire: "Decide with Hoist instead" ----------
+HOIST_PICK = "Decide with Hoist instead"
+
+
+def questionnaire_answers(call):
+    resp = call.get("tool_response")
+    if isinstance(resp, str):  # Muse Code sends the questionnaire's result as a JSON string
+        try:
+            resp = json.loads(resp)
+        except ValueError:
+            return []
+    return [a for a in ((resp or {}).get("answers") or []) if isinstance(a, dict)]
+
+
+def picked_hoist(answers):
+    return any(a.get("selected_label") == HOIST_PICK or HOIST_PICK in (a.get("selected_labels") or []) for a in answers)
+
+
+def questionnaire_handoff(payload, root):
+    """PostToolBatch: the only hook that sees the questionnaire (PreToolUse and PostToolUse skip it).
+    When the person picked Hoist, start a session with the agent's questions as hints and open the page."""
+    for call in payload.get("tool_calls") or []:
+        if "request_user_input" not in str(call.get("tool_name")) or not picked_hoist(questionnaire_answers(call)):
+            continue
+        questions = (call.get("tool_input") or {}).get("questions") or []
+        hints = "\n".join("- " + str(q.get("question", "")) + " Options the agent offered: "
+                          + ", ".join(str(o.get("label", "")) for o in q.get("options") or [] if o.get("label") != HOIST_PICK)
+                          for q in questions)
+        task_file = root / ".hoist" / "last_task.txt"
+        task = task_file.read_text().strip() if task_file.exists() else "The current task"
+        if ensure_server(root) and post_session(task, hints):
+            webbrowser.open(f"{URL}/#/session")
+            print("Hoist: the user chose to decide in Hoist, so ignore every answer in that form. Muse Spark is preparing "
+                  f"the decisions at {URL}/#/session. Run `python3 {shlex.quote(str(HOME / 'hoist.py'))} wait` now and let it "
+                  "finish: it waits until the user has decided and prints the choices. Then follow them and continue the task.")
+        else:
+            print(f"Hoist: couldn't open the decision page at {URL}. Ask the user these questions in chat instead.")
+        return 0
+    return 0
+
+
+def post_session(task, hints=""):
+    req = urllib.request.Request(f"{URL}/api/session", data=json.dumps({"task": task, "hints": hints}).encode(), method="POST",
+                                 headers={"Content-Type": "application/json", "Origin": URL})
+    try:
+        urllib.request.urlopen(req, timeout=10).read()
+        return True
+    except urllib.error.HTTPError as e:
+        return e.code == 409  # already preparing: the page is still the right place
+    except OSError:
+        return False
 
 
 def ensure_server(root):
@@ -229,7 +284,8 @@ def make_handler(root):
                 task = str(body.get("task", "")).strip()[:500]
                 if not task:
                     return self.send(400, {"error": "Describe the task first."})
-                threading.Thread(target=run_session, args=(root, task), daemon=True).start()
+                hints = str(body.get("hints", ""))[:4000]
+                threading.Thread(target=run_session, args=(root, task, hints), daemon=True).start()
                 time.sleep(0.2)
                 return self.send(200, session_state(root))
             if self.path == "/api/session/answers":
@@ -281,6 +337,9 @@ def wait(did, project):
     root = Path(project).resolve()
     if not did:
         waiting = [d for d in load_decisions(root) if d["status"] == "open"]
+        ses = session_state(root)
+        if not waiting and ses and (ses["status"] in ("planning", "drafting") or session_open(ses)):
+            return wait_session(root)
         if not waiting:
             print("HOIST: no decision is waiting. Carry on.")
             return
@@ -303,6 +362,41 @@ def wait(did, project):
     print(f"{line}\nHOIST: decided. {'Parked for now' if dec['status'] == 'parked' else opt.get('n', dec.get('choice'))}"
           f" (record: {dec.get('record', '')})\n{line}")
     print(outcome_message(dec, k, dec["trigger"]["package"]))
+
+
+def session_open(ses):
+    asks = [d["id"] for d in ((ses.get("plan") or {}).get("decisions") or []) if d.get("mode") == "ask"]
+    return ses["status"] == "ready" and any(a not in ses.get("outcomes", {}) for a in asks)
+
+
+def wait_session(root):
+    line = "-" * 64
+    ses = session_state(root)
+    print(f"{line}\nHOIST: paused while you make this task's lasting decisions\n  Task:       {ses['task']}\n"
+          f"  Decide at:  {URL}/#/session\n  Muse Spark prepares them first; the agent continues when you're done.\n{line}", flush=True)
+    while True:
+        ses = session_state(root)
+        if ses["status"] == "error":
+            print(f"HOIST: Muse Spark couldn't prepare the decisions ({ses.get('error')}). Ask the user in chat instead.")
+            return
+        if ses["status"] == "ready" and not session_open(ses):
+            break
+        time.sleep(1)
+    print(f"{line}\nHOIST: decided\n{line}")
+    out = ses.get("outcomes", {})
+    for d in ses["plan"]["decisions"]:
+        o, dr = out.get(d["id"]), ses["drafts"].get(d["id"]) or {}
+        if d.get("mode") == "log":
+            continue
+        if o and o.get("mode") == "parked":
+            print(f"- {d['title']}: not decided yet; keep it easy to replace ({o['record']})")
+        elif o and o.get("choice"):
+            name = next((x["name"] for x in dr.get("options", []) if x["id"] == o["choice"]), o["choice"])
+            print(f"- {d['title']}: {name} ({o['record']})")
+        else:
+            print(f"- {d['title']}: default, {d.get('default')}")
+    print("Hoist: these are the user's decisions for this task. Follow them exactly, ignore any earlier form answers, "
+          "and continue the original task. Choices the agent makes on its own can be noted in the final message.")
 
 
 # ---------- Muse Spark writes the content; this code sets the contract and checks it ----------
@@ -475,8 +569,9 @@ def apply_budget(plan):
     return plan
 
 
-def make_plan(root, task):
-    p = apply_budget(muse_json(PLAN_SYSTEM, project_context(root, task), f"plan:{root.name}", max_output=4000))
+def make_plan(root, task, hints=""):
+    prompt = project_context(root, task) + (f"\n\nThe agent was about to ask the person these questions; cover them as decisions:\n{hints}" if hints else "")
+    p = apply_budget(muse_json(PLAN_SYSTEM, prompt, f"plan:{root.name}", max_output=4000))
     (root / ".hoist").mkdir(exist_ok=True)
     (root / ".hoist" / "plan.json").write_text(json.dumps({"task": task, **p}, indent=2))
     return p
@@ -588,16 +683,16 @@ def ensure_key():
     return False
 
 
-def run_session(root, task):
+def run_session(root, task, hints=""):
     """Plan the task, then draft each decision the person is asked. Progress goes to .hoist/session.json for the page."""
     ses = {"task": task, "status": "planning", "started": time.strftime("%Y-%m-%d %H:%M:%S"), "drafted": [], "total": 0,
-           "profile_answers": {}, "answers": {}, "outcomes": {}}
+           "profile_answers": {}, "answers": {}, "outcomes": {}, "from_questionnaire": bool(hints)}
     save_session(root, ses)
     try:
         if not ensure_key():
             raise RuntimeError("No Muse Spark key. Save it with: security add-generic-password -a \"$USER\" -s hoist-meta-api -w")
         shutil.rmtree(root / ".hoist" / "drafts", ignore_errors=True)
-        p = make_plan(root, task)
+        p = make_plan(root, task, hints)
         asks = [d["id"] for d in p.get("decisions", []) if d.get("mode") == "ask"]
         ses.update(status="drafting", total=len(asks))
         save_session(root, ses)
@@ -626,12 +721,8 @@ def start(task, project):
     root = Path(project).resolve()
     if not ensure_server(root):
         sys.exit(f"Hoist couldn't start its page on {URL}. Is another project's Hoist running?")
-    req = urllib.request.Request(f"{URL}/api/session", data=json.dumps({"task": task}).encode(), method="POST",
-                                 headers={"Content-Type": "application/json", "Origin": URL})
-    try:
-        urllib.request.urlopen(req, timeout=10).read()
-    except urllib.error.HTTPError as e:
-        sys.exit(f"Hoist: {json.loads(e.read()).get('error', e.reason)}")
+    if not post_session(task):
+        sys.exit("Hoist: couldn't start the session. Is the page server answering?")
     webbrowser.open(f"{URL}/#/session")
     print(f"HOIST: Muse Spark is preparing the decisions for \"{task}\". Follow along at {URL}/#/session")
 
@@ -644,8 +735,12 @@ def install(project):
     cfg = json.loads(hooks_file.read_text()) if hooks_file.exists() else {}
     hooks = cfg.setdefault("hooks", {})
     cmd = f"{shlex.quote(sys.executable)} {shlex.quote(str(HOME / 'hoist.py'))} gate"
-    for event, matcher in (("UserPromptSubmit", None), ("PreToolUse", "*")):
-        keep = [e for e in hooks.get(event, []) if "hoist.py" not in json.dumps(e)]
+    for event in list(hooks):  # drop earlier Hoist entries anywhere (older installs, test copies)
+        hooks[event] = [e for e in hooks[event] if "hoist.py" not in json.dumps(e)]
+        if not hooks[event]:
+            del hooks[event]
+    for event, matcher in (("UserPromptSubmit", None), ("PreToolUse", "*"), ("PostToolBatch", None)):
+        keep = hooks.get(event, [])
         entry = {"hooks": [{"type": "command", "command": cmd, "timeout": HOOK_TIMEOUT}]}
         if matcher:
             entry = {"matcher": matcher, **entry}
@@ -663,7 +758,7 @@ def install(project):
     if ".hoist/" not in lines:
         gi.write_text("\n".join(lines + [".hoist/"]) + "\n")
     print(f"Hoist installed in {root}")
-    print(f"  hook:    {hooks_file.relative_to(root)} (UserPromptSubmit, PreToolUse)")
+    print(f"  hook:    {hooks_file.relative_to(root)} (UserPromptSubmit, PreToolUse, PostToolBatch)")
     print(f"  skill:   {skill.relative_to(root)}")
     print(f"  records: docs/decisions/")
     print("Restart Muse Code in this folder and trust it, so the hook loads.")
