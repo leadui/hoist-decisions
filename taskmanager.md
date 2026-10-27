@@ -4,6 +4,7 @@
 
 ## Now — where we are (resume here)
 - State: `hoist_audit.py` works end to end except the live Muse Spark call, which has not run yet (tested with `--dry-run` and `--from-json test/sample_reply.json`). Validate gate passes. Dry run on excalidraw: 55 files, ~16k input tokens, worst case $0.07. Known gap, left as is by the owner: `firebase-project/firebase.json` is not in `EVIDENCE`.
+- 2026-10-27: card rebuilt as a focused 3-step flow (ask → recommend → recorded) after the owner found the all-in-one card unusable; it is on GitHub Pages via `site/index.html`.
 - 2026-10-26: design settled on **map + decision card + evidence graph**, with **Muse Code** as the agent. Interactive prototype: [Hoist Decision Card](https://claude.ai/artifact/8BNdWnry1pnz3mHF1sWxt1). Demo script updated to match: [Hoist Demo Script](https://claude.ai/artifact/Y845JAaHCn1mVGiS9GTg98).
 - Next (go/no-go, due Wed Oct 28):
   1. Real scan of https://github.com/excalidraw/excalidraw, then one of the owner's repos. Judge whether `graph.md` is believable.
@@ -19,12 +20,15 @@ Agents ask questions you can't answer. Hoist turns them into decisions you under
 
 When a coding agent reaches a choice that is costly to undo (a one-way door), Hoist pauses it and opens a decision card: what's being decided, what it costs to undo, questions about you (not about the tech), each option's gains and costs, what decides it, and what would flip it. Every proposal can be traced back to its evidence. The choice is recorded as an ADR, and the record updates when plans change. Entry for the Meta Global AI Developer Hackathon, Indie developer track (judged on creativity, technical ambition, and whether it works), theme "Build for your world". Meta tools doing real work: Muse Spark (audit, questions, inferred facts, record prose) and Muse Code (the agent Hoist guards).
 
-### What the user sees (three layers)
-1. **Glance (5 seconds):** the decision as a question, door badge, best fit and where the agent's own pick ranks (in words, never a score), a confidence badge with its reasons, and who is accountable (Proposed by Muse Code · Analyzed by Muse Spark · Decided by you).
-2. **Decide (30 seconds):** "About you" questions; already-known facts (from ADRs); considered options ranked Best fit / Runner-up / Third, each with "Strong on / Weak on" and "Good, because / Bad, because" consequences tagged Now or Later; options that fail a hard limit shown as **Ruled out** with the reason and source; a "Close call" tag when the top two are near; top 3 deciding factors; "Would flip if" with a Try-it what-if; how Hoist keeps the decision true; a live **record preview**; then Select an option and three exits: Record, No preference (best fit recorded as delegated, low confidence, revisit), Ask me later (recorded as proposed with a short-term placeholder).
-3. **Trust (on demand):** clicking Evidence on any option (including a ruled-out one) opens a graph, Sources → Facts → What matters → Option. Sources are tagged seen in repo, your answer, agent's task, docs, or inferred by Muse Spark (dashed). Edges are green when they help, red when they hurt, and thicker when they count more. Clicking a node highlights its path and shows the file snippet, answer, or doc link. The raw weights and ratings sit in a collapsed "How Hoist ranked this" section.
+### What the user sees (one step at a time)
+The first card version showed everything at once (about 25 blocks) and was not usable. The current flow asks one thing at a time and keeps details one click away (overview first, details on demand).
+1. **Ask:** the decision in plain words ("Pick a database for saved projects"), one line on why it's hard to undo, then the "About you" questions one at a time (large buttons, keys 1–3, one line on why each is asked). Always available: "Ask me later" and "I don't mind, pick for me".
+2. **Recommend:** one recommendation ("Use managed Postgres"), one sentence on why built from the answers, a "You accept" line with the real cost, one primary button, and one line with confidence and what would change the answer. Below: other options as a short list (one downside each, the agent's pick marked, "Use this"), and ruled-out options with the reason.
+3. **Recorded:** the file written, the record behind "Show the record", and Undo.
 
-Left rail: the decision map (recorded, deciding now, open and blocked), then **Decided by your agent**: two-way doors Muse Code settled on its own, each as a Y-statement with "Looks right" and "Open as a card". The card is where you decide; the rail is context and review.
+Behind clicks, never on the main card:
+- **Why?** (per option): good and bad points, then the facts used with their source (repo file, your answer, docs, inferred by Muse Spark). The connection graph and the raw weights are in two collapsed toggles.
+- **Project decisions** (top bar): the decision map and the agent's own two-way choices as Y-statements, with "Looks right" and "Ask me about this".
 
 ### Pieces, in build order
 1. **Audit** (`hoist_audit.py`, done): Muse Spark reads a repo's manifests, CI and deploy config, infers its lasting decisions, tags each seen / inferred / unknown, and writes `docs/decisions/ADR-NNN-*.md` plus `graph.md` (Mermaid). To do: use catalog ids where a decision matches, and also write `docs/decisions/hoist.json`.

@@ -1,11 +1,16 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="description" content="Hoist prototype: how a coding agent's lasting decisions are explained, traced to evidence, and recorded. Sample data; no API calls."><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html>
+<html lang="en">
+<head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Hoist prototype: how a coding agent's lasting decisions are explained to you and recorded. Sample data; no API calls.">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Hoist Decision Card</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: slim status bar; decision map + agent log rail (left) + decision card (right); evidence sheet slides in from the right */
+/* Layout: one narrow column, one step at a time (ask → recommend → recorded). Details live in side sheets. */
 :root{
   --bg:#F5F7F6; --surface:#FFFFFF; --ink:#16201C; --muted:#56635D; --faint:#86918C; --line:#DBE1DE; --soft:#ECF0EE;
   --accent:#0F7657; --accent-soft:#DFF0E8; --accent-ink:#FFFFFF;
@@ -24,439 +29,276 @@
   --oneway:#E68B83; --oneway-soft:#3A1F1C; --heavy:#E2B062; --heavy-soft:#33280F; --scrim:rgba(0,0,0,.5); color-scheme:dark}
 
 *{box-sizing:border-box}
-body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
 button{font:inherit;color:inherit;cursor:pointer}
-:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
-.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 48px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px}
 
 .bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
-.bar .in{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-.mark{font-family:var(--mono);font-weight:500;font-size:15px;letter-spacing:-.01em}
+.bar .in{max-width:880px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.mark{font-family:var(--mono);font-weight:500;font-size:15px}
 .proj{color:var(--muted);font-size:13.5px}
-.status{margin-left:auto;display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:4px 12px 4px 10px;background:var(--surface)}
-.dot{width:7px;height:7px;border-radius:50%;background:var(--heavy);position:relative}
+.barbtn{margin-left:auto;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 12px;font-size:13px;color:var(--muted);display:inline-flex;gap:8px;align-items:center}
+.barbtn:hover{color:var(--ink)}
+.badge{font-family:var(--mono);font-size:11px;color:var(--heavy);background:var(--heavy-soft);border-radius:999px;padding:0 7px}
+
+.wrap{max-width:640px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:56px 72px}
+@media (max-width:640px){.wrap{padding-block:28px 48px}}
+.step{display:flex;flex-direction:column;gap:22px;animation:in .45s var(--ease)}
+@keyframes in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.status{display:inline-flex;align-items:center;gap:9px;font-size:13.5px;color:var(--muted)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--heavy);position:relative;flex:none}
 .dot::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:1px solid var(--heavy);opacity:0;animation:breathe 2.4s var(--ease) infinite}
-.status.done .dot{background:var(--accent)} .status.done .dot::after{border-color:var(--accent)}
-@keyframes breathe{0%{transform:scale(.6);opacity:.7}100%{transform:scale(1.6);opacity:0}}
+.dot.ok{background:var(--accent)} .dot.ok::after{border-color:var(--accent)}
+@keyframes breathe{0%{transform:scale(.6);opacity:.7}100%{transform:scale(1.7);opacity:0}}
+h1{font-size:clamp(28px,4.4vw,38px);line-height:1.1;letter-spacing:-.025em;font-weight:600;margin:0;text-wrap:balance}
+.lead{font-size:17px;color:var(--muted);margin:0;max-width:56ch;text-wrap:pretty}
+.lead b{color:var(--ink);font-weight:500}
+code{font-family:var(--mono);font-size:.88em;background:var(--soft);padding:1px 6px;border-radius:5px;color:var(--ink)}
 
-.grid{display:grid;grid-template-columns:252px minmax(0,1fr);gap:40px;padding-top:32px;align-items:start}
-@media (max-width:860px){.grid{grid-template-columns:minmax(0,1fr);gap:24px;padding-top:20px}}
+.qhead{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-top:10px}
+.qnum{font-family:var(--mono);font-size:12px;color:var(--faint)}
+.pips{display:flex;gap:5px}
+.pips i{width:22px;height:3px;border-radius:2px;background:var(--line)}
+.pips i.on{background:var(--ink)}
+.qtext{font-size:21px;font-weight:500;letter-spacing:-.01em;margin:0}
+.qwhy{font-size:14px;color:var(--faint);margin:-12px 0 0}
+.answers{display:flex;flex-direction:column;gap:8px}
+.ans{display:flex;align-items:center;gap:14px;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:14px 16px;font-size:16px;transition:border-color .2s var(--ease),transform .15s var(--ease)}
+.ans:hover{border-color:var(--faint)}
+.ans:active{transform:scale(.99)}
+.ans .key{font-family:var(--mono);font-size:12px;color:var(--faint);border:1px solid var(--line);border-radius:5px;width:22px;height:22px;display:grid;place-items:center;flex:none}
+.ans.sel{border-color:var(--ink)}
+.ans .hint{margin-left:auto;font-size:12.5px;color:var(--faint)}
+.row{display:flex;gap:16px;flex-wrap:wrap;align-items:center}
+.link{border:0;background:none;padding:0;color:var(--muted);font-size:14px;text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--line)}
+.link:hover{color:var(--ink);text-decoration-color:var(--ink)}
 
-.eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint)}
-.rail{position:sticky;top:calc(env(safe-area-inset-top,0px) + 76px);display:flex;flex-direction:column;gap:14px}
-@media (max-width:860px){.rail{position:static}}
-.map{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;position:relative}
-.map::before{content:"";position:absolute;left:5px;top:12px;bottom:12px;width:1px;background:var(--line)}
-.map li{display:grid;grid-template-columns:11px minmax(0,1fr);gap:12px;padding:7px 0;align-items:start}
-.pin{width:11px;height:11px;border-radius:3px;margin-top:5px;background:var(--surface);border:1.5px solid var(--faint);position:relative;z-index:1}
-.pin.d3{border-color:var(--oneway)} .pin.d2{border-color:var(--heavy)}
-.pin.now{background:var(--oneway);box-shadow:0 0 0 4px var(--oneway-soft)}
-.pin.open{border-style:dashed}
-.map .t{font-size:13.5px;font-weight:500}
-.map .s{font-size:12.5px;color:var(--muted)}
-.map .now-t{color:var(--oneway)}
-.map li.dim .t{color:var(--muted);font-weight:400}
-@media (max-width:860px){.map{flex-direction:row;overflow-x:auto;gap:18px}.map::before{display:none}.map li{min-width:140px}}
-.log{border-top:1px solid var(--line);padding-top:14px;display:flex;flex-direction:column;gap:8px}
-.loghead{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
-.count{font-family:var(--mono);font-size:11.5px;color:var(--heavy);background:var(--heavy-soft);border-radius:5px;padding:1px 7px}
-.count.zero{color:var(--accent);background:var(--accent-soft)}
-.logintro{font-size:12.5px;color:var(--faint);margin:0}
-details.y{border:1px solid var(--line);border-radius:10px;background:var(--surface)}
-details.y summary{list-style:none;cursor:pointer;padding:8px 10px;font-size:13px;display:flex;gap:8px;align-items:center}
-details.y summary::-webkit-details-marker{display:none}
-details.y summary .st{margin-left:auto;font-family:var(--mono);font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--heavy)}
-details.y.ok summary .st{color:var(--accent)}
-details.y .yb{padding:0 10px 10px;font-size:12.5px;color:var(--muted);display:flex;flex-direction:column;gap:8px}
-details.y .yb p{margin:0}
-details.y .yb em{font-style:normal;color:var(--ink)}
-.door2{width:8px;height:8px;border-radius:2px;border:1.5px solid var(--accent);flex:none}
-
-.card{display:flex;flex-direction:column;gap:30px;min-width:0}
-.head{display:flex;flex-direction:column;gap:10px}
-.door{align-self:flex-start;display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--oneway);background:var(--oneway-soft);padding:4px 10px;border-radius:6px}
-h1{font-size:clamp(26px,3.4vw,36px);line-height:1.08;letter-spacing:-.025em;font-weight:600;margin:0;text-wrap:balance;max-width:24ch}
-.intercept{font-size:14px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px;align-items:baseline}
-.intercept code{font-family:var(--mono);font-size:13px;color:var(--ink);background:var(--soft);padding:1px 7px;border-radius:5px;text-decoration:line-through;text-decoration-color:var(--oneway)}
-.verdict{font-size:17px;line-height:1.5;max-width:62ch;margin:4px 0 0;text-wrap:pretty}
-.verdict b{font-weight:600}
-.meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:2px}
-.conf{display:inline-flex;align-items:center;gap:8px;font-size:13px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:3px 12px 3px 6px}
-.conf .lv{font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;border-radius:999px;padding:2px 8px;background:var(--heavy-soft);color:var(--heavy)}
-.conf .lv.high{background:var(--accent-soft);color:var(--accent)}
-.conf .lv.low{background:var(--oneway-soft);color:var(--oneway)}
-.conf span:last-child{color:var(--muted)}
-.acct{display:flex;flex-wrap:wrap;gap:0;font-size:12.5px;color:var(--muted);border:1px solid var(--line);border-radius:10px;overflow:hidden;align-self:flex-start;background:var(--surface)}
-.acct div{padding:6px 12px;border-left:1px solid var(--line)}
-.acct div:first-child{border-left:0}
-.acct b{display:block;font-family:var(--mono);font-weight:400;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--faint)}
-.acct .you{color:var(--ink);font-weight:500}
-
-section h2{font-size:13px;font-weight:500;margin:0 0 14px;color:var(--muted)}
-.qs{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px 28px}
-.q p{margin:0 0 8px;font-size:14.5px}
-.seg{display:inline-flex;flex-wrap:wrap;gap:4px;padding:3px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
-.seg button{border:0;background:transparent;padding:5px 11px;border-radius:7px;font-size:13.5px;color:var(--muted);transition:background .25s var(--ease),color .25s var(--ease)}
-.seg button:hover{color:var(--ink)}
-.seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
-.seg button:active{transform:scale(.97)}
-.known{margin-top:16px;display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:13.5px;color:var(--muted)}
-.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:2px 10px;font-size:12.5px;color:var(--ink)}
-.chip i{width:6px;height:6px;border-radius:50%;background:var(--accent)}
-.chip.whatif{border-style:dashed;color:var(--heavy)} .chip.whatif i{background:var(--heavy)}
-.linkbtn{border:0;background:none;padding:0;color:var(--accent);font-size:13px;text-decoration:underline;text-underline-offset:3px}
-
-.opts{display:flex;flex-direction:column;gap:10px}
-.opt{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px 20px;align-items:start;will-change:transform;transition:border-color .25s var(--ease)}
-.opt.picked{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
-.opt.lead{padding:22px}
-@media (max-width:640px){.opt{grid-template-columns:minmax(0,1fr)}}
-.oname{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
-.oname h3{margin:0;font-size:16px;font-weight:600;letter-spacing:-.01em}
-.opt.lead .oname h3{font-size:21px}
-.osub{font-size:13px;color:var(--faint);margin:2px 0 0}
-.tag{font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;padding:2px 7px;border-radius:5px}
-.tag.fit{background:var(--accent-soft);color:var(--accent)}
-.tag.rank{background:var(--soft);color:var(--muted)}
-.tag.agent{background:var(--heavy-soft);color:var(--heavy)}
-.tag.close{border:1px dashed var(--heavy);color:var(--heavy)}
-.sw{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;font-size:13.5px}
-.sw span b{font-weight:500;color:var(--ink)}
-.sw .s{color:var(--accent)} .sw .w{color:var(--oneway)}
-.cons{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px 22px;margin-top:14px}
-.cons ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:7px}
-.cons li{font-size:13.5px;line-height:1.45;display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;align-items:baseline}
-.cons .k{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);margin-bottom:6px}
-.when{font-family:var(--mono);font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--faint);border:1px solid var(--line);border-radius:4px;padding:0 5px}
-.cons .good .k{color:var(--accent)} .cons .bad .k{color:var(--oneway)}
-.opt:not(.lead) .cons{display:none}
-.opt:not(.lead) .badline{font-size:13.5px;color:var(--muted);margin:8px 0 0}
-.opt.lead .badline{display:none}
-.acts{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
-@media (max-width:640px){.acts{justify-content:flex-start}}
-.btn{border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:7px 13px;font-size:13.5px;font-weight:500;display:inline-flex;align-items:center;gap:7px;transition:border-color .2s var(--ease),transform .15s var(--ease)}
-.btn:hover{border-color:var(--faint)}
+.rec{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:16px}
+.rec .why{font-size:16.5px;margin:0;max-width:56ch}
+.accept{display:flex;gap:10px;font-size:15px;color:var(--muted);padding-top:14px;border-top:1px solid var(--line)}
+.accept b{color:var(--ink);font-weight:500;white-space:nowrap}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 16px;font-size:15px;font-weight:500;display:inline-flex;align-items:center;gap:8px;transition:transform .15s var(--ease),filter .2s}
 .btn:active{transform:translateY(1px)}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
-.btn.primary:hover{border-color:var(--accent);filter:brightness(1.06)}
-.btn.ghost{border-color:transparent;background:transparent;color:var(--muted)}
-.btn.ghost:hover{color:var(--ink);border-color:var(--line)}
-.btn[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
-.btn svg{width:15px;height:15px}
-.ruled{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:baseline;font-size:13.5px;color:var(--muted);padding:12px 16px;border:1px dashed var(--line);border-radius:12px}
-.ruled b{font-weight:500;color:var(--ink);text-decoration:line-through;text-decoration-color:var(--faint)}
-.ruled .tag{background:var(--oneway-soft);color:var(--oneway)}
+.btn.primary:hover{filter:brightness(1.06)}
+.btn svg{width:16px;height:16px}
+.small{font-size:14px;color:var(--muted);margin:0}
+.small b{color:var(--ink);font-weight:500}
+.lv{font-family:var(--mono);font-size:11px;letter-spacing:.04em;text-transform:uppercase;border-radius:999px;padding:1px 8px;background:var(--heavy-soft);color:var(--heavy)}
+.lv.low{background:var(--oneway-soft);color:var(--oneway)}
 
-.why{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:32px}
-@media (max-width:760px){.why{grid-template-columns:minmax(0,1fr)}}
-.factor{padding:11px 0;border-top:1px solid var(--line);display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 12px}
-.factor:first-of-type{border-top:0;padding-top:0}
-.factor .fn{font-weight:500;font-size:14.5px}
-.factor .fw{font-family:var(--mono);font-size:11px;color:var(--faint);align-self:center;text-transform:uppercase;letter-spacing:.04em}
-.factor .fy{grid-column:1/-1;font-size:13.5px;color:var(--muted)}
-.flips{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
-.flips li{font-size:14px;display:flex;flex-direction:column;gap:4px;padding:12px 14px;border:1px dashed var(--line);border-radius:10px}
-.flips li b{font-weight:600}
-.stable{font-size:14px;color:var(--muted);margin:0}
-.keep{margin-top:18px;font-size:13.5px;color:var(--muted)}
-.keep b{display:block;font-weight:500;color:var(--ink);margin-bottom:4px}
+.others h2{font-size:13px;font-weight:500;color:var(--faint);margin:0 0 8px}
+.other{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 14px;padding:12px 0;border-top:1px solid var(--line);align-items:center}
+.other:first-of-type{border-top:0}
+.other .n{font-weight:500;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.other .d{font-size:14px;color:var(--muted);grid-column:1/2}
+.other .acts{grid-row:1/3;grid-column:2;display:flex;gap:12px}
+.tag{font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;padding:1px 6px;border-radius:4px;background:var(--heavy-soft);color:var(--heavy)}
+.ruled{font-size:13.5px;color:var(--faint);margin:6px 0 0}
+.ruled s{text-decoration-color:var(--faint)}
 
-details.prev{border:1px solid var(--line);border-radius:12px;background:var(--surface)}
-details.prev summary{cursor:pointer;padding:12px 16px;font-size:14px;font-weight:500;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
-details.prev summary span{font-family:var(--mono);font-size:12px;font-weight:400;color:var(--faint)}
-details.prev pre{margin:0 16px 16px}
-pre.adr{font-family:var(--mono);font-size:12.5px;line-height:1.6;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:16px;white-space:pre-wrap;word-break:break-word;max-height:440px;overflow:auto;margin:0}
+.done{display:flex;flex-direction:column;gap:12px}
+.file{font-family:var(--mono);font-size:13px;color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+pre.adr{font-family:var(--mono);font-size:12.5px;line-height:1.6;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;white-space:pre-wrap;word-break:break-word;max-height:460px;overflow:auto;margin:0}
 
-.decide{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding-top:20px;border-top:1px solid var(--line)}
-.decide .hint{font-size:13px;color:var(--faint);flex-basis:100%}
-
-.done{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px;display:flex;flex-direction:column;gap:14px}
-
-.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,24px);opacity:0;background:var(--ink);color:var(--surface);font-size:13.5px;padding:10px 16px;border-radius:10px;transition:transform .4s var(--ease),opacity .3s var(--ease);pointer-events:none;max-width:calc(100vw - 32px);z-index:30}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,24px);opacity:0;background:var(--ink);color:var(--surface);font-size:14px;padding:10px 16px;border-radius:10px;transition:transform .4s var(--ease),opacity .3s var(--ease);pointer-events:none;max-width:calc(100vw - 32px);z-index:30}
 .toast.on{transform:translate(-50%,0);opacity:1}
 
-/* Evidence sheet */
+/* Side sheets: "Why?" (evidence) and "Project decisions" (map + agent log) */
 .scrim{position:fixed;inset:0;background:var(--scrim);opacity:0;pointer-events:none;transition:opacity .35s var(--ease);z-index:20;border:0}
 .scrim.on{opacity:1;pointer-events:auto}
 .sheet{position:fixed;top:0;right:0;bottom:0;width:min(860px,100vw);background:var(--surface);border-left:1px solid var(--line);z-index:21;transform:translateX(104%);transition:transform .45s var(--ease);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);padding-right:env(safe-area-inset-right,0px)}
+.sheet.narrow{width:min(480px,100vw)}
 .sheet.on{transform:none}
 .sh{display:flex;align-items:flex-start;gap:14px;padding:20px 22px 14px;border-bottom:1px solid var(--line)}
-.sh h2{margin:2px 0 0;font-size:21px;font-weight:600;letter-spacing:-.015em}
-.sh p{margin:4px 0 0;font-size:13.5px;color:var(--muted)}
-.sh .x{margin-left:auto;border:1px solid var(--line);background:var(--surface);border-radius:8px;width:34px;height:34px;display:grid;place-items:center;flex:none}
-.sbody{overflow:auto;padding:16px 22px 28px;display:flex;flex-direction:column;gap:16px;flex:1;min-height:0}
+.sh h2{margin:0;font-size:20px;font-weight:600;letter-spacing:-.015em}
+.sh p{margin:4px 0 0;font-size:14px;color:var(--muted)}
+.x{margin-left:auto;border:1px solid var(--line);background:var(--surface);border-radius:8px;width:34px;height:34px;display:grid;place-items:center;flex:none}
+.sbody{overflow:auto;padding:18px 22px 28px;display:flex;flex-direction:column;gap:18px;flex:1;min-height:0}
 .sbody>*{flex:none}
-.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--muted)}
-.legend span{display:inline-flex;align-items:center;gap:6px}
-.legend i{width:12px;height:8px;border-radius:2px;border:1.5px solid currentColor}
-.cols{display:grid;grid-template-columns:repeat(4,1fr);font-family:var(--mono);font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);min-width:760px}
-.gwrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--bg);padding:12px 12px 6px}
-svg.g{display:block;min-width:760px;width:100%;height:auto}
-.gn{cursor:pointer}
+.facts{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.facts li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;padding:10px 0;border-top:1px solid var(--line);font-size:14.5px}
+.facts li:first-child{border-top:0}
+.facts .src{font-family:var(--mono);font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.04em;align-self:center}
+.facts .src.inf{color:var(--heavy)}
+.sec{font-size:13px;font-weight:500;color:var(--faint);margin:0}
+details.more summary{cursor:pointer;font-size:14px;color:var(--muted)}
+details.more[open] summary{margin-bottom:12px}
+.gwrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--bg);padding:12px}
+svg.g{display:block;min-width:720px;width:100%;height:auto}
 .gn rect{fill:var(--surface);stroke-width:1.4}
 .gn text{fill:var(--ink);font-family:var(--sans)}
-.gn .tg{fill:var(--faint);font-family:var(--mono);font-size:9.5px;letter-spacing:.03em}
-.gn.sel rect{stroke-width:2.6}
-.gn>*{transition:opacity .3s var(--ease)}
-.gn.dim>*,.ge.dim{opacity:.18}
-.ge{fill:none;transition:opacity .3s var(--ease)}
-.draw{stroke-dasharray:1;stroke-dashoffset:1;animation:draw .7s var(--ease) forwards}
-.pop{opacity:0;animation:pop .45s var(--ease) forwards}
-@keyframes draw{to{stroke-dashoffset:0}}
-@keyframes pop{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
-.detail{border:1px solid var(--line);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:10px}
-.detail .dk{font-family:var(--mono);font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--faint)}
-.detail h3{margin:0;font-size:17px;font-weight:600}
-.detail p{margin:0;font-size:14px;color:var(--muted);max-width:68ch}
-.detail pre{margin:0;font-family:var(--mono);font-size:12.5px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;white-space:pre-wrap;overflow-x:auto}
-.detail a{color:var(--accent)}
-.qual{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px 14px;font-size:13.5px;align-items:center}
-.qual .h{font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--faint)}
-.qual .v{font-size:12.5px;text-align:right}
-.qual .good{color:var(--accent)} .qual .bad{color:var(--oneway)} .qual .ok{color:var(--muted)}
-details.raw summary{cursor:pointer;font-size:13px;color:var(--muted)}
-details.raw table{border-collapse:collapse;font-family:var(--mono);font-size:12px;margin-top:8px;font-variant-numeric:tabular-nums}
-details.raw td,details.raw th{padding:4px 10px;border-bottom:1px solid var(--line);text-align:right}
-details.raw th{font-weight:400;color:var(--faint)}
-details.raw td:first-child,details.raw th:first-child{text-align:left}
-
-@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}.draw{stroke-dashoffset:0}.pop{opacity:1}}
+.gn .tg{fill:var(--faint);font-family:var(--mono);font-size:9.5px}
+.ge{fill:none}
+table.raw{border-collapse:collapse;font-family:var(--mono);font-size:12px;font-variant-numeric:tabular-nums}
+table.raw td,table.raw th{padding:4px 10px;border-bottom:1px solid var(--line);text-align:right}
+table.raw th{font-weight:400;color:var(--faint)}
+table.raw td:first-child,table.raw th:first-child{text-align:left}
+.map{list-style:none;margin:0;padding:0}
+.map li{display:grid;grid-template-columns:12px minmax(0,1fr);gap:12px;padding:8px 0;font-size:14.5px}
+.pin{width:11px;height:11px;border-radius:3px;margin-top:6px;border:1.5px solid var(--faint)}
+.pin.d3{border-color:var(--oneway)} .pin.d2{border-color:var(--heavy)} .pin.now{background:var(--oneway);border-color:var(--oneway)} .pin.open{border-style:dashed}
+.map .s{color:var(--muted);font-size:13px}
+.y{border-top:1px solid var(--line);padding:12px 0;display:flex;flex-direction:column;gap:8px;font-size:14px}
+.y p{margin:0;color:var(--muted)} .y em{font-style:normal;color:var(--ink)}
+.y .t{display:flex;justify-content:space-between;gap:8px;font-weight:500}
+.y .st{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--heavy)}
+.y.ok .st{color:var(--accent)}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 
+</head>
+<body>
 <header class="bar"><div class="in">
   <span class="mark">hoist</span>
-  <span class="proj">fieldnotes · notes app for small teams · prototype with sample data</span>
-  <span class="status" id="status"><span class="dot"></span><span id="statusText">Muse Code paused at a one-way door</span></span>
+  <span class="proj">fieldnotes · prototype with sample data</span>
+  <button class="barbtn" id="openProject">Project decisions <span class="badge" id="logBadge"></span></button>
 </div></header>
 
-<div class="wrap">
-  <div class="grid">
-    <aside class="rail" aria-label="Decision map and agent log">
-      <span class="eyebrow">Decision map</span>
-      <ol class="map" id="map"></ol>
-      <div class="log">
-        <div class="loghead"><span class="eyebrow">Decided by your agent</span><span class="count" id="logCount"></span></div>
-        <p class="logintro">Two-way doors Muse Code settled on its own. Each one is logged in docs/decisions/agent-log.md.</p>
-        <div id="log"></div>
-      </div>
-    </aside>
-    <main class="card" id="card"></main>
-  </div>
-</div>
+<main class="wrap" id="app"></main>
 
-<button class="scrim" id="scrim" aria-label="Close evidence" tabindex="-1"></button>
-<aside class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="shTitle" aria-hidden="true">
-  <div class="sh">
-    <div>
-      <span class="eyebrow">What feeds this option</span>
-      <h2 id="shTitle"></h2>
-      <p id="shSub"></p>
-    </div>
-    <button class="x" id="shClose" aria-label="Close evidence"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 3l10 10M13 3L3 13"/></svg></button>
-  </div>
-  <div class="sbody">
-    <div class="legend" id="legend"></div>
-    <div class="gwrap">
-      <div class="cols"><span>Sources</span><span>Facts</span><span>What matters</span><span>Option</span></div>
-      <svg class="g" id="graph" role="img" aria-label="Evidence graph from sources to the option"></svg>
-    </div>
-    <div class="detail" id="detail" aria-live="polite"></div>
-  </div>
+<button class="scrim" id="scrim" aria-label="Close" tabindex="-1"></button>
+<aside class="sheet" id="whySheet" role="dialog" aria-modal="true" aria-labelledby="whyTitle" aria-hidden="true">
+  <div class="sh"><div><h2 id="whyTitle"></h2><p id="whySub"></p></div><button class="x" data-close aria-label="Close"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 3l10 10M13 3L3 13"/></svg></button></div>
+  <div class="sbody" id="whyBody"></div>
+</aside>
+<aside class="sheet narrow" id="projSheet" role="dialog" aria-modal="true" aria-labelledby="projTitle" aria-hidden="true">
+  <div class="sh"><div><h2 id="projTitle">Project decisions</h2><p>What's decided, what's open, and what your agent chose on its own.</p></div><button class="x" data-close aria-label="Close"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 3l10 10M13 3L3 13"/></svg></button></div>
+  <div class="sbody" id="projBody"></div>
 </aside>
 <div class="toast" id="toast" role="status"></div>
 
 <script>
 const TODAY='2026-10-26';
-const ICON={
-  graph:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="3" cy="4" r="1.8"/><circle cx="3" cy="12" r="1.8"/><circle cx="13" cy="8" r="1.8"/><path d="M4.7 4.6L11.3 7.4M4.7 11.4l6.6-2.8"/></svg>',
-  check:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.5"/></svg>'
-};
+const CHECK='<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.5"/></svg>';
 const FACTORS={rel:'Linked records for sharing',ops:'Nothing for you to run',host:'Works on your host',scale:'Room to grow',cost:'Low cost at your size'};
+const REASON={rel:'your users share projects',ops:'nobody wants to run a database server',host:'it runs on Vercel as is',scale:'it leaves room to grow',cost:'it stays cheap at your size'};
 const BASE={rel:1,ops:1,host:2,scale:1,cost:1};
 const Q=[
-  {id:'share',t:'Will people share projects with each other?',a:[{l:'Yes',w:{rel:4}},{l:'No'}]},
-  {id:'ops',t:'Who keeps the database running?',a:[{l:'Nobody, ideally',w:{ops:3}},{l:'We have someone'}]},
-  {id:'scale',t:'How many users in year one?',a:[{l:'Hundreds',w:{cost:2}},{l:'Thousands',w:{scale:1}},{l:'Millions',w:{scale:4}}]}
+  {id:'share',t:'Will people share projects with each other?',why:'Shared data needs records that point at each other.',alt:['projects were shared','projects weren\'t shared'],a:[{l:'Yes, teams share projects',w:{rel:4}},{l:'No, each person keeps their own'}]},
+  {id:'ops',t:'Who will keep the database running?',why:'Someone has to patch it, back it up, and watch it.',alt:['nobody could run a server','someone could run a server'],a:[{l:'Nobody, ideally',w:{ops:3}},{l:'Someone on the team can'}]},
+  {id:'scale',t:'How many users do you expect in the first year?',why:'Sets how much cost and room to grow matter.',alt:['you expected hundreds of users','you expected thousands of users','you expected millions of users'],a:[{l:'Hundreds',w:{cost:2}},{l:'Thousands',w:{scale:1}},{l:'Millions',w:{scale:4}}]}
 ];
-const HOSTS=[{l:'Vercel'},{l:'A server you run'}];
-/* Options compared at one level: database engines, each with how it is hosted. */
+const HOSTS=['Vercel','a server you run'];
 const OPT={
-  pg:{n:'Postgres, managed',tn:'managed Postgres',sub:'Neon, connected through Vercel',slug:'postgres',s:{rel:10,ops:8,host:9,scale:8,cost:6},server:{host:6},
+  pg:{n:'Managed Postgres',sub:'Postgres on Neon, connected through Vercel',slug:'postgres',s:{rel:10,ops:8,host:9,scale:8,cost:6},server:{host:6},
     good:[['Now','Sharing is ordinary linked records with simple queries.'],['Later','The provider handles backups and patches.']],
     bad:[['Now','Adds a vendor account, and local development needs a connection string.'],['Later','A monthly bill once you pass the free tier.']]},
-  turso:{n:'SQLite, hosted',tn:'hosted SQLite',sub:'Turso, reached over the network',slug:'hosted-sqlite',s:{rel:8,ops:8,host:8,scale:6,cost:9},server:{host:7},
+  turso:{n:'Hosted SQLite',sub:'SQLite on Turso, over the network',slug:'hosted-sqlite',s:{rel:8,ops:8,host:8,scale:6,cost:9},server:{host:7},
     good:[['Now','The same SQLite engine locally and in production.'],['Later','Low cost while you are small.']],
     bad:[['Now','Fewer hosting integrations and tools support it.'],['Later','A smaller ecosystem if you need extensions later.']]},
-  mongo:{n:'MongoDB, managed',tn:'managed MongoDB',sub:'Atlas, hosted document database',slug:'mongodb',s:{rel:5,ops:8,host:8,scale:9,cost:5},server:{host:6},
+  mongo:{n:'Managed MongoDB',sub:'MongoDB on Atlas',slug:'mongodb',s:{rel:5,ops:8,host:8,scale:9,cost:5},server:{host:6},
     good:[['Now','Note shapes can change without migrations.'],['Later','Spreads across machines when collections get large.']],
     bad:[['Now','Sharing between users needs manual references and extra queries.'],['Later','Reports across users get harder to write.']]},
-  sqlite:{n:'SQLite, file in the app',tn:'a SQLite file',sub:'One database file next to the app',slug:'sqlite-file',s:{rel:8,ops:10,host:10,scale:3,cost:10},
-    ko:{when:a=>a.host===0,why:'Vercel functions do not keep files between requests, so saved projects would vanish.',src:'Vercel docs'},
+  sqlite:{n:'SQLite file',sub:'One database file next to the app',slug:'sqlite-file',s:{rel:8,ops:10,host:10,scale:3,cost:10},
+    ko:{when:a=>a.host===0,why:'Vercel doesn\'t keep files between requests, so saved projects would vanish.'},
     good:[['Now','Free, one file, nothing to sign up for.'],['Later','Backups are a file copy.']],
     bad:[['Now','Only works where the disk is kept.'],['Later','One machine only; growing means a migration.']]}
 };
 const AGENT_PICK='mongo';
-const MAP=[
-  {t:'Language',s:'TypeScript · ADR-0001',c:'d3'},
-  {t:'Hosting',s:'Vercel · ADR-0003',c:'d2'},
-  {t:'Database',s:'Deciding now',c:'now'},
-  {t:'Sign-in',s:'Open · waits on database',c:'open d2',dim:true},
-  {t:'Backups',s:'Open · waits on database',c:'open d2',dim:true}
-];
+const MAP=[{t:'Language',s:'TypeScript · ADR-0001',c:'d3'},{t:'Hosting',s:'Vercel · ADR-0003',c:'d2'},{t:'Database',s:'Deciding now',c:'now'},{t:'Sign-in',s:'Waits on database',c:'open d2'},{t:'Backups',s:'Waits on database',c:'open d2'}];
 const LOG=[
   {id:'zod',title:'Form validation: Zod',ctx:'the sign-up form',concern:'checking user input',chose:'Zod',over:'Yup',gain:'one schema for both types and checks',accept:'one more dependency'},
   {id:'rhf',title:'Form state: React Hook Form',ctx:'the sign-up and settings forms',concern:'tracking form state',chose:'React Hook Form',over:'Formik',gain:'fewer re-renders and a smaller bundle',accept:'a less familiar API for newcomers'},
   {id:'datefns',title:'Dates: date-fns',ctx:'showing when projects were edited',concern:'formatting dates',chose:'date-fns',over:'Day.js',gain:'importing only the functions in use',accept:'longer import lines'},
   {id:'argon',title:'Password hashing: argon2',ctx:'user accounts',concern:'storing passwords',chose:'argon2',over:'bcrypt',gain:'the current recommended algorithm',accept:'a native module to build on deploy'}
 ];
-const ystmt=e=>`In the context of ${e.ctx}, facing ${e.concern}, Muse Code chose ${e.chose} over ${e.over}, to achieve ${e.gain}, accepting ${e.accept}.`;
 
-let A={share:0,ops:0,scale:0,host:0}, pick=null, done=null, sheetFor=null, selNode=null, reviewed={};
+let A={share:null,ops:null,scale:null,host:0}, step='ask', qi=0, pick=null, done=null, reviewed={};
+const ans=()=>({share:A.share??0,ops:A.ops??0,scale:A.scale??0,host:A.host});
 
-function viable(k,ans){const o=OPT[k];return !(o.ko&&o.ko.when(ans));}
-function model(ans){
+function viable(k,a){const o=OPT[k];return !(o.ko&&o.ko.when(a));}
+function model(a){
   const w={...BASE},s={};
-  Q.forEach(q=>{const a=q.a[ans[q.id]];if(a.w)for(const f in a.w)w[f]+=a.w[f];});
-  for(const k in OPT){s[k]={...OPT[k].s};if(ans.host===1&&OPT[k].server)Object.assign(s[k],OPT[k].server);}
+  Q.forEach(q=>{const x=q.a[a[q.id]];if(x.w)for(const f in x.w)w[f]+=x.w[f];});
+  for(const k in OPT){s[k]={...OPT[k].s};if(a.host===1&&OPT[k].server)Object.assign(s[k],OPT[k].server);}
   const max=Object.values(w).reduce((x,y)=>x+y,0)*10;
-  const r=Object.keys(OPT).filter(k=>viable(k,ans)).map(k=>({k,t:Object.keys(w).reduce((x,f)=>x+w[f]*s[k][f],0)})).sort((a,b)=>b.t-a.t);
-  const out=Object.keys(OPT).filter(k=>!viable(k,ans));
-  return{w,s,r,out,max,close:r.length>1&&(r[0].t-r[1].t)/max<0.04};
+  const r=Object.keys(OPT).filter(k=>viable(k,a)).map(k=>({k,t:Object.keys(w).reduce((x,f)=>x+w[f]*s[k][f],0)})).sort((x,y)=>y.t-x.t);
+  return{w,s,r,out:Object.keys(OPT).filter(k=>!viable(k,a)),close:r.length>1&&(r[0].t-r[1].t)/max<0.04};
 }
-function deciding(m){
-  const[a,b]=m.r;
-  return Object.keys(m.w).map(f=>({f,w:m.w[f],imp:m.w[f]*(m.s[a.k][f]-m.s[b.k][f]),fav:m.s[a.k][f]>=m.s[b.k][f]?a.k:b.k}))
-    .filter(x=>x.imp!==0).sort((x,y)=>Math.abs(y.imp)-Math.abs(x.imp)).slice(0,3);
-}
+function deciding(m){const[a,b]=m.r;return Object.keys(m.w).map(f=>({f,w:m.w[f],imp:m.w[f]*(m.s[a.k][f]-m.s[b.k][f])})).filter(x=>x.imp>0).sort((x,y)=>y.imp-x.imp).slice(0,2);}
 function flips(m){
-  const out=[],win=m.r[0].k;
-  Q.forEach(q=>q.a.forEach((a,i)=>{if(i===A[q.id])return;const m2=model({...A,[q.id]:i});
-    if(m2.r[0].k!==win)out.push({set:{[q.id]:i},txt:`If you answered <b>${a.l}</b> to “${q.t}”`,win:m2.r[0].k});}));
-  HOSTS.forEach((h,i)=>{if(i===A.host)return;const m2=model({...A,host:i});
-    if(m2.r[0].k!==win)out.push({set:{host:i},txt:`If hosting moved to <b>${h.l.toLowerCase()}</b>`,win:m2.r[0].k});});
+  const out=[],win=m.r[0].k,a=ans();
+  Q.forEach(q=>q.a.forEach((x,i)=>{if(i===a[q.id])return;const m2=model({...a,[q.id]:i});if(m2.r[0].k!==win)out.push({txt:q.alt[i],win:m2.r[0].k});}));
+  [0,1].forEach(i=>{if(i===a.host)return;const m2=model({...a,host:i});if(m2.r[0].k!==win)out.push({txt:`hosting moved to ${HOSTS[i]}`,win:m2.r[0].k});});
   return out;
 }
-/* Qualitative words instead of numbers (avoids pseudo-accuracy). */
-const matters=w=>w>=5?'Matters a lot':w>=3?'Matters':'Minor';
-const doesWord=s=>s>=8?'Strong':s>=6?'Fine':'Weak';
-const doesCls=s=>s>=8?'good':s>=6?'ok':'bad';
-function strengths(m,k){return Object.keys(m.w).filter(f=>m.s[k][f]>=8&&m.w[f]>=2).sort((a,b)=>m.w[b]*m.s[k][b]-m.w[a]*m.s[k][a]).slice(0,2);}
-function weaknesses(m,k){return Object.keys(m.w).filter(f=>m.s[k][f]<=6&&m.w[f]>=2).sort((a,b)=>m.w[b]*(10-m.s[k][b])-m.w[a]*(10-m.s[k][a])).slice(0,2);}
-function confidence(m){
-  const seen=A.host===0?2:1,inferred=1,whatif=A.host===1,delegated=done&&done.mode==='delegated';
-  let lv='medium',why=[];
-  if(delegated||whatif)lv='low';else if(!m.close&&inferred===0)lv='high';
-  const parts=[`${seen} seen in your repo`,`${inferred} inferred by Muse Spark`,`3 from you`];
-  if(whatif)parts.push('hosting is a what-if');
-  if(m.close)parts.push('top two are close');
-  if(delegated)parts.push('you had no preference');
-  return{lv,txt:parts.join(' · ')};
+function confidence(m,deleg){
+  if(deleg)return{lv:'low',txt:'you had no preference, so Hoist chose'};
+  return{lv:'medium',txt:m.close?'one fact is inferred, and the runner-up is close':'one fact is inferred from the agent\'s task'};
 }
-const RANKW=['Best fit','Runner-up','Third','Fourth'];
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const lc=s=>s.charAt(0).toLowerCase()+s.slice(1);
 const $=id=>document.getElementById(id);
+const app=$('app');
 
-function renderMap(){
-  $('map').innerHTML=MAP.map(d=>`<li class="${d.dim?'dim':''}"><span class="pin ${d.c}"></span><span><div class="t ${d.c==='now'?'now-t':''}">${d.t}</div><div class="s">${d.s}</div></span></li>`).join('');
-}
-function renderLog(){
-  const open=LOG.filter(e=>!reviewed[e.id]).length,c=$('logCount');
-  c.textContent=open?`${open} to review`:'All reviewed';c.classList.toggle('zero',!open);
-  $('log').innerHTML=LOG.map(e=>`<details class="y ${reviewed[e.id]?'ok':''}" data-y="${e.id}"><summary><span class="door2" title="Two-way door"></span>${e.title}<span class="st">${reviewed[e.id]?'Reviewed':'Not reviewed'}</span></summary>
-    <div class="yb"><p>In the context of <em>${e.ctx}</em>, facing <em>${e.concern}</em>, Muse Code chose <em>${e.chose}</em> over <em>${e.over}</em>, to achieve <em>${e.gain}</em>, accepting <em>${e.accept}</em>.</p>
-    <div class="acts" style="justify-content:flex-start">${reviewed[e.id]?'':`<button class="btn" data-log="ok" data-id="${e.id}">Looks right</button>`}<button class="btn ghost" data-log="card" data-id="${e.id}">Open as a card</button></div></div></details>`).join('');
-}
-
-function optRow(k,i,m,lead){
-  const o=OPT[k],isPick=(pick||m.r[0].k)===k,st=strengths(m,k),wk=weaknesses(m,k);
-  const tags=`<span class="tag ${i===0?'fit':'rank'}">${RANKW[i]}</span>`+(i===0&&m.close?'<span class="tag close">Close call</span>':'')+(k===AGENT_PICK?'<span class="tag agent">Agent\'s pick</span>':'');
-  const li=([w,t])=>`<li><span class="when">${w}</span><span>${t}</span></li>`;
-  return `<article class="opt ${lead?'lead':''} ${isPick?'picked':''}" data-opt="${k}">
-    <div>
-      <div class="oname"><h3>${o.n}</h3>${tags}</div>
-      <p class="osub">${o.sub}</p>
-      <div class="sw">${st.length?`<span class="s">Strong on <b>${st.map(f=>FACTORS[f].toLowerCase()).join(', ')}</b></span>`:''}${wk.length?`<span class="w">Weak on <b>${wk.map(f=>FACTORS[f].toLowerCase()).join(', ')}</b></span>`:''}</div>
-      <div class="cons"><div class="good"><span class="k">Good, because</span><ul>${o.good.map(li).join('')}</ul></div><div class="bad"><span class="k">Bad, because</span><ul>${o.bad.map(li).join('')}</ul></div></div>
-      <p class="badline">Bad, because ${o.bad[0][1].charAt(0).toLowerCase()+o.bad[0][1].slice(1)}</p>
-    </div>
-    <div class="acts">
-      <button class="btn ghost" data-act="evidence" data-k="${k}">${ICON.graph}Evidence</button>
-      <button class="btn" data-act="pick" data-k="${k}" aria-pressed="${isPick}">${isPick?ICON.check+'Selected':'Select'}</button>
-    </div>
-  </article>`;
-}
-
-function renderCard(){
-  const m=model(A);
-  if(pick&&!viable(pick,A))pick=null;
-  if(done){renderDone(m);return;}
-  const first={};document.querySelectorAll('[data-opt]').forEach(el=>first[el.dataset.opt]=el.getBoundingClientRect().top);
-  const best=m.r[0].k,chosen=pick||best,dec=deciding(m),fl=flips(m),cf=confidence(m);
-  const agentRank=m.r.findIndex(x=>x.k===AGENT_PICK);
-  const verdict=best===AGENT_PICK?`<b>${OPT[best].n}</b> fits you best, and it is also what your agent picked.`
-    :`<b>${OPT[best].n}</b> fits you best. ${OPT[AGENT_PICK].n}, your agent's pick, is ${RANKW[agentRank].toLowerCase()}.`;
-  $('card').innerHTML=`
-  <div class="head">
-    <span class="eyebrow">Decision 3 of 5</span>
-    <span class="door">One-way door · rewrite to undo</span>
-    <h1>Where should user accounts and saved projects live?</h1>
-    <div class="intercept">Muse Code was about to run <code>npm install mongodb</code> while adding “user accounts with saved projects”.</div>
-    <p class="verdict">${verdict}</p>
-    <div class="meta"><span class="conf"><span class="lv ${cf.lv}">Confidence: ${cf.lv}</span><span>${cf.txt}</span></span></div>
-    <div class="acct"><div><b>Proposed by</b>Muse Code</div><div><b>Analyzed by</b>Muse Spark</div><div><b>Decided by</b><span class="you">You</span></div></div>
-  </div>
-
-  <section aria-labelledby="h-about">
-    <h2 id="h-about">About you</h2>
-    <div class="qs">${Q.map(q=>`<div class="q"><p>${q.t}</p><div class="seg" role="group" aria-label="${esc(q.t)}">${q.a.map((a,i)=>`<button data-q="${q.id}" data-i="${i}" aria-pressed="${A[q.id]===i}">${a.l}</button>`).join('')}</div></div>`).join('')}</div>
-    <div class="known">Already known: <span class="chip ${A.host?'whatif':''}"><i></i>Hosting: ${HOSTS[A.host].l}${A.host?' (what-if)':' · ADR-0003'}</span>${A.host?'<button class="linkbtn" data-act="resethost">Back to Vercel</button>':''}</div>
-  </section>
-
-  <section aria-labelledby="h-opts">
-    <h2 id="h-opts">Considered options</h2>
-    <div class="opts">${m.r.map((x,i)=>optRow(x.k,i,m,i===0)).join('')}
-      ${m.out.map(k=>`<div class="ruled"><span class="tag">Ruled out</span><b>${OPT[k].n}</b><span>${OPT[k].ko.why}</span><button class="linkbtn" data-act="evidence" data-k="${k}">Source: ${OPT[k].ko.src}</button></div>`).join('')}
-    </div>
-  </section>
-
-  <section class="why">
-    <div>
-      <h2>What decides it</h2>
-      ${dec.map(d=>`<div class="factor"><span class="fn">${FACTORS[d.f]}</span><span class="fw">${matters(d.w)} to you</span><span class="fy">${OPT[d.fav].n} is stronger here.</span></div>`).join('')}
-      <div class="keep"><b>How Hoist keeps this true</b>After you record it, the Muse Code hook and <code>hoist check</code> in CI block database drivers that conflict with this decision.</div>
-    </div>
-    <div>
-      <h2>Would flip if</h2>
-      ${fl.length?`<ul class="flips">${fl.map((f,i)=>`<li><span>${f.txt}, <b>${OPT[f.win].n}</b> would win.</span><button class="linkbtn" data-act="try" data-i="${i}">Try it</button></li>`).join('')}</ul>`
-        :'<p class="stable">No single answer you could change moves the winner.</p>'}
-    </div>
-  </section>
-
-  <details class="prev" id="prev"><summary>Record preview <span>docs/decisions/0004-store-saved-projects-in-${OPT[chosen].slug}.md</span></summary>
-    <pre class="adr">${esc(adr(m,chosen,'chosen'))}</pre></details>
-
-  <div class="decide">
-    <button class="btn primary" data-act="record">${ICON.check}Record: ${OPT[chosen].n}</button>
-    <button class="btn" data-act="nopref">No preference, use the best fit</button>
-    <button class="btn ghost" data-act="later">Ask me later</button>
-    <span class="hint">${chosen!==best?`You selected ${OPT[chosen].n} over the best fit; the record will say so. `:''}Recording writes the file above and lets Muse Code continue.</span>
+/* ---------- step 1: ask, one question at a time ---------- */
+function renderAsk(){
+  const q=Q[qi];
+  app.innerHTML=`<div class="step">
+    <span class="status"><span class="dot"></span>Muse Code is paused and waiting for you</span>
+    <h1>Pick a database for saved projects</h1>
+    <p class="lead">Muse Code was about to run <code>npm install mongodb</code>. Switching databases later means moving every saved project, so three quick questions first.</p>
+    <div class="qhead"><span class="qnum">Question ${qi+1} of ${Q.length}</span><span class="pips">${Q.map((_,i)=>`<i class="${i<=qi?'on':''}"></i>`).join('')}</span></div>
+    <p class="qtext">${q.t}</p>
+    <p class="qwhy">${q.why}</p>
+    <div class="answers">${q.a.map((x,i)=>`<button class="ans ${A[q.id]===i?'sel':''}" data-a="${i}"><span class="key">${i+1}</span>${x.l}</button>`).join('')}</div>
+    <div class="row">${qi>0?'<button class="link" data-go="back">Back</button>':''}<button class="link" data-go="later">Ask me later</button><button class="link" data-go="nopref">I don't mind, pick for me</button></div>
   </div>`;
-  window._flips=fl;
-  if(prevOpen)$('prev').open=true;
-  $('prev').addEventListener('toggle',e=>prevOpen=e.target.open);
-  if(!matchMedia('(prefers-reduced-motion: reduce)').matches){
-    document.querySelectorAll('[data-opt]').forEach(el=>{const t=first[el.dataset.opt];if(t==null)return;const dy=t-el.getBoundingClientRect().top;if(!dy)return;
-      el.style.transition='none';el.style.transform=`translateY(${dy}px)`;el.getBoundingClientRect();
-      el.style.transition='transform .55s cubic-bezier(.16,1,.3,1)';el.style.transform='';});
-  }
 }
-let prevOpen=false;
 
+/* ---------- step 2: one recommendation ---------- */
+function renderRec(){
+  const a=ans(),m=model(a),best=m.r[0].k,chosen=pick||best,o=OPT[chosen],cf=confidence(m),fl=flips(m);
+  const reasons=deciding(m).map(d=>REASON[d.f]);
+  const why=chosen===best
+    ? `It fits because ${reasons.join(' and ')}.`
+    : `You picked this over ${OPT[best].n}, which fits your answers better.`;
+  const others=m.r.map(x=>x.k).filter(k=>k!==chosen);
+  app.innerHTML=`<div class="step">
+    <span class="status"><span class="dot"></span>Muse Code is paused and waiting for you</span>
+    <div class="rec">
+      <span class="small">${chosen===best?'Recommended for you':'Your choice'}</span>
+      <h1>Use ${o.n.charAt(0).toLowerCase()+o.n.slice(1)}</h1>
+      <p class="why">${why} ${chosen===best?o.good[0][1]:''}</p>
+      <div class="accept"><b>You accept</b><span>${lc(o.bad[1][1])} ${lc(o.bad[0][1])}</span></div>
+      <div class="row"><button class="btn primary" data-go="record">${CHECK}Use ${o.n.charAt(0).toLowerCase()+o.n.slice(1)}</button><button class="link" data-why="${chosen}">Why?</button></div>
+      <p class="small"><span class="lv">Confidence ${cf.lv}</span> &nbsp;${cf.txt}.${fl.length?` It would change if ${fl[0].txt}; then ${OPT[fl[0].win].n} fits better.`:''}</p>
+    </div>
+    <div class="others"><h2>Other options</h2>
+      ${others.map(k=>`<div class="other"><span class="n">${OPT[k].n}${k===AGENT_PICK?'<span class="tag">Agent\'s pick</span>':''}${k===best?'<span class="tag">Best fit</span>':''}</span>
+        <span class="d">${k===m.r[1].k&&m.close&&chosen===best?'Close second. ':''}${OPT[k].bad[0][1]}</span>
+        <span class="acts"><button class="link" data-why="${k}">Why?</button><button class="link" data-pick="${k}">Use this</button></span></div>`).join('')}
+      ${m.out.map(k=>`<p class="ruled"><s>${OPT[k].n}</s> ruled out: ${OPT[k].ko.why}</p>`).join('')}
+    </div>
+    <div class="row"><button class="link" data-go="edit">Change my answers</button><button class="link" data-go="later">Ask me later</button></div>
+  </div>`;
+}
+
+/* ---------- step 3: recorded ---------- */
+function renderDone(){
+  const a=ans(),m=model(a),{k,mode}=done,parked=mode==='parked';
+  const file=parked?'0004-keep-saved-projects-in-memory.md':`0004-store-saved-projects-in-${OPT[k].slug}.md`;
+  app.innerHTML=`<div class="step">
+    <span class="status"><span class="dot ok"></span>${parked?'Muse Code continues with a temporary store':'Muse Code is continuing with your choice'}</span>
+    <h1>${parked?'Parked for now':`Recorded: ${OPT[k].n}`}</h1>
+    <p class="lead">${parked?'Saved projects stay in memory until you decide. Hoist will ask again before the first real user signs up.'
+      :mode==='delegated'?'You didn\'t mind, so Hoist used the best fit and noted that it chose for you. It will check back later.'
+      :'Your reasons are saved with the decision, so anyone (or any agent) can see why later.'}</p>
+    <div class="file"><span>docs/decisions/${file}</span><span>${parked?'proposed':'accepted'}</span></div>
+    <details class="more"><summary>Show the record</summary><pre class="adr" id="adrText">${esc(adr(m,k,mode))}</pre></details>
+    <div class="row"><button class="link" data-go="copy">Copy record</button><button class="link" data-go="undo">Undo</button></div>
+  </div>`;
+  $('logBadge').textContent=openCount()||'';
+}
+
+function render(){if(done)renderDone();else if(step==='ask')renderAsk();else renderRec();window.scrollTo({top:0});}
+
+/* ---------- record (MADR) ---------- */
 function adr(m,k,mode){
-  const cf=confidence(m),fl=flips(m),best=m.r[0].k,deleg=mode==='delegated';
-  if(mode==='parked'){
-    return `---
+  const a=ans(),cf=confidence(m,mode==='delegated'),fl=flips(m),best=m.r[0].k;
+  if(mode==='parked')return `---
 status: proposed
 date: ${TODAY}
 door: one-way
@@ -464,222 +306,150 @@ proposed-by: Muse Code (adding user accounts with saved projects)
 consulted: Muse Spark (repo analysis, questions)
 deciders: project owner (asked to decide later)
 confidence: low
-revisit: before the first real user signs up
 ---
 # Keep saved projects in memory until the database is decided
 
 ## Context and Problem Statement
-Where should user accounts and saved projects live? The owner chose to
-decide later. Muse Code needs somewhere to keep data to finish the feature.
+Where should user accounts and saved projects live? The owner chose to decide later.
 
 ## Decision Outcome
-Short term: an in-memory store behind a small repository interface, so the
-real database can be swapped in without touching the feature code.
-Leading option when parked: ${OPT[best].n}.
+Short term: an in-memory store behind a small interface, so the real
+database can be swapped in. Leading option when parked: ${OPT[best].n}.
 
 ### Consequences
 - Good, because work continues without a lasting choice.
-- Bad, because all saved projects are lost on every deploy.
+- Bad, because saved projects are lost on every deploy.
 
 ## More Information
 - Revisit before the first real user signs up.`;
-  }
   const order=[k,...m.r.map(x=>x.k).filter(x=>x!==k)];
-  const drivers=[...Q.map(q=>`- ${q.t.replace(/\?$/,'')}: ${q.a[A[q.id]].l} (your answer)`),
-    A.host===0?'- Vercel functions do not keep files between requests (Vercel docs)':'- Hosting would move to a server you run (what-if, not yet recorded)'];
-  const pc=order.slice(1).map(x=>`### ${OPT[x].n}${x===AGENT_PICK?' (the agent\'s original pick)':''}
-${OPT[x].good.map(g=>`- Good, because ${lc(g[1])}`).join('\n')}
-${OPT[x].bad.map(b=>`- Bad, because ${lc(b[1])}`).join('\n')}`).join('\n\n');
-  const st=strengths(m,k).map(f=>FACTORS[f].toLowerCase());
   return `---
 status: accepted
 date: ${TODAY}
 door: one-way
 proposed-by: Muse Code (adding user accounts with saved projects)
 consulted: Muse Spark (repo analysis, questions)
-deciders: ${deleg?'Hoist, delegated by the project owner (no preference)':'project owner'}
+deciders: ${mode==='delegated'?'Hoist, delegated by the project owner':'project owner'}
 confidence: ${cf.lv}
 depends-on: [0003-host-on-vercel]
 ---
-# Store saved projects in ${OPT[k].tn}
+# Store saved projects in ${lc(OPT[k].n)}
 
 ## Context and Problem Statement
 Where should user accounts and saved projects live? Muse Code was about to
-install MongoDB. The app has no database yet (package.json) and runs on
-${A.host===0?'Vercel serverless (ADR-0003)':'a server you run (what-if)'}.
+install MongoDB. The app has no database yet and runs on Vercel (ADR-0003).
 
 ## Decision Drivers
-${drivers.join('\n')}
+${Q.map(q=>`- ${q.t.replace(/\?$/,'')}: ${q.a[a[q.id]].l} (your answer)`).join('\n')}
+- Vercel functions don't keep files between requests (Vercel docs)
 
 ## Considered Options
-${order.map((x,i)=>`${i+1}. ${OPT[x].n}`).join('\n')}${m.out.length?'\n'+m.out.map(x=>`Ruled out: ${OPT[x].n}, because ${lc(OPT[x].ko.why)}`).join('\n'):''}
+${order.map((x,i)=>`${i+1}. ${OPT[x].n}`).join('\n')}
+${m.out.map(x=>`Ruled out: ${OPT[x].n}, because ${lc(OPT[x].ko.why)}`).join('\n')}
 
 ## Decision Outcome
-Chosen: ${OPT[k].n}, because ${k===best?`it is the best fit for the drivers above${st.length?`, strong on ${st.join(' and ')}`:''}`:`the owner preferred it over the best fit, ${OPT[best].n}`}.
+Chosen: ${OPT[k].n}, because ${k===best?deciding(m).map(d=>REASON[d.f]).join(' and '):`the owner preferred it over ${OPT[best].n}`}.
 
 ### Consequences
 ${OPT[k].good.map(g=>`- Good, because ${lc(g[1])}`).join('\n')}
 ${OPT[k].bad.map(b=>`- Bad, because ${lc(b[1])}`).join('\n')}
 
 ### Confirmation
-- Hoist blocks database drivers that conflict with this record (Muse Code hook, \`hoist check\` in CI).
+- Hoist blocks database drivers that conflict with this record.
 - [ ] Restore one backup before launch.
 
 ## Pros and Cons of the Options
-${pc}
+${order.slice(1).map(x=>`### ${OPT[x].n}${x===AGENT_PICK?' (the agent\'s original pick)':''}\n${OPT[x].good.map(g=>`- Good, because ${lc(g[1])}`).join('\n')}\n${OPT[x].bad.map(b=>`- Bad, because ${lc(b[1])}`).join('\n')}`).join('\n\n')}
 
 ## More Information
-- Confidence: ${cf.lv}. ${cf.txt}.
-${fl.length?fl.map(f=>`- Revisit ${f.txt.replace(/<\/?b>/g,'').replace(/^If/,'if')}: ${OPT[f.win].n} would fit better.`).join('\n'):'- No single answer change would flip it.'}${deleg?'\n- Delegated: ask the owner again before the first 1,000 users.':''}
-- Evidence: vercel.json, package.json, https://vercel.com/docs/functions`;
-}
-const lc=s=>s.charAt(0).toLowerCase()+s.slice(1);
-
-function renderDone(m){
-  const {k,mode}=done,parked=mode==='parked';
-  const file=parked?'0004-keep-saved-projects-in-memory.md':`0004-store-saved-projects-in-${OPT[k].slug}.md`;
-  const head=parked?'Parked: saved projects stay in memory for now':`Saved projects live in ${OPT[k].tn}`;
-  const line=parked?'Recorded as proposed with a revisit point. Muse Code continues with a temporary store that is easy to swap.'
-    :mode==='delegated'?'You had no preference, so Hoist used the best fit, recorded it as delegated with low confidence, and will ask again.':'Recorded with your reasons. Muse Code has resumed and will install the client.';
-  $('card').innerHTML=`<div class="head">
-    <span class="eyebrow">Decision 3 of 5 · ${parked?'proposed':'accepted'}</span>
-    <h1>${head}</h1>
-    <p class="verdict">${line}</p>
-    <div class="acct"><div><b>Proposed by</b>Muse Code</div><div><b>Analyzed by</b>Muse Spark</div><div><b>Decided by</b><span class="you">${parked?'Not yet':mode==='delegated'?'Hoist, for you':'You'}</span></div></div>
-  </div>
-  <div class="done">
-    <span class="eyebrow">docs/decisions/${file}</span>
-    <pre class="adr" id="adrText">${esc(adr(m,k,mode))}</pre>
-    <div class="acts" style="justify-content:flex-start"><button class="btn" data-act="copy">Copy record</button>${parked?'':`<button class="btn" data-act="evidence" data-k="${k}">${ICON.graph}Evidence</button>`}<button class="btn ghost" data-act="undo">Reopen decision</button></div>
-  </div>`;
+- Confidence: ${cf.lv}; ${cf.txt}.
+${fl.map(f=>`- Revisit if ${f.txt}: ${OPT[f.win].n} would fit better.`).join('\n')||'- No single answer change would flip it.'}`;
 }
 
-/* ---------- evidence graph ---------- */
-function buildGraph(k){
-  const m=model(A),s=m.s[k],w=m.w,vercel=A.host===0;
-  const N=[
-    {id:'vercel',c:0,t:'vercel.json',tg:'FILE · SEEN',kind:'file',d:{h:'vercel.json',p:'Found at the repo root by the audit. It is why Hoist knows you deploy on Vercel.',pre:'{\n  "framework": "nextjs",\n  "regions": ["iad1"]\n}'}},
-    {id:'pkg',c:0,t:'package.json',tg:'FILE · SEEN',kind:'file',d:{h:'package.json',p:'Lists Next.js and no database driver, so nothing is decided yet.',pre:'"next": "15.0.3",\n"react": "19.0.0"\n// no pg, sqlite, or mongodb'}},
-    {id:'task',c:0,t:'Agent\'s task',tg:'MUSE CODE',kind:'agent',d:{h:'The task Muse Code was working on',p:'Muse Spark read this and inferred that each user owns projects.',pre:'"Add user accounts with saved projects"'}},
-    {id:'a_share',c:0,t:`You: ${Q[0].a[A.share].l}`,tg:'YOUR ANSWER',kind:'you',d:{h:Q[0].t,p:`You answered “${Q[0].a[A.share].l}”. Change it on the card and the graph updates.`}},
-    {id:'a_ops',c:0,t:`You: ${Q[1].a[A.ops].l}`,tg:'YOUR ANSWER',kind:'you',d:{h:Q[1].t,p:`You answered “${Q[1].a[A.ops].l}”.`}},
-    {id:'a_scale',c:0,t:`You: ${Q[2].a[A.scale].l}`,tg:'YOUR ANSWER',kind:'you',d:{h:Q[2].t,p:`You answered “${Q[2].a[A.scale].l}”.`}},
-    {id:'doc',c:0,t:'Vercel docs',tg:'DOCS',kind:'doc',d:{h:'Vercel Functions documentation',p:'Function file systems are read-only apart from a temporary folder that is not kept. Hoist stores this fact in its catalog with the link.',link:'https://vercel.com/docs/functions'}},
-    {id:'f_host',c:1,t:vercel?'Runs on Vercel':'Runs on your server',tg:vercel?'SEEN · ADR-0003':'WHAT-IF',kind:vercel?'file':'whatif',d:{h:vercel?'You deploy on Vercel serverless':'What-if: a server you run',p:vercel?'Recorded in ADR-0003 from vercel.json.':'Not saved. You switched this on the card to test the decision.'}},
-    {id:'f_disk',c:1,t:vercel?'No lasting disk':'Disk persists',tg:'DOC FACT',kind:'doc',d:{h:vercel?'Files written at runtime do not last':'A server keeps its disk',p:vercel?'A database file written by the app would be lost. This is why the SQLite file is ruled out.':'On your own server a SQLite file is kept, so it becomes a real option.'}},
-    {id:'f_users',c:1,t:A.share===0?'Users share projects':'Projects stay private',tg:'INFERRED + YOU',kind:'inferred',d:{h:A.share===0?'Users own projects and share them':'Each user keeps projects private',p:'Muse Spark inferred ownership from the task. Your answer settled sharing. This is the one inferred fact, which is why confidence is not high.'}},
-    {id:'f_ops',c:1,t:A.ops===0?'No one on call':'Someone can run it',tg:'YOU',kind:'you',d:{h:A.ops===0?'No one is on call for a database':'Someone on the team can run a database',p:'Straight from your answer.'}},
-    {id:'f_size',c:1,t:Q[2].a[A.scale].l+' of users',tg:'YOU',kind:'you',d:{h:`${Q[2].a[A.scale].l} of users in year one`,p:'Sets how much cost and room to grow matter.'}},
-    {id:'f_none',c:1,t:'No database yet',tg:'SEEN',kind:'file',d:{h:'Nothing to migrate',p:'This is why the decision is open now and cheap to make well today.'}}
-  ];
-  ['rel','ops','host','scale','cost'].forEach(f=>N.push({id:'x_'+f,c:2,t:FACTORS[f],tg:`${matters(w[f]).toUpperCase()} · ${doesWord(s[f]).toUpperCase()} HERE`,kind:'factor',
-    d:{h:FACTORS[f],p:`${matters(w[f])} to you, because of your answers. ${OPT[k].n} is ${doesWord(s[f]).toLowerCase()} here.`}}));
-  const ri=m.r.findIndex(x=>x.k===k),rk=ri<0?'RULED OUT':RANKW[ri].toUpperCase();
-  N.push({id:'prop',c:3,t:OPT[k].n,tg:rk,kind:'prop',d:null});
-  const E=[['vercel','f_host'],['doc','f_disk'],['task','f_users'],['a_share','f_users'],['a_ops','f_ops'],['a_scale','f_size'],['pkg','f_none'],
-    ['f_users','x_rel'],['f_ops','x_ops'],['f_host','x_host'],['f_disk','x_host'],['f_size','x_scale'],['f_size','x_cost'],['f_none','prop']].map(([a,b])=>({a,b,wd:1.3,tone:'n'}));
-  const ko=!viable(k,A);
-  ['rel','ops','host','scale','cost'].forEach(f=>{const isKo=ko&&f==='host';E.push({a:'x_'+f,b:'prop',wd:isKo?4:1+w[f]*s[f]/14,tone:isKo?'bad':s[f]>=8?'good':s[f]<=5?'bad':'n'});});
-  if(ko){const n=N.find(x=>x.id==='x_host');n.tg='RULES IT OUT';n.d.p=OPT[k].ko.why;}
-  return{N,E,m,rk,ko};
+/* ---------- "Why?" sheet: plain facts first, graph and numbers on request ---------- */
+function openWhy(k){
+  const a=ans(),m=model(a),o=OPT[k],ko=!viable(k,a),s=m.s[k];
+  $('whyTitle').textContent=o.n;
+  $('whySub').textContent=ko?`Ruled out: ${o.ko.why}`:o.sub;
+  const facts=[
+    ['Your app runs on Vercel','vercel.json'],['There is no database yet','package.json'],
+    [`${a.share===0?'Users share projects':'Projects stay private'}`,'your answer'],
+    [`${a.ops===0?'Nobody wants to run a server':'Someone can run a server'}`,'your answer'],
+    [`${Q[2].a[a.scale].l} of users in year one`,'your answer'],
+    ['Each user owns projects','inferred'],['Vercel doesn\'t keep files between requests','Vercel docs']];
+  const rows=Object.keys(m.w).sort((x,y)=>m.w[y]-m.w[x]);
+  $('whyBody').innerHTML=`
+    <p class="sec">Good and bad</p>
+    <ul class="facts">${o.good.map(g=>`<li><span>${g[1]}</span><span class="src" style="color:var(--accent)">good · ${g[0]}</span></li>`).join('')}${o.bad.map(b=>`<li><span>${b[1]}</span><span class="src" style="color:var(--oneway)">bad · ${b[0]}</span></li>`).join('')}</ul>
+    <p class="sec">What Hoist based this on</p>
+    <ul class="facts">${facts.map(([t,src])=>`<li><span>${t}</span><span class="src ${src==='inferred'?'inf':''}">${src==='inferred'?'inferred by Muse Spark':src}</span></li>`).join('')}</ul>
+    <details class="more"><summary>See how the facts connect</summary><div class="gwrap">${graph(k,m)}</div></details>
+    <details class="more"><summary>See the numbers behind the ranking</summary>
+      <p class="small" style="margin-bottom:8px">Your answers set how much each factor matters; Hoist's catalog rates each option. The numbers only put options in order.</p>
+      <table class="raw"><tr><th>Factor</th><th>Weight</th><th>Rating</th></tr>${rows.map(f=>`<tr><td>${FACTORS[f]}</td><td>${m.w[f]}</td><td>${ko&&f==='host'?'ruled out':s[f]+'/10'}</td></tr>`).join('')}</table></details>`;
+  openSheet('whySheet');
 }
-
-function renderSheet(){
-  const k=sheetFor,{N,E,m,rk,ko}=buildGraph(k);
-  $('shTitle').textContent=OPT[k].n;
-  $('shSub').textContent=ko?`Ruled out: ${OPT[k].ko.why}`:`${rk.charAt(0)+rk.slice(1).toLowerCase()} for you. Click any node to see where it came from.`;
-  $('legend').innerHTML=[['file','Seen in your repo'],['you','Your answer'],['agent','Agent\'s task'],['doc','Docs'],['inferred','Inferred by Muse Spark']]
-    .map(([c,l])=>`<span style="color:${KCOL[c]}"><i></i><span style="color:var(--muted)">${l}</span></span>`).join('')+
-    '<span><span style="color:var(--accent)">━</span>&nbsp;helps</span><span><span style="color:var(--oneway)">━</span>&nbsp;hurts</span>';
-  const W=880,colX=[8,232,456,690],NW=[200,200,214,182],NH=46,GAP=14;
-  const counts=[0,1,2,3].map(c=>N.filter(n=>n.c===c).length),H=Math.max(...counts)*(NH+GAP)+8;
-  const pos={};
-  [0,1,2,3].forEach(c=>{const col=N.filter(n=>n.c===c),tot=col.length*(NH+GAP)-GAP,y0=(H-tot)/2;col.forEach((n,i)=>pos[n.id]={x:colX[c],y:y0+i*(NH+GAP),w:NW[c],h:c===3?NH+18:NH});});
-  pos.prop.y=H/2-pos.prop.h/2;
-  const g=$('graph');g.setAttribute('viewBox',`0 0 ${W} ${H}`);
-  const tone={good:'var(--accent)',bad:'var(--oneway)',n:'var(--faint)'};
+function graph(k,m){
+  const s=m.s[k],w=m.w,ko=!viable(k,ans());
+  const cols=[['vercel.json','package.json','Your answers','Agent\'s task','Vercel docs'],['Runs on Vercel','No database yet','Sharing, upkeep, size','Users own projects','No lasting disk'],['Works on your host','Linked records','Nothing to run','Cost and growth'],[OPT[k].n]];
+  const E=[[0,0,1,0],[0,1,3,0],[0,2,1,1],[0,2,1,2],[0,2,1,3],[0,3,1,3],[0,4,1,4],[1,0,2,0],[1,4,2,0],[1,2,2,1],[1,3,2,1],[1,2,2,2],[1,2,2,3]];
+  const fx=['host','rel','ops','cost'];
+  const X=[8,190,372,560],NW=[160,160,168,160],NH=36,G=12,H=5*(NH+G);
+  const pos=(c,i)=>{const n=cols[c].length,tot=n*(NH+G)-G,y0=(H-tot)/2;return{x:X[c],y:y0+i*(NH+G),w:NW[c]};};
   let out='';
-  E.forEach(e=>{const a=pos[e.a],b=pos[e.b],x1=a.x+a.w,y1=a.y+a.h/2,x2=b.x,y2=b.y+b.h/2,dx=(x2-x1)/2;
-    const delay=(N.find(n=>n.id===e.a).c*0.18+0.1).toFixed(2);
-    out+=`<path class="ge draw" data-a="${e.a}" data-b="${e.b}" pathLength="1" d="M${x1},${y1} C${x1+dx},${y1} ${x2-dx},${y2} ${x2},${y2}" stroke="${tone[e.tone]}" stroke-width="${e.wd.toFixed(2)}" style="animation-delay:${delay}s"/>`;});
-  N.forEach(n=>{const q=pos[n.id],col=KCOL[n.kind]||'var(--line)',dash=(n.kind==='inferred'||n.kind==='whatif')?'stroke-dasharray="4 3"':'';
-    const big=n.c===3,fill=big?(ko?'var(--oneway-soft)':'var(--accent-soft)'):'';
-    out+=`<g class="gn pop${n.id===selNode?' sel':''}" data-id="${n.id}" tabindex="0" role="button" aria-label="${esc(n.t)}" style="animation-delay:${(n.c*0.14).toFixed(2)}s">
-      <rect x="${q.x}" y="${q.y}" width="${q.w}" height="${q.h}" rx="9" stroke="${big&&ko?'var(--oneway)':col}" ${dash} ${fill?`style="fill:${fill}"`:''}/>
-      <text x="${q.x+12}" y="${q.y+(big?26:20)}" font-size="${big?15:12.5}" font-weight="${big?600:500}">${esc(n.t)}</text>
-      <text class="tg" x="${q.x+12}" y="${q.y+(big?46:36)}">${esc(n.tg)}</text></g>`;});
-  g.innerHTML=out;
-  g.querySelectorAll('.gn').forEach(el=>{
-    const go=()=>{selNode=el.dataset.id;highlight();showDetail(N,m,k);};
-    el.addEventListener('click',go);el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();go();}});
-  });
-  highlight();showDetail(N,m,k);
-}
-const KCOL={file:'var(--accent)',you:'var(--ink)',agent:'var(--heavy)',doc:'var(--faint)',inferred:'var(--heavy)',whatif:'var(--heavy)',factor:'var(--muted)',prop:'var(--accent)'};
-
-function highlight(){
-  const g=$('graph'),edges=[...g.querySelectorAll('.ge')];
-  if(!selNode||selNode==='prop'){g.querySelectorAll('.dim').forEach(e=>e.classList.remove('dim'));g.querySelectorAll('.gn').forEach(e=>e.classList.toggle('sel',e.dataset.id===selNode));return;}
-  const keep=new Set([selNode]);
-  const walk=(id,dir)=>edges.forEach(e=>{const from=dir?e.dataset.a:e.dataset.b,to=dir?e.dataset.b:e.dataset.a;if(from===id&&!keep.has(to)){keep.add(to);walk(to,dir);}});
-  walk(selNode,true);walk(selNode,false);
-  g.querySelectorAll('.gn').forEach(e=>{e.classList.toggle('dim',!keep.has(e.dataset.id));e.classList.toggle('sel',e.dataset.id===selNode);});
-  edges.forEach(e=>e.classList.toggle('dim',!(keep.has(e.dataset.a)&&keep.has(e.dataset.b))));
+  const path=(a,b,col,wd)=>{const x1=a.x+a.w,y1=a.y+NH/2,x2=b.x,y2=b.y+NH/2,dx=(x2-x1)/2;return`<path class="ge" d="M${x1},${y1} C${x1+dx},${y1} ${x2-dx},${y2} ${x2},${y2}" stroke="${col}" stroke-width="${wd}"/>`;};
+  E.forEach(([c1,i1,c2,i2])=>out+=path(pos(c1,i1),pos(c2,i2),'var(--faint)',1.2));
+  fx.forEach((f,i)=>{const bad=(ko&&f==='host')||s[f]<=5,good=s[f]>=8&&!(ko&&f==='host');out+=path(pos(2,i),pos(3,0),good?'var(--accent)':bad?'var(--oneway)':'var(--faint)',1+w[f]/2);});
+  cols.forEach((col,c)=>col.forEach((t,i)=>{const p=pos(c,i),inf=t==='Users own projects';
+    out+=`<g class="gn"><rect x="${p.x}" y="${p.y}" width="${NW[c]}" height="${NH}" rx="8" stroke="${c===3?(ko?'var(--oneway)':'var(--accent)'):inf?'var(--heavy)':'var(--line)'}" ${inf?'stroke-dasharray="4 3"':''}/><text x="${p.x+10}" y="${p.y+22}" font-size="12">${esc(t)}</text></g>`;}));
+  return `<svg class="g" viewBox="0 0 730 ${H}" role="img" aria-label="How the facts connect to this option">${out}</svg>`;
 }
 
-function showDetail(N,m,k){
-  const n=N.find(x=>x.id===(selNode||'prop')),el=$('detail');
-  if(n.id==='prop'){
-    const s=m.s[k],rows=Object.keys(m.w).sort((a,b)=>m.w[b]-m.w[a]);
-    const o=OPT[k];
-    el.innerHTML=`<span class="dk">Option</span><h3>${o.n}</h3>
-      <p>Good, because ${lc(o.good[0][1])} Bad, because ${lc(o.bad[0][1])}</p>
-      <div class="qual"><span class="h">What matters</span><span class="h">To you</span><span class="h">This option</span>
-      ${rows.map(f=>`<span>${FACTORS[f]}</span><span class="v">${matters(m.w[f])}</span><span class="v ${doesCls(s[f])}">${doesWord(s[f])}</span>`).join('')}</div>
-      <details class="raw"><summary>How Hoist ranked this</summary>
-        <p style="margin-top:8px">Your answers set how much each factor matters. Hoist's catalog rates each option on each factor. The ranking multiplies the two and adds them up. The numbers only order the options; they are not a measure of quality.</p>
-        <table><tr><th>Factor</th><th>Weight</th><th>Rating</th><th>Product</th></tr>${rows.map(f=>`<tr><td>${FACTORS[f]}</td><td>${m.w[f]}</td><td>${s[f]}/10</td><td>${m.w[f]*s[f]}</td></tr>`).join('')}</table>
-      </details>`;
-    return;
-  }
-  el.innerHTML=`<span class="dk">${esc(n.tg)}</span><h3>${esc(n.d.h)}</h3><p>${esc(n.d.p)}</p>${n.d.pre?`<pre>${esc(n.d.pre)}</pre>`:''}${n.d.link?`<p><a href="${n.d.link}" target="_blank" rel="noopener">${n.d.link}</a></p>`:''}`;
+/* ---------- project decisions sheet ---------- */
+const openCount=()=>LOG.filter(e=>!reviewed[e.id]).length;
+function openProject(){
+  $('projBody').innerHTML=`<p class="sec">Decisions</p>
+    <ul class="map">${MAP.map(d=>`<li><span class="pin ${d.c}"></span><span>${d.t}<br><span class="s">${done&&d.c==='now'?(done.mode==='parked'?'Parked':OPT[done.k].n+' · ADR-0004'):d.s}</span></span></li>`).join('')}</ul>
+    <p class="sec">Your agent decided on its own · ${openCount()} to review</p>
+    <div>${LOG.map(e=>`<div class="y ${reviewed[e.id]?'ok':''}"><span class="t">${e.title}<span class="st">${reviewed[e.id]?'reviewed':'not reviewed'}</span></span>
+      <p>In the context of <em>${e.ctx}</em>, facing <em>${e.concern}</em>, Muse Code chose <em>${e.chose}</em> over <em>${e.over}</em>, to achieve <em>${e.gain}</em>, accepting <em>${e.accept}</em>.</p>
+      ${reviewed[e.id]?'':`<div class="row"><button class="link" data-rev="${e.id}">Looks right</button><button class="link" data-card="${e.id}">Ask me about this</button></div>`}</div>`).join('')}</div>`;
+  openSheet('projSheet');
 }
 
-let lastFocus=null;
-function openSheet(k){sheetFor=k;selNode=viable(k,A)?'prop':'x_host';lastFocus=document.activeElement;renderSheet();
-  $('sheet').classList.add('on');$('scrim').classList.add('on');$('sheet').setAttribute('aria-hidden','false');setTimeout(()=>$('shClose').focus(),60);}
-function closeSheet(){$('sheet').classList.remove('on');$('scrim').classList.remove('on');$('sheet').setAttribute('aria-hidden','true');sheetFor=null;if(lastFocus)lastFocus.focus();}
+/* ---------- sheets, toast, events ---------- */
+let openId=null,lastFocus=null;
+function openSheet(id){openId=id;lastFocus=document.activeElement;$(id).classList.add('on');$(id).setAttribute('aria-hidden','false');$('scrim').classList.add('on');setTimeout(()=>$(id).querySelector('[data-close]').focus(),60);}
+function closeSheet(){if(!openId)return;$(openId).classList.remove('on');$(openId).setAttribute('aria-hidden','true');$('scrim').classList.remove('on');openId=null;if(lastFocus)lastFocus.focus();}
+function toast(t){const el=$('toast');el.textContent=t;el.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('on'),3000);}
 
-function toast(t){const el=$('toast');el.textContent=t;el.classList.add('on');clearTimeout(toast._t);toast._t=setTimeout(()=>el.classList.remove('on'),3200);}
-function setStatus(){const s=$('status');s.classList.toggle('done',!!done);
-  $('statusText').textContent=!done?'Muse Code paused at a one-way door':done.mode==='parked'?'Muse Code resumed · decision parked':'Muse Code resumed · ADR-0004 written';}
-function finish(d){done=d;renderCard();setStatus();window.scrollTo({top:0,behavior:'smooth'});}
-
-$('card').addEventListener('click',e=>{
+function answer(i){A[Q[qi].id]=i;if(qi<Q.length-1){qi++;render();}else{step='rec';render();}}
+app.addEventListener('click',e=>{
   const b=e.target.closest('button');if(!b)return;
-  if(b.dataset.q){A[b.dataset.q]=+b.dataset.i;renderCard();return;}
-  const act=b.dataset.act,m=model(A);
-  if(act==='evidence')openSheet(b.dataset.k);
-  if(act==='pick'){pick=b.dataset.k===m.r[0].k?null:b.dataset.k;renderCard();}
-  if(act==='record')finish({k:pick||m.r[0].k,mode:'chosen'});
-  if(act==='nopref'){pick=null;finish({k:m.r[0].k,mode:'delegated'});}
-  if(act==='later')finish({k:m.r[0].k,mode:'parked'});
-  if(act==='try'){const f=window._flips[+b.dataset.i];Object.assign(A,f.set);renderCard();toast('What-if applied. Nothing is saved until you record it.');}
-  if(act==='resethost'){A.host=0;renderCard();}
-  if(act==='undo'){done=null;renderCard();setStatus();}
-  if(act==='copy'){const t=$('adrText').textContent;const ok=()=>{b.textContent='Copied';setTimeout(()=>b.textContent='Copy record',1400);};
-    try{navigator.clipboard.writeText(t).then(ok,()=>selectText($('adrText')));}catch(err){selectText($('adrText'));}}
+  if(b.dataset.a!=null)return answer(+b.dataset.a);
+  if(b.dataset.why)return openWhy(b.dataset.why);
+  if(b.dataset.pick){pick=b.dataset.pick===model(ans()).r[0].k?null:b.dataset.pick;return render();}
+  const go=b.dataset.go,m=model(ans());
+  if(go==='back'){qi--;render();}
+  if(go==='edit'){step='ask';qi=0;render();}
+  if(go==='later'){done={k:m.r[0].k,mode:'parked'};render();}
+  if(go==='nopref'){Q.forEach(q=>{if(A[q.id]==null)A[q.id]=0;});pick=null;done={k:model(ans()).r[0].k,mode:'delegated'};render();}
+  if(go==='record'){done={k:pick||m.r[0].k,mode:'chosen'};render();}
+  if(go==='undo'){done=null;step='rec';render();}
+  if(go==='copy'){const t=$('adrText').textContent;try{navigator.clipboard.writeText(t).then(()=>toast('Record copied'),()=>toast('Select the record text to copy it'));}catch(err){toast('Select the record text to copy it');}}
 });
-$('log').addEventListener('click',e=>{
-  const b=e.target.closest('button[data-log]');if(!b)return;
-  if(b.dataset.log==='ok'){reviewed[b.dataset.id]=true;renderLog();toast('Marked as reviewed in agent-log.md.');}
-  else toast('Hoist will reopen this as a decision card after the current one.');
+$('projBody').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.rev){reviewed[b.dataset.rev]=true;openProject();$('logBadge').textContent=openCount()||'';}
+  if(b.dataset.card)toast('Hoist will ask you about this after the current decision.');});
+$('openProject').onclick=openProject;
+document.querySelectorAll('[data-close]').forEach(b=>b.onclick=closeSheet);$('scrim').onclick=closeSheet;
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape')return closeSheet();
+  if(!openId&&!done&&step==='ask'&&/^[1-3]$/.test(e.key)){const i=+e.key-1;if(i<Q[qi].a.length)answer(i);}
 });
-function selectText(el){const r=document.createRange();r.selectNodeContents(el);const s=getSelection();s.removeAllRanges();s.addRange(r);}
-$('shClose').onclick=closeSheet;$('scrim').onclick=closeSheet;
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&sheetFor)closeSheet();});
-
-renderMap();renderLog();renderCard();setStatus();
+$('logBadge').textContent=openCount();
+render();
 </script>
 
-</body></html>
+</body>
+</html>
