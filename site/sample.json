@@ -14,858 +14,278 @@
     "package": "mongoose",
     "tool": "edit_file"
    },
-   "facts": {
-    "host": 0
-   },
-   "fact_sources": {
-    "host": "vercel.json"
-   },
+   "facts": {},
+   "fact_sources": {},
    "answers": {}
   }
  ],
  "records": [
   {
    "file": "0001-use-typescript.md",
-   "markdown": "---\nstatus: accepted\ndate: 2026-10-20\ndoor: one-way\nproposed-by: project owner\ndeciders: project owner\nconfidence: high\n---\n# Use TypeScript for the app and server\n\n> **Decision:** Use TypeScript everywhere. **Because** the team already writes it and the Next.js starter uses it. **Accepted cost:** a build step and type errors to fix before shipping. **Revisit if** the team moves to another language.\n\n## Context and Problem Statement\nWhich language should fieldnotes be written in?\n\n## Decision Drivers\n- The team writes TypeScript every day (your answer)\n- Next.js starter (seen in package.json)\n\n## Considered Options\n1. TypeScript\n2. JavaScript\n\n## Decision Outcome\nChosen: TypeScript, because the team already writes it and errors show up before users see them.\n\n### Consequences\n- Good, because type errors show up before users see them.\n- Bad, because there is a build step to keep working.\n\n## More Information\n- Confidence: high; every driver is seen in the repo or answered.\n"
-  },
-  {
-   "file": "0003-host-on-vercel.md",
-   "markdown": "---\nstatus: accepted\ndate: 2026-10-22\ndoor: heavy\nproposed-by: project owner\ndeciders: project owner\nconfidence: high\ndepends-on: [0001-use-typescript]\n---\n# Host the app on Vercel\n\n> **Decision:** Host on Vercel. **Because** it deploys a Next.js app on every push with nothing to run. **Accepted cost:** functions don't keep files, and costs grow with traffic. **Revisit if** the app needs long-running jobs or a disk.\n\n## Context and Problem Statement\nWhere should fieldnotes run?\n\n## Decision Drivers\n- Nobody wants to run servers (your answer)\n- vercel.json in the repo (seen)\n\n## Considered Options\n1. Vercel\n2. A container on Fly.io\n\n## Decision Outcome\nChosen: Vercel, because it deploys on every push with nothing to run.\n\n### Consequences\n- Good, because previews come with every pull request.\n- Bad, because functions don't keep files between requests.\n- Bad, because costs grow with traffic.\n\n## More Information\n- Confidence: high.\n"
+   "markdown": "---\nstatus: accepted\ndate: 2026-10-20\ndoor: one-way\nproposed-by: project owner\ndeciders: project owner\nconfidence: high\n---\n# Use TypeScript for the app and server\n\n> **Decision:** Use TypeScript everywhere. **Because** the team already writes it. **Accepted cost:** a build step and type errors to fix before shipping. **Revisit if** the team moves to another language.\n\n## Context and Problem Statement\nWhich language should fieldnotes be written in?\n\n## Decision Drivers\n- The team writes TypeScript every day (your answer)\n- Express starter (seen in package.json)\n\n## Considered Options\n1. TypeScript\n2. JavaScript\n\n## Decision Outcome\nChosen: TypeScript, because the team already writes it and errors show up before users see them.\n\n### Consequences\n- Good, because type errors show up before users see them.\n- Bad, because there is a build step to keep working.\n\n## More Information\n- Confidence: high; every driver is seen in the repo or answered.\n"
   }
  ],
  "sample_session": {
   "task": "Add user accounts with saved projects",
   "plan": {
    "task": "Add user accounts with saved projects",
-   "task_summary": "Add user accounts with saved projects to a minimal Express app (Fieldnotes) deployed on Vercel - requires auth, persistence, and project ownership design from scratch.",
+   "task_summary": "Add user accounts with saved projects to existing Express app 'fieldnotes' - currently minimal, no auth or DB chosen yet.",
    "profile": [
     {
-     "id": "target-audience",
-     "text": "Who will use this? Just you, a small team, or public users on the internet?",
-     "why": "Determines if projects need to be private, shared, and how robust auth needs to be.",
+     "id": "intended-audience",
+     "text": "Who is this app for?",
+     "why": "Determines how simple or robust auth, sharing, and scaling needs to be.",
      "beginner_note": "",
      "answers": [
-      "Just me / friends",
-      "Small team or community",
-      "Public users at scale"
+      "Just me / personal use",
+      "Small group of known people",
+      "Public internet - anyone can sign up"
      ],
      "used_by": [
-      "project-access-model",
-      "auth-method"
+      "auth-approach",
+      "project-ownership-model",
+      "data-store"
      ]
     },
     {
-     "id": "login-friction",
-     "text": "What should logging in feel like for your users?",
-     "why": "Tradeoff between security, convenience, and implementation complexity for account creation.",
-     "beginner_note": "OAuth means 'Login with Google/GitHub' - no password to remember.",
-     "answers": [
-      "As frictionless as possible - no passwords",
-      "Traditional email + password is fine",
-      "Most secure possible, even if slower"
-     ],
-     "used_by": [
-      "auth-method",
-      "session-strategy"
-     ]
-    },
-    {
-     "id": "hosting-budget",
-     "text": "What are your constraints for hosting data and costs?",
-     "why": "Vercel is serverless - choice of database affects cost, vendor lock-in, and latency.",
-     "beginner_note": "Serverless databases like Vercel Postgres, Turso, or Supabase work well on Vercel; self-hosted Postgres does not.",
-     "answers": [
-      "Stay free/cheap and inside Vercel ecosystem",
-      "I have a preferred DB/provider already",
-      "Minimize vendor lock-in, keep it portable"
-     ],
-     "used_by": [
-      "user-data-store"
-     ]
-    },
-    {
-     "id": "project-longevity",
-     "text": "How important are saved projects long-term?",
-     "why": "Affects backup, account deletion policy, and how strictly we version project data.",
+     "id": "project-sensitivity",
+     "text": "How private or sensitive are the saved projects?",
+     "why": "Affects security requirements, session handling, and data deletion needs.",
      "beginner_note": "",
      "answers": [
-      "Ephemeral - okay to lose if account deleted",
-      "Important - users expect them to persist for years",
-      "Critical - like user documents that need export/backup"
+      "Not sensitive - casual notes",
+      "Private work I wouldn't want others to see",
+      "Sensitive / must be properly protected"
      ],
      "used_by": [
-      "project-access-model",
-      "account-lifecycle"
+      "session-handling",
+      "project-ownership-model",
+      "data-store"
+     ]
+    },
+    {
+     "id": "future-plans",
+     "text": "What are your plans for growing or sharing this app?",
+     "why": "Choices like persistence and auth are one-way if you later need multi-device or team features.",
+     "beginner_note": "Think about whether you'll keep this local or want others to access it online.",
+     "answers": [
+      "Keep it simple and local for now",
+      "Might put it online for others later",
+      "Plan to grow into a collaborative product"
+     ],
+     "used_by": [
+      "data-store",
+      "project-ownership-model",
+      "auth-approach"
      ]
     }
    ],
    "decisions": [
     {
-     "id": "user-data-store",
-     "title": "Choose persistence layer for users and saved projects",
-     "scope": "What database/service stores user accounts and project JSON/blobs, and how it's deployed on Vercel. Does not cover auth method or schema details.",
-     "door": 2,
+     "id": "auth-approach",
+     "title": "Choose how users sign up and sign in",
+     "scope": "Covers identity method (password, magic link, external login, etc) and what user data is collected. Leaves storage tech and session format to other decisions.",
+     "door": 3,
      "owner": "you",
      "mode": "ask",
-     "default": "Vercel Postgres or Vercel KV with Prisma",
-     "why": "Switching databases later requires data migration and rewriting all account/project queries.",
+     "default": "email + password with hashed passwords",
+     "why": "Login method dictates UX, security obligations, and migration cost - changing it later forces all users to re-enroll.",
      "depends_on": []
     },
     {
-     "id": "auth-method",
-     "title": "Select authentication mechanism",
-     "scope": "How users sign up and prove identity - password, magic link, OAuth provider, or third-party auth service. Excludes session token format.",
+     "id": "data-store",
+     "title": "Choose where user accounts and projects are persisted",
+     "scope": "Covers database or file storage choice and table/schema shape for users and projects. Leaves hosting provider and session mechanism to others.",
      "door": 3,
      "owner": "you",
      "mode": "ask",
-     "default": "OAuth via Auth.js for Google + GitHub, no passwords",
-     "why": "Password handling brings major security liability; changing auth method invalidates existing users and UX.",
+     "default": "SQLite file in project with users and projects tables",
+     "why": "Persistence underpins backups, queries, and portability - switching DBs later requires data migration and code rewrite.",
      "depends_on": [
-      "user-data-store"
+      "auth-approach"
      ]
     },
     {
-     "id": "session-strategy",
-     "title": "Define session and token handling",
-     "scope": "Whether auth is stateful session cookies vs JWT, cookie security settings, and expiration/refresh logic for Vercel serverless functions.",
+     "id": "session-handling",
+     "title": "Choose session and authentication state mechanism",
+     "scope": "Covers how logged-in state is maintained (server cookie session vs token), expiry, and logout/revocation. Leaves auth method itself to other decision.",
      "door": 2,
      "owner": "agent",
      "mode": "default",
-     "default": "HttpOnly secure cookie sessions with 30-day expiry",
-     "why": "Impacts security, ability to scale on Vercel edge functions, and logout-all-devices capability.",
+     "default": "httpOnly cookie sessions with express-session",
+     "why": "Affects security against XSS/CSRF and how logout works across devices.",
      "depends_on": [
-      "auth-method"
+      "auth-approach",
+      "data-store"
      ]
     },
     {
-     "id": "project-access-model",
-     "title": "Set project ownership and sharing model",
-     "scope": "Whether projects are private per user, public by default, or shareable, and if ownership is single-user or team-based. Covers data model for user->projects relation.",
-     "door": 3,
-     "owner": "you",
-     "mode": "ask",
-     "default": "Private to owner by default, with optional public link",
-     "why": "Changing from single-owner to shared/team model later requires rewriting permission checks across the app.",
-     "depends_on": [
-      "user-data-store"
-     ]
-    },
-    {
-     "id": "account-lifecycle",
-     "title": "Decide account recovery and deletion policy",
-     "scope": "How password reset/recovery works, data retention after deletion, and GDPR-style export/delete behavior for saved projects.",
+     "id": "project-ownership-model",
+     "title": "Define project ownership and access rules",
+     "scope": "Covers what a 'saved project' contains, 1 owner vs shared, and permissions for view/edit. Leaves UI design to later.",
      "door": 2,
      "owner": "you",
-     "mode": "default",
-     "default": "Email recovery and soft-delete with 30-day purge",
-     "why": "Deletion policy is legally binding once users sign up; retroactively changing it risks data loss or compliance issues.",
+     "mode": "ask",
+     "default": "private projects owned by single user, no sharing in v1",
+     "why": "Adding sharing/collaboration after launch requires a new permission system that is hard to retrofit without breaking existing data.",
      "depends_on": [
-      "user-data-store",
-      "auth-method"
-     ],
-     "budget_note": "over the 3-question budget; default recorded for review"
+      "data-store"
+     ]
     }
    ]
   },
   "drafts": {
-   "user-data-store": {
-    "title": "Choose persistence layer for users and saved projects",
+   "auth-approach": {
+    "id": "auth-approach",
+    "title": "Choose how users sign up and sign in",
     "task": "Add user accounts with saved projects",
     "problems": [],
-    "question": "Where should we store user accounts and saved projects so it works well on Vercel?",
-    "why_now": "Auth and project saving need tables and storage before code can be written.",
-    "undo": "Changing later means migrating users and project data and rewriting queries.",
-    "assumes": "Assumes OAuth via Auth.js and cookie sessions from other decisions.",
+    "question": "How should users create accounts and sign in?",
+    "why_now": "Account creation touches registration flow, stored data, and login UI that other work will build on.",
+    "undo": "Changing method later means migrating users, resetting credentials, and rewriting login screens.",
+    "assumes": "User records will be in SQLite by default and login state will use httpOnly cookie sessions by default.",
     "door": 2,
     "profile_effects": [
      {
-      "profile_id": "hosting-budget",
+      "profile_id": "intended-audience",
       "answers": [
        {
-        "label": "Stay free/cheap and inside Vercel ecosystem",
-        "effects": [
-         {
-          "option": "vercel-postgres",
-          "dir": "favors",
-          "reason": "Native Vercel integration, free tier, no extra vendor"
-         },
-         {
-          "option": "supabase-postgres",
-          "dir": "against",
-          "reason": "Extra vendor outside Vercel adds cost/complexity"
-         }
-        ]
-       },
-       {
-        "label": "I have a preferred DB/provider already",
-        "effects": [
-         {
-          "option": "supabase-postgres",
-          "dir": "favors",
-          "reason": "Fits if you already use Supabase"
-         },
-         {
-          "option": "turso-libsql",
-          "dir": "favors",
-          "reason": "Fits if you already use Turso/libSQL"
-         }
-        ]
-       },
-       {
-        "label": "Minimize vendor lock-in, keep it portable",
-        "effects": [
-         {
-          "option": "turso-libsql",
-          "dir": "favors",
-          "reason": "SQLite format is portable across hosts"
-         },
-         {
-          "option": "supabase-postgres",
-          "dir": "favors",
-          "reason": "Standard Postgres you can self-host later"
-         },
-         {
-          "option": "vercel-postgres",
-          "dir": "against",
-          "reason": "Tied to Vercel/Neon platform"
-         }
-        ]
-       }
-      ]
-     },
-     {
-      "profile_id": "project-longevity",
-      "answers": [
-       {
-        "label": "Ephemeral - okay to lose if account deleted",
-        "effects": [
-         {
-          "option": "turso-libsql",
-          "dir": "favors",
-          "reason": "Simple storage enough for short-lived data"
-         }
-        ]
-       },
-       {
-        "label": "Important - users expect them to persist for years",
-        "effects": [
-         {
-          "option": "vercel-postgres",
-          "dir": "favors",
-          "reason": "Managed backups and durability for long-term projects"
-         },
-         {
-          "option": "supabase-postgres",
-          "dir": "favors",
-          "reason": "Managed Postgres with backups and PITR"
-         }
-        ]
-       },
-       {
-        "label": "Critical - like user documents that need export/backup",
-        "effects": [
-         {
-          "option": "vercel-postgres",
-          "dir": "favors",
-          "reason": "Transactional Postgres needed for reliable documents"
-         },
-         {
-          "option": "supabase-postgres",
-          "dir": "favors",
-          "reason": "Strongest backup/export story for critical docs"
-         }
-        ]
-       }
-      ]
-     },
-     {
-      "profile_id": "target-audience",
-      "answers": [
-       {
-        "label": "Just me / friends",
-        "effects": [
-         {
-          "option": "turso-libsql",
-          "dir": "favors",
-          "reason": "Lowest overhead for tiny user base"
-         }
-        ]
-       },
-       {
-        "label": "Small team or community",
-        "effects": [
-         {
-          "option": "vercel-postgres",
-          "dir": "favors",
-          "reason": "Handles small scale without ops"
-         }
-        ]
-       },
-       {
-        "label": "Public users at scale",
-        "effects": [
-         {
-          "option": "vercel-postgres",
-          "dir": "favors",
-          "reason": "Scales serverless with Vercel functions"
-         },
-         {
-          "option": "supabase-postgres",
-          "dir": "favors",
-          "reason": "Scales with connection pooling for many users"
-         }
-        ]
-       }
-      ]
-     }
-    ],
-    "questions": [],
-    "options": [
-     {
-      "id": "vercel-postgres",
-      "name": "Vercel Postgres (Neon) with Prisma/Drizzle",
-      "summary": "Managed Postgres inside Vercel for users and project JSON.",
-      "good": [
-       {
-        "when": "now",
-        "text": "One click setup in Vercel dashboard, works with serverless functions"
-       },
-       {
-        "when": "later",
-        "text": "No DB ops, auto-scaling and backups handled"
-       }
-      ],
-      "bad": [
-       {
-        "when": "now",
-        "text": "Locks you to Vercel/Neon pricing"
-       },
-       {
-        "when": "later",
-        "text": "Migrating away means Postgres dump and import"
-       }
-      ],
-      "learn": {
-       "what": "Vercel Postgres is managed Postgres powered by Neon. You connect from your Express/API routes with a connection string and an ORM.",
-       "living_with": "You add a POSTGRES_URL env var in Vercel. Deploys get DB access automatically, you manage schema via migrations.",
-       "terms": [
-        {
-         "term": "Neon",
-         "meaning": "Serverless Postgres provider that Vercel resells as Vercel Postgres"
-        },
-        {
-         "term": "ORM",
-         "meaning": "Library like Prisma or Drizzle that maps tables to code"
-        }
-       ],
-       "docs_url": "https://vercel.com/docs/storage/vercel-postgres"
-      },
-      "check_current": "Confirm Vercel Postgres pricing and free tier limits are still listed as Neon-based on Vercel docs.",
-      "ruled_out": ""
-     },
-     {
-      "id": "supabase-postgres",
-      "name": "Supabase Postgres",
-      "summary": "External managed Postgres with built-in Auth/storage, used via connection string.",
-      "good": [
-       {
-        "when": "now",
-        "text": "Generous free tier, includes dashboard and backups"
-       },
-       {
-        "when": "later",
-        "text": "Portable Postgres you can self-host if you leave Vercel"
-       }
-      ],
-      "bad": [
-       {
-        "when": "now",
-        "text": "Second vendor/dashboard to manage alongside Vercel"
-       },
-       {
-        "when": "later",
-        "text": "Extra network hop from Vercel functions can add latency"
-       }
-      ],
-      "learn": {
-       "what": "Supabase is hosted Postgres with extra tools. You can use just the database part from Vercel via a Postgres URL.",
-       "living_with": "You keep Supabase project for DB, set its URL in Vercel env vars. You use Supabase SQL editor for ops.",
-       "terms": [
-        {
-         "term": "Supabase",
-         "meaning": "Platform that hosts Postgres and adds auth/storage/tools"
-        },
-        {
-         "term": "Connection pooling",
-         "meaning": "Reusing DB connections so serverless functions don't exhaust the DB"
-        }
-       ],
-       "docs_url": "https://supabase.com/docs/guides/database"
-      },
-      "check_current": "Confirm Supabase free project limits and connection string pooling (PgBouncer) format before relying on it.",
-      "ruled_out": ""
-     },
-     {
-      "id": "turso-libsql",
-      "name": "Turso (libSQL / SQLite) over HTTP",
-      "summary": "Distributed SQLite accessed over HTTP, works well on edge/serverless.",
-      "good": [
-       {
-        "when": "now",
-        "text": "Very cheap, fast for reads, simple file-based mental model"
-       },
-       {
-        "when": "later",
-        "text": "DB file is portable, easy to backup or move vendors"
-       }
-      ],
-      "bad": [
-       {
-        "when": "now",
-        "text": "SQLite has fewer Postgres features and different constraints"
-       },
-       {
-        "when": "later",
-        "text": "JSON querying and relational features are weaker for growing project data"
-       }
-      ],
-      "learn": {
-       "what": "Turso is SQLite (libSQL) hosted at the edge and queried via HTTP. You get a database URL and auth token.",
-       "living_with": "You add TURSO_DATABASE_URL and token as env vars. Migrations are SQLite SQL, tooling is lighter.",
-       "terms": [
-        {
-         "term": "libSQL",
-         "meaning": "Fork of SQLite made for HTTP replication"
-        },
-        {
-         "term": "SQLite",
-         "meaning": "Single-file relational database, simpler than Postgres"
-        }
-       ],
-       "docs_url": "https://docs.turso.tech/"
-      },
-      "check_current": "Confirm Turso free tier row/storage limits and HTTP client support still applies.",
-      "ruled_out": ""
-     }
-    ],
-    "default_option": "vercel-postgres",
-    "default_reason": "Defaults to cheapest path inside Vercel with no extra vendor and works with serverless.",
-    "agent_pick": "vercel-postgres",
-    "evidence": [
-     {
-      "source": "package.json",
-      "detail": "Express app with no DB yet, vercel.json present so Vercel-native storage is lowest friction"
-     },
-     {
-      "source": "task",
-      "detail": "Needs to store users and project JSON/blobs on Vercel, so requires serverless-compatible DB"
-     },
-     {
-      "source": "profile",
-      "detail": "hosting-budget answer determines Vercel vs external vs portable preference"
-     }
-    ]
-   },
-   "auth-method": {
-    "title": "Select authentication mechanism",
-    "task": "Add user accounts with saved projects",
-    "problems": [],
-    "question": "How should users prove who they are when signing in?",
-    "why_now": "Auth shapes the user table and sign-up flow, which other user-account tasks need.",
-    "undo": "Changing it later requires migrating existing accounts and asking users to reset or relink logins.",
-    "assumes": "Will store users in vercel-postgres and use HttpOnly secure cookie sessions with 30-day expiry if other decisions use defaults.",
-    "door": 2,
-    "profile_effects": [
-     {
-      "profile_id": "target-audience",
-      "answers": [
-       {
-        "label": "Just me / friends",
-        "effects": [
-         {
-          "option": "oauth-google-github",
-          "dir": "favors",
-          "reason": "No password handling for tiny trusted group, quick to add"
-         },
-         {
-          "option": "managed-auth-service",
-          "dir": "against",
-          "reason": "Extra service not needed for few users"
-         }
-        ]
-       },
-       {
-        "label": "Small team or community",
-        "effects": [
-         {
-          "option": "oauth-google-github",
-          "dir": "favors",
-          "reason": "Teams already have Google/GitHub accounts"
-         },
-         {
-          "option": "email-password-self",
-          "dir": "against",
-          "reason": "More support work for password resets in a team"
-         }
-        ]
-       },
-       {
-        "label": "Public users at scale",
-        "effects": [
-         {
-          "option": "managed-auth-service",
-          "dir": "favors",
-          "reason": "Handles abuse, rate limiting, and compliance at scale"
-         },
-         {
-          "option": "email-password-self",
-          "dir": "against",
-          "reason": "You must build hardening for many attackers"
-         }
-        ]
-       }
-      ]
-     },
-     {
-      "profile_id": "login-friction",
-      "answers": [
-       {
-        "label": "As frictionless as possible - no passwords",
+        "label": "Just me / personal use",
         "effects": [
          {
           "option": "magic-link-email",
           "dir": "favors",
-          "reason": "No password to remember, just email click"
+          "reason": "no password to remember for solo use"
          },
          {
-          "option": "oauth-google-github",
-          "dir": "favors",
-          "reason": "One click login with existing account"
-         },
-         {
-          "option": "email-password-self",
+          "option": "email-password",
           "dir": "against",
-          "reason": "Requires creating and remembering a password"
+          "reason": "password management overhead unnecessary"
          }
         ]
        },
        {
-        "label": "Traditional email + password is fine",
+        "label": "Small group of known people",
         "effects": [
          {
-          "option": "email-password-self",
+          "option": "magic-link-email",
           "dir": "favors",
-          "reason": "Matches expected pattern for users"
+          "reason": "low friction for small trusted group"
          },
          {
-          "option": "oauth-google-github",
-          "dir": "against",
-          "reason": "Adds external dependency when users expect password"
+          "option": "oauth-only",
+          "dir": "favors",
+          "reason": "people already have Google/GitHub accounts"
          }
         ]
        },
        {
-        "label": "Most secure possible, even if slower",
+        "label": "Public internet - anyone can sign up",
         "effects": [
          {
-          "option": "managed-auth-service",
+          "option": "email-password",
           "dir": "favors",
-          "reason": "Built-in MFA, anomaly detection, secure storage"
+          "reason": "most users expect password login for public apps"
+         },
+         {
+          "option": "oauth-only",
+          "dir": "favors",
+          "reason": "reduces fake accounts and password support load"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "profile_id": "project-sensitivity",
+      "answers": [
+       {
+        "label": "Not sensitive - casual notes",
+        "effects": [
+         {
+          "option": "magic-link-email",
+          "dir": "favors",
+          "reason": "light security matches light data"
+         }
+        ]
+       },
+       {
+        "label": "Private work I wouldn't want others to see",
+        "effects": [
+         {
+          "option": "email-password",
+          "dir": "favors",
+          "reason": "persistent login expected for private work"
          },
          {
           "option": "magic-link-email",
           "dir": "against",
-          "reason": "Depends only on email inbox security"
+          "reason": "email account compromise equals app compromise"
          }
         ]
-       }
-      ]
-     }
-    ],
-    "questions": [],
-    "options": [
-     {
-      "id": "oauth-google-github",
-      "name": "OAuth with Google and GitHub",
-      "summary": "Let users sign in via existing Google or GitHub account.",
-      "good": [
-       {
-        "when": "now",
-        "text": "No passwords to store or hash yourself"
        },
        {
-        "when": "later",
-        "text": "Less reset support; users keep security with their provider"
-       }
-      ],
-      "bad": [
-       {
-        "when": "now",
-        "text": "Need to register OAuth apps and handle provider callbacks"
-       },
-       {
-        "when": "later",
-        "text": "If user loses provider account they lose access unless linked"
-       }
-      ],
-      "learn": {
-       "what": "OAuth is a standard where your app redirects to Google/GitHub. They confirm the user and return an ID token. You trust that token as proof of identity.",
-       "living_with": "You keep a user row with provider ID and email. Login is a redirect flow. You add a second provider by adding another OAuth client.",
-       "terms": [
-        {
-         "term": "OAuth",
-         "meaning": "Protocol to login via another service without sharing password"
-        },
-        {
-         "term": "Provider ID",
-         "meaning": "Unique user identifier from Google/GitHub"
-        }
-       ],
-       "docs_url": "https://developers.google.com/identity/protocols/oauth2"
-      },
-      "check_current": "",
-      "ruled_out": ""
-     },
-     {
-      "id": "magic-link-email",
-      "name": "Passwordless magic link via email",
-      "summary": "User enters email, gets a one-time link that logs them in.",
-      "good": [
-       {
-        "when": "now",
-        "text": "Low friction, no passwords to implement or store"
-       },
-       {
-        "when": "later",
-        "text": "Easy to add secondary factor later without breaking flow"
-       }
-      ],
-      "bad": [
-       {
-        "when": "now",
-        "text": "Requires working email delivery on Vercel functions"
-       },
-       {
-        "when": "later",
-        "text": "Login fails if email is delayed or in spam"
-       }
-      ],
-      "learn": {
-       "what": "On sign-up you create a short-lived token, store its hash, and email a link containing it. Clicking the link sets the session cookie if the token matches.",
-       "living_with": "You monitor email deliverability and token expiry. Users login same way every time. No password reset flow needed.",
-       "terms": [
-        {
-         "term": "Magic link",
-         "meaning": "One-time URL sent by email that logs user in when clicked"
-        },
-        {
-         "term": "One-time token",
-         "meaning": "Random string valid once for a few minutes"
-        }
-       ],
-       "docs_url": ""
-      },
-      "check_current": "",
-      "ruled_out": ""
-     },
-     {
-      "id": "email-password-self",
-      "name": "Self-built email and password",
-      "summary": "Classic sign-up with email, password hash stored in your DB.",
-      "good": [
-       {
-        "when": "now",
-        "text": "Works without any external provider or email delivery for login"
-       },
-       {
-        "when": "later",
-        "text": "Fully portable, no provider lock-in"
-       }
-      ],
-      "bad": [
-       {
-        "when": "now",
-        "text": "You must correctly hash, salt, and protect passwords"
-       },
-       {
-        "when": "later",
-        "text": "You own password reset, breach handling, and MFA if needed later"
-       }
-      ],
-      "learn": {
-       "what": "User submits email and password. Server hashes password with a slow hash like bcrypt and stores hash. On login, hash input and compare to stored hash.",
-       "living_with": "You enforce password rules and build reset-by-email. You watch for weak passwords and reuse. Each login is local to your code.",
-       "terms": [
-        {
-         "term": "Password hash",
-         "meaning": "One-way scrambled version of password stored instead of plain text"
-        },
-        {
-         "term": "bcrypt",
-         "meaning": "Common slow hashing algorithm for passwords"
-        }
-       ],
-       "docs_url": ""
-      },
-      "check_current": "",
-      "ruled_out": ""
-     },
-     {
-      "id": "managed-auth-service",
-      "name": "Managed auth service (Clerk, Auth0, Supabase Auth)",
-      "summary": "Offload sign-up, login, and password handling to an external auth service.",
-      "good": [
-       {
-        "when": "now",
-        "text": "Gets OAuth, magic link, MFA out of the box with SDKs"
-       },
-       {
-        "when": "later",
-        "text": "Service handles security patches and scaling"
-       }
-      ],
-      "bad": [
-       {
-        "when": "now",
-        "text": "Adds vendor, extra env keys, and pricing to track"
-       },
-       {
-        "when": "later",
-        "text": "Migrating away means exporting users and rewriting auth code"
-       }
-      ],
-      "learn": {
-       "what": "You install provider SDK in Express and configure it. The service hosts login pages or provides UI components and returns a verified user to your app.",
-       "living_with": "You manage users in provider dashboard plus your DB. You follow their breaking changes and billing. Day-to-day login is their flow, not yours.",
-       "terms": [
-        {
-         "term": "Managed auth",
-         "meaning": "Third-party service that runs authentication for you"
-        }
-       ],
-       "docs_url": "https://clerk.com/docs"
-      },
-      "check_current": "If choosing managed auth, confirm current free tier limits and Vercel integration still exists before relying on pricing.",
-      "ruled_out": ""
-     }
-    ],
-    "default_option": "oauth-google-github",
-    "default_reason": "Works for small trust groups and public users, avoids storing passwords, and fits Vercel serverless with no email delivery dependency.",
-    "agent_pick": "",
-    "evidence": [
-     {
-      "source": "package.json",
-      "detail": "Express 4.x app, no auth library currently installed"
-     },
-     {
-      "source": "vercel.json",
-      "detail": "Vercel deployment with version 2, serverless functions imply stateless auth handling"
-     },
-     {
-      "source": "task",
-      "detail": "Need user accounts that can save projects; auth mechanism needed before user->project relation"
-     },
-     {
-      "source": "inferred",
-      "detail": "Default persistence assumed vercel-postgres, so can store provider ID or password hash in same DB"
-     }
-    ]
-   },
-   "project-access-model": {
-    "title": "Set project ownership and sharing model",
-    "task": "Add user accounts with saved projects",
-    "problems": [],
-    "question": "Who should own a project and who can see it?",
-    "why_now": "This sets the database tables for users and projects, and changing it later means migrating all saved projects.",
-    "undo": "You would need to rewrite ownership fields, add sharing tables, and migrate existing projects.",
-    "assumes": "Assumes we use vercel-postgres for storage and oauth-google-github for login if those are not decided elsewhere.",
-    "door": 2,
-    "profile_effects": [
-     {
-      "profile_id": "target-audience",
-      "answers": [
-       {
-        "label": "Just me / friends",
+        "label": "Sensitive / must be properly protected",
         "effects": [
          {
-          "option": "private-single-owner",
-          "dir": "favors",
-          "reason": "No need for teams or public gallery when just you/friends"
-         },
-         {
-          "option": "team-workspace",
+          "option": "email-password",
           "dir": "against",
-          "reason": "Team model is extra complexity for personal use"
-         }
-        ]
-       },
-       {
-        "label": "Small team or community",
-        "effects": [
-         {
-          "option": "shareable-links",
-          "dir": "favors",
-          "reason": "Teams need to share specific projects without full team access"
+          "reason": "needs correct hashing and breach protection"
          },
          {
-          "option": "team-workspace",
+          "option": "oauth-only",
           "dir": "favors",
-          "reason": "Community use often needs shared ownership"
-         }
-        ]
-       },
-       {
-        "label": "Public users at scale",
-        "effects": [
-         {
-          "option": "private-single-owner",
-          "dir": "favors",
-          "reason": "Public users expect private by default for safety"
-         },
-         {
-          "option": "public-by-default",
-          "dir": "against",
-          "reason": "Public by default creates privacy issues at scale"
+          "reason": "delegates protection to mature provider"
          }
         ]
        }
       ]
      },
      {
-      "profile_id": "project-longevity",
+      "profile_id": "future-plans",
       "answers": [
        {
-        "label": "Ephemeral - okay to lose if account deleted",
+        "label": "Keep it simple and local for now",
         "effects": [
          {
-          "option": "private-single-owner",
+          "option": "magic-link-email",
           "dir": "favors",
-          "reason": "Simple ownership matches disposable projects"
-         }
-        ]
-       },
-       {
-        "label": "Important - users expect them to persist for years",
-        "effects": [
-         {
-          "option": "shareable-links",
-          "dir": "favors",
-          "reason": "Long-lived projects often get shared over time"
-         }
-        ]
-       },
-       {
-        "label": "Critical - like user documents that need export/backup",
-        "effects": [
-         {
-          "option": "private-single-owner",
-          "dir": "favors",
-          "reason": "Clear single owner makes export and delete policy simple"
+          "reason": "least code to keep it local"
          },
          {
-          "option": "team-workspace",
+          "option": "oauth-only",
           "dir": "against",
-          "reason": "Shared ownership complicates export and delete ownership"
+          "reason": "requires internet callback setup even locally"
+         }
+        ]
+       },
+       {
+        "label": "Might put it online for others later",
+        "effects": [
+         {
+          "option": "email-password",
+          "dir": "favors",
+          "reason": "works offline and online without external deps"
+         },
+         {
+          "option": "oauth-only",
+          "dir": "against",
+          "reason": "needs domain verification before going live"
+         }
+        ]
+       },
+       {
+        "label": "Plan to grow into a collaborative product",
+        "effects": [
+         {
+          "option": "oauth-only",
+          "dir": "favors",
+          "reason": "easier to trust identities for sharing later"
+         },
+         {
+          "option": "email-password",
+          "dir": "favors",
+          "reason": "allows any email domain, not locked to provider"
          }
         ]
        }
@@ -874,53 +294,33 @@
     ],
     "questions": [
      {
-      "id": "need-collab",
-      "text": "Do you need other people to edit the same project as you, or just view it?",
-      "why": "Editing together needs team ownership, viewing only can be done with shareable links.",
-      "beginner_note": "Think if you want Google Docs style co-editing vs just sending a read-only link.",
+      "id": "email-access-reliability",
+      "text": "Will everyone who uses this reliably get emails quickly?",
+      "why": "Magic link login fails if email is slow or not checked often",
+      "beginner_note": "Magic link means we email you a one-time link to log in instead of a password.",
       "answers": [
        {
-        "label": "Just me edits, others might view",
+        "label": "Yes, email is fast and checked",
         "effects": [
          {
-          "option": "shareable-links",
+          "option": "magic-link-email",
           "dir": "favors",
-          "reason": "View links cover this without team complexity"
-         },
-         {
-          "option": "team-workspace",
-          "dir": "against",
-          "reason": "No need for joint editing"
+          "reason": "email delivery works for login flow"
          }
         ]
        },
        {
-        "label": "We need to edit together",
+        "label": "Not sure / email can be spotty",
         "effects": [
          {
-          "option": "team-workspace",
-          "dir": "favors",
-          "reason": "Joint editing requires shared ownership"
+          "option": "magic-link-email",
+          "dir": "against",
+          "reason": "login would be blocked by email delays"
          },
          {
-          "option": "private-single-owner",
-          "dir": "against",
-          "reason": "Single owner blocks co-editing"
-         }
-        ]
-       },
-       {
-        "label": "No sharing needed at all",
-        "effects": [
-         {
-          "option": "private-single-owner",
+          "option": "email-password",
           "dir": "favors",
-          "reason": "Simplest model when no sharing"
-         },
-         {
-          "option": "shareable-links",
-          "dir": "against",
-          "reason": "Sharing features unused"
+          "reason": "no dependency on email delivery"
          }
         ]
        }
@@ -929,36 +329,608 @@
     ],
     "options": [
      {
-      "id": "private-single-owner",
-      "name": "Private, single-owner",
-      "summary": "Each project has one owner user, private to them only.",
+      "id": "email-password",
+      "name": "Email + password",
+      "summary": "Users sign up with email and choose a password you store hashed",
       "good": [
        {
         "when": "now",
-        "text": "Simplest data model: user_id foreign key on projects"
+        "text": "Familiar flow, works without external services"
        },
        {
         "when": "later",
-        "text": "Easy to reason about delete, export, and privacy"
+        "text": "Easy to add password reset and email verification later"
        }
       ],
       "bad": [
        {
         "when": "now",
-        "text": "No way to share a project even if you want to later"
+        "text": "You must hash passwords correctly and handle reset flow"
        },
        {
         "when": "later",
-        "text": "Adding sharing later still needs a new table and migration"
+        "text": "You own breach risk and support for forgotten passwords"
        }
       ],
       "learn": {
-       "what": "One table for projects with an owner_id column pointing to the user. No sharing table. Queries filter by owner_id = current user.",
-       "living_with": "You check owner on every read/write. If a user is deleted, you delete their projects. No invite logic to maintain.",
+       "what": "You collect email and a password hash. On login you compare the hash using a slow hashing function. Sessions are then created separately.",
+       "living_with": "You manage password rules, reset emails, and secure storage. Users can log in even if email is down, after initial signup.",
+       "terms": [
+        {
+         "term": "password hash",
+         "meaning": "One-way scrambled version of password that can't be reversed"
+        },
+        {
+         "term": "salt",
+         "meaning": "Random data added before hashing to make each hash unique"
+        }
+       ],
+       "docs_url": "https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html"
+      },
+      "check_current": "",
+      "ruled_out": ""
+     },
+     {
+      "id": "magic-link-email",
+      "name": "Magic link via email",
+      "summary": "No passwords; users get a one-time login link sent to their email",
+      "good": [
+       {
+        "when": "now",
+        "text": "No password storage or hashing code needed"
+       },
+       {
+        "when": "later",
+        "text": "Collects only email, minimal personal data"
+       }
+      ],
+      "bad": [
+       {
+        "when": "now",
+        "text": "Login depends on email delivery and link expiry handling"
+       },
+       {
+        "when": "later",
+        "text": "Harder to support API clients or long-lived offline login"
+       }
+      ],
+      "learn": {
+       "what": "User enters email, you create a short-lived token and email a link containing it. Clicking the link proves ownership and creates a session.",
+       "living_with": "Each login needs inbox access. You need an email sending service and to handle expired or reused links.",
+       "terms": [
+        {
+         "term": "magic link",
+         "meaning": "Single-use URL that logs you in when clicked"
+        },
+        {
+         "term": "token expiry",
+         "meaning": "Time after which the link no longer works"
+        }
+       ],
+       "docs_url": ""
+      },
+      "check_current": "",
+      "ruled_out": ""
+     },
+     {
+      "id": "oauth-only",
+      "name": "External login only (Google/GitHub)",
+      "summary": "Users sign in with existing provider, you store provider ID and email",
+      "good": [
+       {
+        "when": "now",
+        "text": "No password handling, provider handles security"
+       },
+       {
+        "when": "later",
+        "text": "Trusted email verification and often profile data included"
+       }
+      ],
+      "bad": [
+       {
+        "when": "now",
+        "text": "Needs OAuth app registration and internet callback URLs"
+       },
+       {
+        "when": "later",
+        "text": "Locked to provider availability and user must have account there"
+       }
+      ],
+      "learn": {
+       "what": "You redirect to a provider like Google. After approval, provider returns an ID and email you use to find or create local user.",
+       "living_with": "You configure client IDs, handle callback routes, and deal with provider outages. No local passwords to reset.",
+       "terms": [
+        {
+         "term": "OAuth",
+         "meaning": "Standard for letting users sign in via another service"
+        },
+        {
+         "term": "callback URL",
+         "meaning": "Address provider redirects back to after login"
+        }
+       ],
+       "docs_url": "https://developers.google.com/identity/protocols/oauth2"
+      },
+      "check_current": "If choosing OAuth, confirm the provider's registration steps and free tier are still current before relying on it",
+      "ruled_out": ""
+     }
+    ],
+    "default_option": "email-password",
+    "default_reason": "Works with default SQLite store and cookie sessions, no external email or OAuth setup required for v1.",
+    "agent_pick": "",
+    "evidence": [
+     {
+      "source": "package.json",
+      "detail": "only express installed, no auth library chosen yet"
+     },
+     {
+      "source": "task",
+      "detail": "task is Add user accounts with saved projects, so sign-up/sign-in needed"
+     },
+     {
+      "source": "inferred",
+      "detail": "no existing users table, so auth method still open"
+     }
+    ]
+   },
+   "data-store": {
+    "id": "data-store",
+    "title": "Choose where user accounts and projects are persisted",
+    "task": "Add user accounts with saved projects",
+    "problems": [],
+    "question": "Where should user accounts and saved projects be stored?",
+    "why_now": "You need a place to save users and projects before you can implement sign-up and saving.",
+    "undo": "Changing storage later means exporting data and rewriting queries and migrations.",
+    "assumes": "Auth will be email-password and projects are private to one owner, with cookie sessions.",
+    "door": 2,
+    "profile_effects": [
+     {
+      "profile_id": "intended-audience",
+      "answers": [
+       {
+        "label": "Just me / personal use",
+        "effects": [
+         {
+          "option": "json-files",
+          "dir": "favors",
+          "reason": "single user does not need server DB"
+         },
+         {
+          "option": "sqlite-file",
+          "dir": "favors",
+          "reason": "simple local file, no ops"
+         }
+        ]
+       },
+       {
+        "label": "Small group of known people",
+        "effects": [
+         {
+          "option": "sqlite-file",
+          "dir": "favors",
+          "reason": "handles few users with relations and no server"
+         },
+         {
+          "option": "managed-postgres",
+          "dir": "against",
+          "reason": "adds hosting and cost for small group"
+         }
+        ]
+       },
+       {
+        "label": "Public internet - anyone can sign up",
+        "effects": [
+         {
+          "option": "managed-postgres",
+          "dir": "favors",
+          "reason": "designed for many users and concurrent writes"
+         },
+         {
+          "option": "json-files",
+          "dir": "against",
+          "reason": "unsafe for concurrent public writes"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "profile_id": "project-sensitivity",
+      "answers": [
+       {
+        "label": "Not sensitive - casual notes",
+        "effects": [
+         {
+          "option": "json-files",
+          "dir": "favors",
+          "reason": "low stakes tolerates simple file"
+         }
+        ]
+       },
+       {
+        "label": "Private work I wouldn't want others to see",
+        "effects": [
+         {
+          "option": "sqlite-file",
+          "dir": "favors",
+          "reason": "file permissions and queryable access control"
+         },
+         {
+          "option": "json-files",
+          "dir": "against",
+          "reason": "hard to enforce ownership checks"
+         }
+        ]
+       },
+       {
+        "label": "Sensitive / must be properly protected",
+        "effects": [
+         {
+          "option": "managed-postgres",
+          "dir": "favors",
+          "reason": "better access controls and backup options"
+         },
+         {
+          "option": "json-files",
+          "dir": "against",
+          "reason": "no atomicity or secure deletion"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "profile_id": "future-plans",
+      "answers": [
+       {
+        "label": "Keep it simple and local for now",
+        "effects": [
+         {
+          "option": "sqlite-file",
+          "dir": "favors",
+          "reason": "zero setup, stays local"
+         },
+         {
+          "option": "json-files",
+          "dir": "favors",
+          "reason": "simplest for local only"
+         }
+        ]
+       },
+       {
+        "label": "Might put it online for others later",
+        "effects": [
+         {
+          "option": "sqlite-file",
+          "dir": "favors",
+          "reason": "easy to ship, migratable to hosted later"
+         },
+         {
+          "option": "managed-postgres",
+          "dir": "favors",
+          "reason": "works unchanged when deployed"
+         }
+        ]
+       },
+       {
+        "label": "Plan to grow into a collaborative product",
+        "effects": [
+         {
+          "option": "managed-postgres",
+          "dir": "favors",
+          "reason": "scales to sharing and team queries"
+         },
+         {
+          "option": "json-files",
+          "dir": "against",
+          "reason": "rewrite needed for collaboration"
+         }
+        ]
+       }
+      ]
+     }
+    ],
+    "questions": [],
+    "options": [
+     {
+      "id": "sqlite-file",
+      "name": "SQLite file with two tables",
+      "summary": "One local file holding users and projects tables with foreign keys.",
+      "good": [
+       {
+        "when": "now",
+        "text": "No server to run, works with just Express and a driver"
+       },
+       {
+        "when": "later",
+        "text": "Easy to back up by copying file and to migrate to Postgres later"
+       }
+      ],
+      "bad": [
+       {
+        "when": "now",
+        "text": "Need to add better-sqlite3 or sqlite3 dependency and write migrations"
+       },
+       {
+        "when": "later",
+        "text": "Writes are single-writer, not ideal for heavy concurrent public use"
+       }
+      ],
+      "learn": {
+       "what": "SQLite is a relational database stored in a single file. You create tables for users (id, email, password_hash) and projects (id, user_id, data) and use SQL queries.",
+       "living_with": "You check in migration scripts, not the DB file. Day to day you query with SQL and the file lives in your project data folder.",
+       "terms": [
+        {
+         "term": "Migration",
+         "meaning": "A script that creates or changes tables safely"
+        },
+        {
+         "term": "Foreign key",
+         "meaning": "A column that links a project to its owner user"
+        }
+       ],
+       "docs_url": "https://www.sqlite.org/docs.html"
+      },
+      "check_current": "",
+      "ruled_out": ""
+     },
+     {
+      "id": "json-files",
+      "name": "JSON files on disk",
+      "summary": "Save users.json and projects.json, read/write with fs.",
+      "good": [
+       {
+        "when": "now",
+        "text": "Zero dependencies, you already have file system"
+       },
+       {
+        "when": "later",
+        "text": "Easy to inspect files directly for debugging"
+       }
+      ],
+      "bad": [
+       {
+        "when": "now",
+        "text": "No atomic writes or queries, risk of corrupt file on crash"
+       },
+       {
+        "when": "later",
+        "text": "Hard to enforce ownership, search, or scale beyond one user"
+       }
+      ],
+      "learn": {
+       "what": "You store all users in one JSON file and all projects in another. Node reads the file into memory, edits it, writes it back.",
+       "living_with": "You manage locking yourself and watch for file bloat. Backups are file copies and edits have no history.",
+       "terms": [
+        {
+         "term": "Atomic write",
+         "meaning": "An operation that fully succeeds or fails, no half-written state"
+        }
+       ],
+       "docs_url": "https://nodejs.org/api/fs.html"
+      },
+      "check_current": "",
+      "ruled_out": ""
+     },
+     {
+      "id": "managed-postgres",
+      "name": "Managed Postgres database",
+      "summary": "External Postgres service holding users and projects tables.",
+      "good": [
+       {
+        "when": "now",
+        "text": "Proper relations, concurrent writes, ready for online hosting"
+       },
+       {
+        "when": "later",
+        "text": "Scales to public sign-up and sharing without rewriting storage"
+       }
+      ],
+      "bad": [
+       {
+        "when": "now",
+        "text": "Requires connection string, hosted service setup, and network access"
+       },
+       {
+        "when": "later",
+        "text": "You pay for hosting and manage backups and credentials outside code"
+       }
+      ],
+      "learn": {
+       "what": "Postgres is a separate database server. Your app connects over a URL and stores users and projects in tables with SQL.",
+       "living_with": "You need env vars for connection, run migrations on deploy, and monitor the external service uptime.",
+       "terms": [
+        {
+         "term": "Connection string",
+         "meaning": "URL containing host, user, password for the database"
+        },
+        {
+         "term": "Managed",
+         "meaning": "Database run by a provider, not by your app code"
+        }
+       ],
+       "docs_url": "https://www.postgresql.org/docs/"
+      },
+      "check_current": "",
+      "ruled_out": ""
+     }
+    ],
+    "default_option": "sqlite-file",
+    "default_reason": "Gives relational ownership checks with no server, matches local Express setup and migrates easily.",
+    "agent_pick": "",
+    "evidence": [
+     {
+      "source": "package.json",
+      "detail": "Only express dependency, no DB driver yet, simple node start script"
+     },
+     {
+      "source": "task",
+      "detail": "Task is add user accounts with saved projects, requires persistence choice"
+     },
+     {
+      "source": "profile",
+      "detail": "Audience, sensitivity, and future plans affect whether local file or hosted DB is right"
+     },
+     {
+      "source": "inferred",
+      "detail": "No existing data folder or ORM config found, greenfield storage decision"
+     }
+    ]
+   },
+   "project-ownership-model": {
+    "id": "project-ownership-model",
+    "title": "Define project ownership and access rules",
+    "task": "Add user accounts with saved projects",
+    "problems": [],
+    "question": "How should projects be owned and who can access them?",
+    "why_now": "The database tables and permission checks need an ownership model before saving projects.",
+    "undo": "Changing it later means migrating project data and rewriting access checks.",
+    "assumes": "Assumes email-password login, sqlite-file storage, and cookie sessions from other decisions.",
+    "door": 2,
+    "profile_effects": [
+     {
+      "profile_id": "intended-audience",
+      "answers": [
+       {
+        "label": "Just me / personal use",
+        "effects": [
+         {
+          "option": "single-owner-private",
+          "dir": "favors",
+          "reason": "No need for sharing logic if only you use it"
+         }
+        ]
+       },
+       {
+        "label": "Small group of known people",
+        "effects": [
+         {
+          "option": "owner-with-collaborators",
+          "dir": "favors",
+          "reason": "Known group often wants to co-edit same project"
+         }
+        ]
+       },
+       {
+        "label": "Public internet - anyone can sign up",
+        "effects": [
+         {
+          "option": "single-owner-private",
+          "dir": "favors",
+          "reason": "Private by default prevents leaking between strangers"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "profile_id": "project-sensitivity",
+      "answers": [
+       {
+        "label": "Not sensitive - casual notes",
+        "effects": [
+         {
+          "option": "single-owner-can-share-read",
+          "dir": "favors",
+          "reason": "Low sensitivity makes link sharing acceptable"
+         }
+        ]
+       },
+       {
+        "label": "Private work I wouldn't want others to see",
+        "effects": [
+         {
+          "option": "single-owner-private",
+          "dir": "favors",
+          "reason": "Strict owner-only avoids accidental exposure"
+         }
+        ]
+       },
+       {
+        "label": "Sensitive / must be properly protected",
+        "effects": [
+         {
+          "option": "single-owner-private",
+          "dir": "favors",
+          "reason": "Simple owner-only is easier to secure"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "profile_id": "future-plans",
+      "answers": [
+       {
+        "label": "Keep it simple and local for now",
+        "effects": [
+         {
+          "option": "single-owner-private",
+          "dir": "favors",
+          "reason": "Least code and schema for simple local use"
+         }
+        ]
+       },
+       {
+        "label": "Might put it online for others later",
+        "effects": [
+         {
+          "option": "single-owner-can-share-read",
+          "dir": "favors",
+          "reason": "Share links add value without full team system"
+         }
+        ]
+       },
+       {
+        "label": "Plan to grow into a collaborative product",
+        "effects": [
+         {
+          "option": "owner-with-collaborators",
+          "dir": "favors",
+          "reason": "Collaboration needs explicit roles from start"
+         }
+        ]
+       }
+      ]
+     }
+    ],
+    "questions": [],
+    "options": [
+     {
+      "id": "single-owner-private",
+      "name": "One owner, private only",
+      "summary": "Each saved project belongs to one user, only that user can view or edit.",
+      "good": [
+       {
+        "when": "now",
+        "text": "Simple schema: projects table has owner_id only"
+       },
+       {
+        "when": "later",
+        "text": "Least risk of leaking data to other users"
+       }
+      ],
+      "bad": [
+       {
+        "when": "now",
+        "text": "No way to show a project to someone else"
+       },
+       {
+        "when": "later",
+        "text": "Adding sharing later requires new tables and UI"
+       }
+      ],
+      "learn": {
+       "what": "A saved project is a record with owner_id, title, content, timestamps. Ownership is checked on every read and write: if logged-in user id != owner_id, deny.",
+       "living_with": "You log in and only see your projects. There is no share button. Support is just checking logs for owner mismatch.",
        "terms": [
         {
          "term": "owner_id",
-         "meaning": "Column that stores which user owns the row"
+         "meaning": "User id stored on project to say who owns it"
+        },
+        {
+         "term": "access check",
+         "meaning": "Code that blocks request if user is not allowed"
         }
        ],
        "docs_url": ""
@@ -967,120 +939,82 @@
       "ruled_out": ""
      },
      {
-      "id": "shareable-links",
-      "name": "Private with shareable links",
-      "summary": "Private by default, but owner can create view or edit links for others.",
+      "id": "single-owner-can-share-read",
+      "name": "One owner, plus view-only share link",
+      "summary": "One owner controls edit, but can create a random link that lets others view read-only.",
       "good": [
        {
         "when": "now",
-        "text": "Still private by default, but allows collaboration"
+        "text": "Enables sharing without accounts for viewers"
        },
        {
         "when": "later",
-        "text": "Can grow into full team invites without changing owner"
+        "text": "Easy upgrade path to full collaborators later"
        }
       ],
       "bad": [
        {
         "when": "now",
-        "text": "Needs extra table for shares and token handling"
+        "text": "Need to generate and store share tokens and handle revocation"
        },
        {
         "when": "later",
-        "text": "You must handle revoking links and permission levels"
+        "text": "Link can leak if forwarded, need to explain security"
        }
       ],
       "learn": {
-       "what": "Projects still have one owner_id, plus a project_shares table with project_id, shared_user_id or token, and role like viewer or editor.",
-       "living_with": "You check owner or a valid share on reads. You need UI to create and revoke links. Ownership stays clear.",
+       "what": "Project still has one owner_id. Extra field share_token holds a random unguessable string. GET /p/:token shows read-only view without login.",
+       "living_with": "Owner sees a Share button to copy link and revoke it. Viewers cannot edit. You manage expired or leaked links.",
        "terms": [
         {
-         "term": "project_shares",
-         "meaning": "Extra table that records who else can access a project"
+         "term": "share_token",
+         "meaning": "Long random code in URL that grants read-only access"
+        },
+        {
+         "term": "read-only",
+         "meaning": "Can view content but cannot change or delete"
+        }
+       ],
+       "docs_url": ""
+      },
+      "check_current": "",
+      "ruled_out": ""
+     },
+     {
+      "id": "owner-with-collaborators",
+      "name": "Owner plus explicit collaborators",
+      "summary": "One owner plus a list of other users with viewer or editor roles per project.",
+      "good": [
+       {
+        "when": "now",
+        "text": "Supports team workflows from day one"
+       },
+       {
+        "when": "later",
+        "text": "Granular roles make future paid or team features easier"
+       }
+      ],
+      "bad": [
+       {
+        "when": "now",
+        "text": "Requires join table for memberships and role checks on every request"
+       },
+       {
+        "when": "later",
+        "text": "More complex invite, removal, and leaving logic to maintain"
+       }
+      ],
+      "learn": {
+       "what": "You have projects, users, and project_members table with project_id, user_id, role. Owner role can add/remove members. Checks allow view if member, edit if editor or owner.",
+       "living_with": "Project settings show member list and invite by email. Every edit path checks role. You handle invite errors and removed users.",
+       "terms": [
+        {
+         "term": "collaborator",
+         "meaning": "Another user added to a project with permission"
         },
         {
          "term": "role",
-         "meaning": "What the shared person can do, like view or edit"
-        }
-       ],
-       "docs_url": ""
-      },
-      "check_current": "",
-      "ruled_out": ""
-     },
-     {
-      "id": "team-workspace",
-      "name": "Team workspace ownership",
-      "summary": "Projects belong to a team/workspace, all members of the team can access them.",
-      "good": [
-       {
-        "when": "now",
-        "text": "Good for small teams working on same set of projects"
-       },
-       {
-        "when": "later",
-        "text": "Easy to add new members, they see all team projects"
-       }
-      ],
-      "bad": [
-       {
-        "when": "now",
-        "text": "Most complex model: needs teams, memberships, and projects tables"
-       },
-       {
-        "when": "later",
-        "text": "Hard to handle leaving members, GDPR delete, and personal projects"
-       }
-      ],
-      "learn": {
-       "what": "You have teams, team_members, and projects with team_id instead of user_id. Access is via team membership.",
-       "living_with": "Every project query goes through team membership check. You maintain invite, role, and leave-team flows.",
-       "terms": [
-        {
-         "term": "workspace",
-         "meaning": "A group that owns projects together, also called team or org"
-        },
-        {
-         "term": "team_members",
-         "meaning": "Join table linking users to teams"
-        }
-       ],
-       "docs_url": ""
-      },
-      "check_current": "",
-      "ruled_out": ""
-     },
-     {
-      "id": "public-by-default",
-      "name": "Public by default",
-      "summary": "Projects are visible to anyone unless marked private.",
-      "good": [
-       {
-        "when": "now",
-        "text": "Easy discovery and sharing, no share links needed"
-       },
-       {
-        "when": "later",
-        "text": "Can build public gallery or feed without extra sharing logic"
-       }
-      ],
-      "bad": [
-       {
-        "when": "now",
-        "text": "Privacy risk if users expect projects to be private"
-       },
-       {
-        "when": "later",
-        "text": "Changing to private later breaks public links and SEO"
-       }
-      ],
-      "learn": {
-       "what": "Projects have a visibility flag public or private. List queries can return all public projects. No ownership check for reading public ones.",
-       "living_with": "You need to be careful to default to private in UI and enforce filtering. User deletion may need to keep public copies.",
-       "terms": [
-        {
-         "term": "visibility flag",
-         "meaning": "Column that marks if a project is public or private"
+         "meaning": "Label like viewer or editor that decides what someone can do"
         }
        ],
        "docs_url": ""
@@ -1089,29 +1023,29 @@
       "ruled_out": ""
      }
     ],
-    "default_option": "private-single-owner",
-    "default_reason": "Safest default with least code, works with ephemeral or critical projects, and you can add shareable links later without breaking ownership.",
+    "default_option": "single-owner-private",
+    "default_reason": "Safest and simplest starting point for saved projects when sharing requirements are unknown.",
     "agent_pick": "",
     "evidence": [
      {
-      "source": "task",
-      "detail": "Task is Add user accounts with saved projects, implies user->projects relation needed"
-     },
-     {
       "source": "package.json",
-      "detail": "Currently only express, no auth or DB yet, so model can be chosen cleanly"
+      "detail": "express app with no auth or storage yet - ownership model needed before tables"
      },
      {
-      "source": "inferred",
-      "detail": "No existing users table, so single-owner private model is simplest starting point"
+      "source": "task",
+      "detail": "Task is add user accounts with saved projects, requires defining project ownership"
+     },
+     {
+      "source": "profile",
+      "detail": "Audience, sensitivity, and future plans affect whether sharing and roles are needed"
      }
     ]
    }
   },
   "drafted": [
-   "user-data-store",
-   "auth-method",
-   "project-access-model"
+   "auth-approach",
+   "data-store",
+   "project-ownership-model"
   ],
   "total": 3
  }

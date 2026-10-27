@@ -414,7 +414,10 @@ this task will force: choices that are costly to undo later. The project may be 
 writing, data, or anything else; use the evidence to tell which.
 
 Rules for decisions:
-- Only decisions this task needs now. Skip anything already decided in the recorded decisions or visible in the project files.
+- Only decisions this task needs now. Skip anything already decided in the recorded decisions.
+- A config file shows what exists today, not what is right or final. If a lasting choice (hosting, a vendor) is only implied
+  by a file and no recorded decision covers it, treat it as a decision to confirm, not a fixed constraint, and do not let it
+  frame the other decisions.
 - Usually 2 to 6 decisions. Order them so a decision comes after the ones it depends on.
 - Each decision has one clear scope. Two decisions must not overlap: if one choice is part of another, merge them.
 - door: 3 = one-way (redo most of the work to undo), 2 = heavy (days to undo), 1 = two-way (an afternoon).
@@ -427,7 +430,8 @@ Rules for decisions:
 Profile questions: 2 to 4 questions about the person and their project, asked once and used by every decision,
 so the person is never asked the same thing twice. Rules:
 - About their situation, audience, plans, constraints, or taste. Things they know without expertise.
-- Never about products or technologies. Never ask for numbers they cannot know. No invented scenarios.
+- Never about products or technologies, and never name a vendor, host, or product in the question or its answers.
+  Never ask for numbers they cannot know. No invented scenarios.
 - Each one must matter to at least one "ask" decision; list which in used_by.
 - 2 to 4 short answers each, plus beginner_note (one sentence explaining any term, or empty).
 
@@ -475,6 +479,9 @@ Rules for questions:
 Rules for options:
 - 2 to 4 options that could really work, at the same level (compare like with like). Include the agent's pick.
 - Prefer kinds of solution over brand names. Name a product only when it is the usual concrete choice, and then fill check_current.
+- Do not frame the question or the options around one vendor or host. The question names the need, not a platform.
+  If an option only works well on one host, say so as a downside instead of making that host the premise.
+- A config file shows what exists today, not a fixed constraint, unless a recorded decision says so.
 - Put options that cannot work given the evidence in ruled_out with the reason instead of leaving them as weak choices.
 - Every option has at least one bad item and at least one item about later.
 - learn describes the option itself. Never write "you will learn".
@@ -507,6 +514,10 @@ def muse_json(system, prompt, label, max_output=8000):
         except ValueError as e:  # json.JSONDecodeError is a ValueError
             problem = f"invalid JSON: {e}"
     sys.exit(f"Muse Spark's reply was unusable twice ({problem}). Run it again.")
+
+
+VENDORS = ("vercel", "netlify", "aws", "azure", "gcp", "google cloud", "heroku", "fly.io", "render", "railway", "supabase", "neon",
+           "planetscale", "turso", "mongodb", "firebase", "clerk", "auth0", "stripe", "tailwind", "radix", "shadcn")
 
 
 def check_draft(d, profile=None):
@@ -555,6 +566,11 @@ def check_draft(d, profile=None):
                     problems.append(f"answer '{a.get('label')}' points at unknown option '{e.get('option')}'")
     if d.get("default_option") not in {o.get("id") for o in viable}:
         problems.append("default_option is not a workable option")
+    asked = " ".join([str(d.get("question", ""))] + [str(q.get("text", "")) for q in d.get("questions") or []]
+                     + [str(a.get("label", "")) for q in d.get("questions") or [] for a in q.get("answers") or []]).lower()
+    named = sorted({b for b in VENDORS if re.search(r"\b" + re.escape(b) + r"\b", asked)})
+    if named:
+        problems.append(f"the question or answers name {', '.join(named)}: ask about the need, not a product")
     text = json.dumps(d).lower()
     for w in ("%", " score", "best-in-class", "industry-leading", "seamless", "blazing", "you will learn"):
         if w in text:
