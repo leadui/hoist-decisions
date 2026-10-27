@@ -550,21 +550,30 @@ function rankDraft(dr,did,over){
   const ss=SS(),opts=dr.options.filter(o=>!o.ruled_out),sc={},why={};
   opts.forEach(o=>{sc[o.id]=0;why[o.id]=[];});
   const pa={...ss.profile_answers,...(over&&over.profile||{})},oa={...((ss.answers||{})[did]||{}),...(over&&over.own||{})};
-  const apply=(a)=>(a&&a.effects||[]).forEach(e=>{if(!(e.option in sc))return;sc[e.option]+=e.dir==='favors'?1:-1;if(e.dir==='favors')why[e.option].push(e.reason);});
+  const apply=(a)=>(a&&a.effects||[]).forEach(e=>{if(!(e.option in sc))return;sc[e.option]+=e.dir==='favors'?1:-1;if(e.dir==='favors')why[e.option].push({reason:e.reason,answer:a.label});});
   (dr.profile_effects||[]).forEach(pe=>apply((pe.answers||[]).find(a=>a.label===pa[pe.profile_id])));
   (dr.questions||[]).forEach(q=>apply((q.answers||[]).find(a=>a.label===oa[q.id])));
   const order=opts.map((o,i)=>({o,i})).sort((x,y)=>(sc[y.o.id]-sc[x.o.id])||((y.o.id===dr.default_option)-(x.o.id===dr.default_option))||(x.i-y.i)).map(x=>x.o);
   const close=order.length>1&&sc[order[0].id]-sc[order[1].id]<=1;
   return{order,sc,why,close};
 }
+/* "Because" ties each reason to the answer behind it: you said “X” (why that matters) */
+const cleanReason=r=>lc(String(r||'').trim().replace(/^(also|and|so)\s+/i,'').replace(/[.;]+$/,''));
+function becauseText(entries){
+  const seen=new Set(),picked=[];
+  for(const e of entries||[]){if(!e||!e.answer||seen.has(e.answer))continue;seen.add(e.answer);picked.push(`“${e.answer}” (${cleanReason(e.reason)})`);if(picked.length===2)break;}
+  return picked.length?'you said '+picked.join(' and '):'';
+}
+const revisitText=f=>`your answer to “${f.q.replace(/\s+$/,'')}” becomes “${f.label}”`;
+const taskLabel=()=>{const ss=SS(),t=String((ss.plan&&ss.plan.task_summary)||ss.task||'').trim().replace(/\.$/,'');return t.length>140?t.slice(0,139).replace(/\s+\S*$/,'')+'…':t;};
 function flipsDraft(dr,did){
   const ss=SS(),win=rankDraft(dr,did).order[0].id,out=[];
   const prof=(SS().plan.profile||[]);
   (dr.profile_effects||[]).forEach(pe=>{const q=prof.find(x=>x.id===pe.profile_id);if(!q)return;
     q.answers.forEach(lbl=>{if(lbl===ss.profile_answers[q.id])return;const w=rankDraft(dr,did,{profile:{[q.id]:lbl}}).order[0];
-      if(w.id!==win)out.push({txt:`you had answered “${lbl}” to “${q.text}”`,win:w});});});
+      if(w.id!==win)out.push({q:q.text,label:lbl,txt:`you had answered “${lbl}” to “${q.text}”`,win:w});});});
   (dr.questions||[]).forEach(q=>q.answers.forEach(a=>{if(a.label===((ss.answers||{})[did]||{})[q.id])return;const w=rankDraft(dr,did,{own:{[q.id]:a.label}}).order[0];
-    if(w.id!==win)out.push({txt:`you had answered “${a.label}” to “${q.text}”`,win:w});}));
+    if(w.id!==win)out.push({q:q.text,label:a.label,txt:`you had answered “${a.label}” to “${q.text}”`,win:w});}));
   return out;
 }
 function confDraft(dr,rk,mode){
@@ -673,7 +682,7 @@ function renderSessionDecision(d){
     return;
   }
   const rk=rankDraft(dr,d.id),best=rk.order[0],chosen=dr.options.find(o=>o.id===G.pick[d.id])||best,fl=flipsDraft(dr,d.id),cf=confDraft(dr,rk);
-  const reasons=[...new Set(rk.why[chosen.id])].slice(0,2);
+  const because=becauseText(rk.why[chosen.id]);
   const accept=[...(chosen.bad||[])].sort((x,y)=>(y.when==='later')-(x.when==='later'));
   const ruled=dr.options.filter(o=>o.ruled_out);
   app.innerHTML=`<div class="step">
@@ -684,7 +693,7 @@ function renderSessionDecision(d){
     <div class="rec">
       <span class="small">${chosen===best?'Recommended for you':'Your choice'}</span>
       <h1>${esc(chosen.name)}</h1>
-      <p class="why">${chosen===best?(reasons.length?`It fits because ${esc(reasons.map(lc).join(', and '))}.`:esc(dr.default_reason)):`You picked this over ${esc(best.name)}, which fits your answers better.`} ${esc(chosen.summary||'')}</p>
+      <p class="why">${chosen===best?(because?`It fits because ${esc(because)}.`:esc(dr.default_reason)):`You picked this over ${esc(best.name)}, which fits your answers better.`} ${esc(chosen.summary||'')}</p>
       <div class="accept"><b>You accept</b><span>${esc(accept.map(b=>b.text).join(' '))}</span></div>
       <div class="row"><button class="btn primary" data-s="choose" data-o="${esc(chosen.id)}">${CHECK}Use ${esc(chosen.name)}</button><button class="link" data-learn="${esc(chosen.id)}">${G.learn[chosen.id]?'Hide':'Learn more'}</button></div>
       ${G.learn[chosen.id]?learnHtml(chosen):(chosen.check_current?`<p class="check">Check it's current: ${esc(chosen.check_current)}</p>`:'')}
@@ -703,29 +712,29 @@ function renderSessionDecision(d){
 }
 function madrDraft(d,dr,opt,mode){
   const ss=SS(),rk=rankDraft(dr,d.id),fl=flipsDraft(dr,d.id),cf=confDraft(dr,rk,mode),prof=ss.plan.profile||[];
-  const reasons=[...new Set(rk.why[opt.id])];
-  const because=mode==='delegated'?`the owner didn't mind and this is the safe default: ${lc(dr.default_reason||'')}`.replace(/\.$/,''):
-    opt.id===rk.order[0].id?(reasons.map(lc).join(' and ')||lc(dr.default_reason||'it fits the answers')).replace(/\.$/,''):`the owner preferred it over ${rk.order[0].name}`;
+  const because=mode==='delegated'?`you didn't mind, so Hoist used the safe default: ${cleanReason(dr.default_reason||'it fits most projects like this')}`:
+    opt.id===rk.order[0].id?(becauseText(rk.why[opt.id])||cleanReason(dr.default_reason||'it fits your answers best')):
+    `you preferred it over ${rk.order[0].name}, which fit your answers better`;
   const used=(dr.profile_effects||[]).map(pe=>{const q=prof.find(x=>x.id===pe.profile_id);return q&&ss.profile_answers[q.id]?`- ${q.text.replace(/\?$/,'')}: ${ss.profile_answers[q.id]} (your answer)`:null;}).filter(Boolean);
   const own=(dr.questions||[]).map(q=>{const a=((ss.answers||{})[d.id]||{})[q.id];return a?`- ${q.text.replace(/\?$/,'')}: ${a} (your answer)`:null;}).filter(Boolean);
-  const ev=(dr.evidence||[]).map(e=>`- ${e.detail} (${e.source==='inferred'?'inferred by Muse Spark':e.source==='profile'?'your answers':e.source==='task'?'the task':'seen in '+e.source})`);
+  const ev=(dr.evidence||[]).filter(e=>e.source!=='profile').map(e=>`- ${e.detail} (${e.source==='inferred'?'inferred by Muse Spark':e.source==='profile'?'your answers':e.source==='task'?'the task':'seen in '+e.source})`);
   const order=[opt,...rk.order.filter(o=>o!==opt)],ruled=dr.options.filter(o=>o.ruled_out);
   const later=(opt.bad||[]).find(b=>b.when==='later')||(opt.bad||[])[0];
   return `---
 status: accepted
 date: ${today()}
 door: ${{3:'one-way',2:'heavy',1:'two-way'}[dr.door||d.door]}
-proposed-by: ${LIVE?'Muse Code':'your agent'} (${ss.task})
+proposed-by: ${LIVE?'Muse Code':'your agent'} (task: ${taskLabel()})
 consulted: Muse Spark (drafted the questions and options)
 deciders: ${mode==='delegated'?'Hoist, delegated by the project owner':'project owner'}
 confidence: ${cf.lv}
 ---
 # ${d.title}: ${opt.name}
 
-> **Decision:** ${opt.name}. **Because** ${because}. **Accepted cost:** ${later?lc(later.text).replace(/\.$/,''):'none recorded'}. ${fl.length?`**Revisit if** ${fl[0].txt}.`:''}
+> **Decision:** ${opt.name}. **Because** ${because}. **Accepted cost:** ${later?cleanReason(later.text):'none recorded'}. ${fl.length?`**Revisit if** ${revisitText(fl[0])}.`:''}
 
 ## Context and Problem Statement
-${dr.question} ${dr.why_now} ${dr.undo}${dr.assumes?`\nAssumes: ${dr.assumes}`:''}
+${dr.question} ${dr.why_now} ${dr.undo}${dr.assumes?`\n${/^assum/i.test(dr.assumes)?'':'Assumes: '}${dr.assumes}`:''}
 
 ## Decision Drivers
 ${[...used,...own,...ev].join('\n')||'- No drivers recorded'}
@@ -748,28 +757,37 @@ ${order.slice(1).map(o=>`### ${o.name}\n${(o.good||[]).map(g=>`- Good, because $
 
 ## More Information
 - Confidence: ${cf.lv}; ${cf.txt}.
-${fl.map(f=>`- Revisit if ${f.txt}: ${f.win.name} would fit better.`).join('\n')||'- No single answer change would flip it.'}${(opt.learn||{}).docs_url?`\n- Documentation: ${opt.learn.docs_url}`:''}
+${fl.map(f=>`- Revisit if ${revisitText(f)}: ${f.win.name} would fit better.`).join('\n')||'- No single answer change would flip it.'}${(opt.learn||{}).docs_url?`\n- Documentation: ${opt.learn.docs_url}`:''}
 `;
 }
 function madrDefault(d){
-  const ss=SS();
+  const ss=SS(),budget=!!d.budget_note;
+  const why=budget?"it's the safe default for projects like this, and Hoist recorded it instead of asking you, to keep the task short"
+    :"a careful practitioner would pick it without asking, and it's easy to review later";
   return `---
 status: accepted
 date: ${today()}
 door: ${{3:'one-way',2:'heavy',1:'two-way'}[d.door]}
-proposed-by: Hoist plan for "${ss.task}"
-deciders: Hoist default (the owner can review it)
+proposed-by: Hoist plan (task: ${taskLabel()})
+deciders: Hoist default; the project owner can review it
 confidence: low
 ---
 # ${d.title}: ${d.default}
 
-> **Decision:** ${d.default}. **Because** it is the safe default and the owner wasn't asked, to keep the task short. **Revisit** when reviewing defaults.
+> **Decision:** ${d.default}. **Because** ${why}. **Revisit** when you review this task's defaults, or before this choice is built on.
 
 ## Context and Problem Statement
 ${d.why}
 
+## Decision Drivers
+- ${budget?`Hoist asks at most a few questions per task (${d.budget_note})`:'A safe, common default exists'}
+- Not asked, so no answer of yours shaped it
+
 ## Decision Outcome
-Chosen: ${d.default}, as a default.${d.budget_note?`\n\n## More Information\n- ${d.budget_note}`:''}
+Chosen: ${d.default}, as a default.
+
+## More Information
+- Confidence: low; nobody chose this on purpose yet.
 `;
 }
 async function recordSession(d,payload){
