@@ -622,7 +622,7 @@ function renderLoading(ss){
   clearTimeout(renderLoading.t);renderLoading.t=setTimeout(()=>{if(location.hash==='#/session'&&(G.sim||['planning','drafting'].includes((SS()||{}).status)))renderSession();},1000);
 }
 function renderSessionError(ss){
-  app.innerHTML=`<div class="step"><h1>Muse Spark couldn't finish</h1><p class="lead">${esc(ss.error||'Something went wrong.')}</p>
+  app.innerHTML=`<div class="step"><h1>Muse Spark couldn't finish</h1><p class="lead">Preparing the decisions stopped partway. Try again picks up where it stopped and keeps what's already written. Your agent is still waiting.</p><p class="small">Details: ${esc(ss.error||'unknown')}</p>
     <div class="row"><button class="btn primary" data-s="retry">Try again</button></div></div>`;
 }
 function renderOverview(){
@@ -805,10 +805,10 @@ async function renderSessionDone(){
     <div class="row"><a class="btn primary" href="#/records">See all decision records</a>${LIVE?'':'<button class="link" data-s="reset">Try another task</button>'}</div>
   </div>`;
 }
-async function startSession(task){
+async function startSession(task,resume){
   if(!task){const el=$('startErr');el.hidden=false;el.textContent='Describe the task first.';return;}
   G={view:null,pi:0,di:0,learn:{},pick:{},sim:null,t0:Date.now()};
-  if(LIVE){try{S.session=await post('/api/session',{task});}catch(e){const el=$('startErr');if(el){el.hidden=false;el.textContent=e.message;}return;}renderSession();return;}
+  if(LIVE){try{S.session=await post('/api/session',{task,resume:!!resume});}catch(e){const el=$('startErr');if(el){el.hidden=false;el.textContent=e.message;}return;}renderSession();return;}
   /* sample mode: replay the preparation with the recorded fieldnotes session */
   const base=JSON.parse(JSON.stringify(S.sample_session)),total=base.plan.decisions.filter(d=>d.mode==='ask').length;
   G.sim={task,status:'planning',plan:null,drafted:[],total:0};renderSession();
@@ -825,7 +825,7 @@ app.addEventListener('click',async e=>{
   if(b.dataset.ex){$('taskIn').value=b.dataset.ex;return;}
   const s=b.dataset.s;
   if(s==='start')return startSession($('taskIn').value.trim());
-  if(s==='retry')return startSession(SS().task);
+  if(s==='retry')return startSession(SS().task,true);
   if(s==='begin'){G.view='profile';G.pi=0;return renderSession();}
   if(s==='overview'){G.view='overview';return renderSession();}
   if(s==='pback'){G.pi--;return renderSession();}

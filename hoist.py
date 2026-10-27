@@ -285,7 +285,7 @@ def make_handler(root):
                 if not task:
                     return self.send(400, {"error": "Describe the task first."})
                 hints = str(body.get("hints", ""))[:4000]
-                threading.Thread(target=run_session, args=(root, task, hints), daemon=True).start()
+                threading.Thread(target=run_session, args=(root, task, hints, bool(body.get("resume"))), daemon=True).start()
                 time.sleep(0.2)
                 return self.send(200, session_state(root))
             if self.path == "/api/session/answers":
@@ -374,11 +374,18 @@ def wait_session(root):
     ses = session_state(root)
     print(f"{line}\nHOIST: paused while you make this task's lasting decisions\n  Task:       {ses['task']}\n"
           f"  Decide at:  {URL}/#/session\n  Muse Spark prepares them first; the agent continues when you're done.\n{line}", flush=True)
+    error_since = None
     while True:
         ses = session_state(root)
         if ses["status"] == "error":
-            print(f"HOIST: Muse Spark couldn't prepare the decisions ({ses.get('error')}). Ask the user in chat instead.")
-            return
+            if not error_since:
+                error_since = time.time()
+                print("HOIST: Muse Spark hit a problem; the page offers Try again. Still waiting.", flush=True)
+            elif time.time() - error_since > 60:
+                print(f"HOIST: Muse Spark couldn't prepare the decisions ({ses.get('error')}). Ask the user in chat instead.")
+                return
+        else:
+            error_since = None
         if ses["status"] == "ready" and not session_open(ses):
             break
         time.sleep(1)
@@ -485,11 +492,21 @@ def project_context(root, task, limit=9000):
 
 
 def muse_json(system, prompt, label, max_output=8000):
+    """One Muse Spark call that must return JSON. A reply that is cut off or not valid JSON gets one retry."""
     import hoist_audit
-    text, finish = hoist_audit.ask_muse(system, prompt, label, max_output=max_output)
-    if finish != "stop":
-        sys.exit(f"Muse Spark stopped early (finish reason: {finish}). Run the command again.")
-    return hoist_audit.parse(text)
+    problem = ""
+    for attempt in (1, 2):
+        ask = prompt if attempt == 1 else (prompt + f"\n\nYour last reply could not be used ({problem}). "
+                                           "Reply again with one complete, valid JSON object and nothing else.")
+        text, finish = hoist_audit.ask_muse(system, ask, label if attempt == 1 else label + ":retry", max_output=max_output)
+        if finish != "stop":
+            problem = f"it stopped early: {finish}"
+            continue
+        try:
+            return hoist_audit.parse(text)
+        except ValueError as e:  # json.JSONDecodeError is a ValueError
+            problem = f"invalid JSON: {e}"
+    sys.exit(f"Muse Spark's reply was unusable twice ({problem}). Run it again.")
 
 
 def check_draft(d, profile=None):
@@ -683,23 +700,39 @@ def ensure_key():
     return False
 
 
-def run_session(root, task, hints=""):
-    """Plan the task, then draft each decision the person is asked. Progress goes to .hoist/session.json for the page."""
-    ses = {"task": task, "status": "planning", "started": time.strftime("%Y-%m-%d %H:%M:%S"), "drafted": [], "total": 0,
-           "profile_answers": {}, "answers": {}, "outcomes": {}, "from_questionnaire": bool(hints)}
+def run_session(root, task, hints="", resume=False):
+    """Plan the task, then draft each decision the person is asked. Progress goes to .hoist/session.json for the page.
+    With resume, keep the plan and finished drafts and only redo what failed."""
+    old = load_session(root) if resume else None
+    plan_file = root / ".hoist" / "plan.json"
+    resume = bool(old and plan_file.exists())
+    ses = old if resume else {"task": task, "drafted": [], "total": 0, "profile_answers": {}, "answers": {}, "outcomes": {},
+                              "from_questionnaire": bool(hints)}
+    ses.update(status="drafting" if resume else "planning", started=time.strftime("%Y-%m-%d %H:%M:%S"), error=None, failed=[])
     save_session(root, ses)
     try:
         if not ensure_key():
             raise RuntimeError("No Muse Spark key. Save it with: security add-generic-password -a \"$USER\" -s hoist-meta-api -w")
-        shutil.rmtree(root / ".hoist" / "drafts", ignore_errors=True)
-        p = make_plan(root, task, hints)
+        if resume:
+            p = json.loads(plan_file.read_text())
+        else:
+            shutil.rmtree(root / ".hoist" / "drafts", ignore_errors=True)
+            p = make_plan(root, task, hints)
         asks = [d["id"] for d in p.get("decisions", []) if d.get("mode") == "ask"]
         ses.update(status="drafting", total=len(asks))
         save_session(root, ses)
         for did in asks:
+            if did in ses["drafted"]:
+                continue
             ses["current"] = did; save_session(root, ses)
-            make_draft(root, did, task)
-            ses["drafted"].append(did); save_session(root, ses)
+            try:
+                make_draft(root, did, ses["task"])
+                ses["drafted"].append(did)
+            except (Exception, SystemExit):  # this decision falls back to its default on the page; the rest go on
+                ses["failed"].append(did)
+            save_session(root, ses)
+        if asks and len(ses["failed"]) == len(asks):
+            raise RuntimeError("Muse Spark couldn't write any of the decisions.")
         ses.update(status="ready", current=None)
     except (Exception, SystemExit) as e:  # muse_json exits on early stops; report it on the page instead
         ses.update(status="error", error=str(e) or e.__class__.__name__)
