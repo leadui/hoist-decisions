@@ -54,9 +54,11 @@ Updated with every landed slice. Phases are shippable slices, smallest first.
   - [x] Sample: persistence-layer draft carries lean for click-through
   - [x] Course correction: session view rebuilt on the decision-moments engine (tabs, tiers, hyper dive, review) — stories wall deleted, record path untouched
   - [x] Loading wall gone: tabs render as drafts land; no more 30s dead screen
-  - [ ] Owner click-through: tiers + lean strip + review + finish
+  - [x] Streamlined: tiers removed (one expanding list + hyper-dive), lean + lazy deep split, decision-moment language throughout, "Commit & send back to chat"
+  - [ ] Owner click-through: moments + review + commit
 - [ ] **P2 — Review gate + batch record** (Oct 31–Nov 1): landed early with the engine rebuild — decided tabs, escape row (delegate/park/back-to-chat, all unblock wait), gated review + finish, per-confirm MADR records.
   - [ ] Owner click-through covers P1 + P2 together
+- [x] **Landing page**: pitch alongside the app (problem, moment flow, MADR sample, install) with a 3D glass-cube hero; exploration alternatives retired
 - [ ] **P3 — Demo + recording** (Nov 2–3): Muse-only single session, 3–5 minute
   arc (trigger → Compare → lean → chip-flip → commit → MADR in repo).
 

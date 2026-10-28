@@ -6,6 +6,8 @@ Built for the Meta Global AI Developer Hackathon with **Muse Code** (the agent H
 
 Try the decision page with sample data: https://leadui.github.io/hoist-decisions/
 
+Read the pitch: https://leadui.github.io/hoist-decisions/landing.html
+
 ## How it works
 
 1. You give Muse Code a task, for example "add user accounts with saved projects".
@@ -46,4 +48,7 @@ python3 hoist_audit.py <path-or-url>  # Muse Spark: find the decisions a repo ha
 
 ## Status
 
-Built during the hackathon (Oct 26 to Nov 4, 2026). The database decision is the first one in the catalog; hosting and sign-in come next.
+Built during the hackathon (Oct 26 to Nov 4, 2026) with Muse Code. Shipped: the
+decision-moments session engine (interruption → expanding options → hyper-dive →
+commit & send back to chat, MADR records), the sample-data demo and the landing
+page above. Next: demo script + recorded run (Nov 2–3).
