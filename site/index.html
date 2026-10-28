@@ -286,10 +286,10 @@ table.raw td:first-child,table.raw th:first-child{text-align:left}
 .moment .micro{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);margin-top:8px}
 .moment .micro-track{flex:1;height:6px;background:var(--surface);border-radius:3px;overflow:hidden}
 .moment .micro-fill{height:100%;background:var(--accent);border-radius:3px}
-.moment .journey{position:relative;margin:10px 0 2px;padding-left:18px}
-.moment .journey::before{content:"";position:absolute;left:5px;top:6px;bottom:6px;width:2px;background:var(--line)}
-.moment .jstep{position:relative;font-size:13px;padding:3px 0;color:var(--ink)}
-.moment .jstep::before{content:"";position:absolute;left:-17px;top:9px;width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.moment .journey{position:relative;margin:10px 0 2px;padding-left:26px;counter-reset:js}
+.moment .journey::before{content:"";position:absolute;left:8px;top:8px;bottom:8px;width:2px;background:var(--line)}
+.moment .jstep{position:relative;font-size:13px;padding:4px 0;color:var(--ink);counter-increment:js}
+.moment .jstep::before{content:counter(js);position:absolute;left:-26px;top:4px;width:17px;height:17px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-size:10.5px;font-weight:700;display:flex;align-items:center;justify-content:center}
 .moment .nums{margin:10px 0 2px;font-size:13px}
 .moment .num-row{display:flex;justify-content:space-between;gap:12px;padding:3px 0;border-top:1px dashed var(--line)}
 .moment .num-row:first-child{border-top:0}
@@ -307,18 +307,6 @@ table.raw td:first-child,table.raw th:first-child{text-align:left}
 .moment .ghost{margin:10px 0;font-size:13px;color:var(--muted)}
 .moment .ghost summary{cursor:pointer;font-weight:600}
 .moment .ghost li{margin:3px 0}
-.moment .m-qa{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin:10px 0}
-.moment .m-qa p{margin:0 0 8px;font-size:13.5px;color:var(--ink)}
-.moment .m-qa .m-note{font-size:12.5px;color:var(--muted);margin:0 0 8px}
-.moment .m-picks{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.moment .m-qa .m-picks+.m-picks{margin-top:8px}
-.moment .m-pick{font:inherit;font-size:13px;cursor:pointer;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:5px 14px}
-.moment .m-pick[aria-pressed="true"]{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
-.moment .m-state{font-size:12.5px;color:var(--muted);margin-left:4px}
-.moment .lean-box{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:12px 0;color:var(--ink)}
-.moment .lean-box b.t{display:block;font-size:12.5px;color:var(--muted);margin-bottom:4px}
-.moment .lean-box p{margin:0 0 6px;font-size:14px}
-.moment .lean-box .flip{font-size:13px;color:var(--muted);margin:0 0 2px}
 .moment .escape-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px;padding-top:14px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
 .moment .escape-btn{background:none;border:0;color:var(--accent);cursor:pointer;font-size:13px;padding:0;font-family:inherit;text-decoration:underline}
 .moment .rev-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);color:var(--ink)}
@@ -806,19 +794,9 @@ function engineHtml(d){
   const rk=rankDraft(dr,d.id),best=rk.order[0],viable=rk.order;
   const opt=viable.find(o=>o.id===pick),fl=flipsDraft(dr,d.id);
   const leanOpt=viable.find(o=>o.id===dr.agent_pick);
-  const leanSt=i=>(((ss.answers||{})[d.id]||{}).lean||{})[i]||'unchecked';
-  const prof=(ss.plan.profile||[]).filter(q=>(dr.profile_effects||[]).some(pe=>pe.profile_id===q.id));
-  const own=(dr.questions||[])[0],ownAns=((ss.answers||{})[d.id]||{})[own&&own.id];
   const ruled=dr.options.filter(o=>o.ruled_out);
   const signals=(dr.evidence||[]).filter(e=>e.source!=='profile');
   const tiers=[[1,'Glance','names only'],[2,'Compare','stories + trade-offs'],[3,'Deep dive','numbers + charts']].map(([i,n,s])=>`<button class="tier${tier===i?' on':''}" data-etier="${i}" aria-pressed="${tier===i}"><b>${n}</b><small>${s}</small></button>`).join('');
-  const assume=q=>{const st=assumeState(q.id),curA=ss.profile_answers[q.id];return `<div class="m-qa">
-      <p>${esc(q.text)} — <b>${esc(curA||'not sure yet')}</b></p>
-      ${st==='assumed'&&q.basis?`<p class="m-note">Assumed because ${esc(lc(q.basis).replace(/\.$/,''))}.</p>`:''}
-      <div class="m-picks">${st==='assumed'?`<button class="m-pick" data-ok="${esc(q.id)}">Right</button><button class="m-pick" data-chg="${esc(q.id)}">Change</button>`:`<span class="m-state">${st==='changed'?'You changed this':'You confirmed'}</span><button class="m-pick" data-chg="${esc(q.id)}">Change</button>`}</div>
-      ${G.changing===q.id?`<div class="m-picks">${q.answers.map((x,i)=>`<button class="m-pick" data-setans="${esc(q.id)}" data-i="${i}" aria-pressed="${x===curA}">${esc(x)}</button>`).join('')}</div>`:''}
-      ${NEWBIE&&q.beginner_note?`<p class="m-note">${esc(q.beginner_note)}</p>`:''}
-    </div>`;};
   const rows=viable.map(o=>{
     const on=o.id===pick,hasMicro=typeof o.micro==='number';
     let inner=`<h3>${esc(cap(o.plain_name||o.name))}</h3><p class="tech">${esc(o.name)}</p>`;
@@ -831,29 +809,23 @@ function engineHtml(d){
   }).join('');
   const trajs=viable.filter(o=>Array.isArray(o.trajectory)&&o.trajectory.length===2);
   const chart=(tier>=3&&dr.growth&&trajs.length===viable.length&&viable.length)?growthHtml(dr,viable,pick):'';
-  const leanStrip=(dr.lean&&dr.lean.why&&leanOpt)?`<div class="lean-box"><b class="t">The agent's lean</b><p>It leans toward <b>${esc(lc(leanOpt.plain_name||leanOpt.name))}</b> — ${esc(dr.lean.why)}</p>`+
-    (dr.lean.flips||[]).map(f=>`<p class="flip">Would flip if ${esc(lc(f).replace(/\.$/,''))}.</p>`).join('')+`</div>`+
-    (dr.lean.assumptions||[]).map((a,i)=>{const st=leanSt(i);return `<div class="m-qa"><p>${esc(a)}</p><div class="m-picks"><button class="m-pick" data-lok="${i}" aria-pressed="${st==='confirmed'}">Right</button><button class="m-pick" data-lch="${i}" aria-pressed="${st==='challenged'}">Change</button>${st==='unchecked'?'':`<span class="m-state">${st==='challenged'?'Challenged':'Confirmed'}</span>`}</div></div>`;}).join(''):'';
   return `<div class="qhead"><span class="qnum">${esc(d.title)} · ${doorWord(dr.door||d.door)}</span></div>
     <h1>${esc(dr.question)}</h1>
     ${dr.analogy?`<div class="model"><b>The one idea</b>${esc(dr.analogy)}</div>`:''}
     <p class="small">${esc(dr.undo)}${dr.assumes?` ${esc(dr.assumes)}`:''}</p>
     <div class="edu-head"><h2>Walk through it</h2></div>
     <div class="tiers" role="group" aria-label="Explanation depth">${tiers}</div>
-    ${own?`<div class="m-qa"><p>${esc(own.text)}</p>${NEWBIE&&own.beginner_note?`<p class="m-note">${esc(own.beginner_note)}</p>`:''}<div class="m-picks">${own.answers.map((x,i)=>`<button class="m-pick" data-oa="${i}" data-q="${esc(own.id)}" aria-pressed="${x.label===ownAns}">${esc(x.label)}</button>`).join('')}</div></div>`:''}
     ${rows}
     ${chart}
     ${ruled.length?`<details class="ghost"><summary>Rejected: ${ruled.length}</summary><ul>${ruled.map(o=>`<li><b>${esc(o.plain_name||o.name)}</b> — ${esc(o.ruled_out)}</li>`).join('')}</ul></details>`:''}
     ${tier>=3&&signals.length?`<p class="sub">What it noticed</p><ul>${signals.slice(0,4).map(e=>`<li><span>${esc(e.detail)}</span></li>`).join('')}</ul>`:''}
     ${tier>=3&&(dr.risks||[]).length?`<p class="sub">What it's watching out for</p><ul>${dr.risks.map(r=>`<li class="risk"><span>${esc(r)}</span></li>`).join('')}</ul>`:''}
-    ${tier>=3&&prof.length?`<p class="sub">What it assumed about you · correct anything that's wrong</p><div>${prof.map(assume).join('')}</div>`:''}
-    ${tier>=2&&opt?leanStrip:(tier>=2&&(dr.lean||{}).why&&leanOpt?'<p class="small">Pick an option to see your agent\'s lean.</p>':'')}
     <div class="row"><button class="btn primary" data-s="choose" data-o="${opt?esc(opt.id):''}"${opt?'':' disabled'}>${CHECK}Confirm${opt?' '+esc(lc(opt.plain_name||opt.name)):''}</button></div>
     <div class="escape-row"><span>Not sold?</span>
-      ${leanOpt?`<button class="escape-btn" data-s="delegate">Go with the agent's lean</button>`:`<button class="escape-btn" data-s="delegate">I don't mind, use the default</button>`}
+      ${leanOpt?`<button class="escape-btn" data-s="delegate">Let the agent decide</button>`:`<button class="escape-btn" data-s="delegate">I don't mind, use the default</button>`}
       <button class="escape-btn" data-s="refine">${(G.refineOpen||{})[d.id]?'Hide condition':'Add a condition'}</button>
       <button class="escape-btn" data-s="park">Not now</button>
-      <button class="escape-btn" data-s="abandon">Back to chat</button>${newbieToggle()}</div>
+      <button class="escape-btn" data-s="abandon">Back to chat</button></div>
     ${(G.refineOpen||{})[d.id]?`<textarea class="refine" id="refineIn" placeholder="For example: use this, but keep everything exportable as plain files.">${esc((G.notes||{})[d.id]||'')}</textarea>`:''}
     <p class="small">${opt&&opt!==best?`You picked this over ${esc(best.plain_name||best.name)}, which fits your answers better. `:''}${fl.length?`If ${esc(revisitText(fl[0]))}, ${esc(fl[0].win.plain_name||fl[0].win.name)} would fit better.`:'No single answer change would flip this.'}</p>
     <p class="err" id="sErr" hidden></p>`;
@@ -877,7 +849,7 @@ function growthHtml(dr,opts,pick){
   const g=dr.growth,mx=10,bw=34,gap=26,labelH=46,H=140,W=opts.length*(bw*2+gap)+gap;
   const y=v=>H-8-(v/mx)*(H-20);
   const bars=opts.map((o,i)=>{const x=gap+i*(bw*2+gap),on=o.id===pick;
-    return `<rect x="${x}" y="${y(o.trajectory[0])}" width="${bw}" height="${H-8-y(o.trajectory[0])}" rx="3" fill="${on?'var(--accent)':'var(--line)'}"><title>${esc(o.name)}: ${esc(g.now)}</title></rect><rect x="${x+bw+2}" y="${y(o.trajectory[1])}" width="${bw}" height="${H-8-y(o.trajectory[1])}" rx="3" fill="${on?'var(--accent)':'var(--muted)'}" opacity="${on?'1':'0.55'}"><title>${esc(o.name)}: ${esc(g.later)}</title></rect><text x="${x+bw}" y="${H+14}" text-anchor="middle" font-size="10" fill="var(--muted)">${esc(o.plain_name||o.name)}</text>`;}).join('');
+    return `<rect x="${x}" y="${y(o.trajectory[0])}" width="${bw}" height="${H-8-y(o.trajectory[0])}" rx="3" style="fill:${on?'var(--accent)':'var(--line)'}"><title>${esc(o.name)}: ${esc(g.now)}</title></rect><rect x="${x+bw+2}" y="${y(o.trajectory[1])}" width="${bw}" height="${H-8-y(o.trajectory[1])}" rx="3" style="fill:${on?'var(--accent)':'var(--muted)'}" opacity="${on?'1':'0.55'}"><title>${esc(o.name)}: ${esc(g.later)}</title></rect><text x="${x+bw}" y="${H+14}" text-anchor="middle" font-size="10" style="fill:var(--muted)">${esc(o.plain_name||o.name)}</text>`;}).join('');
   const pk=opts.find(o=>o.id===pick);
   return `<div class="chart"><p class="chart-title">${esc(g.title)}</p><svg class="growth" viewBox="0 0 ${W} ${H+labelH}" role="img" aria-label="${esc(g.title)}">${bars}</svg><p class="chart-note">${pk?`${esc(pk.plain_name||pk.name)} grows from ${esc(g.now)} to ${esc(g.later)}. Shapes, not forecasts.`:'Shapes, not forecasts.'}</p></div>`;
 }
@@ -1007,7 +979,7 @@ async function chooseSession(mode,optId){
     if(mode==='parked')await recordSession(d,{choice:null,mode,slug:slugify(d.title+' later'),markdown:`---\nstatus: proposed\ndate: ${today()}\ndoor: ${{3:'one-way',2:'heavy',1:'two-way'}[dr.door||d.door]}\nproposed-by: ${SS().task}\ndeciders: project owner (asked to decide later)\nconfidence: low\n---\n# ${d.title}: decide later\n\n> **Decision:** Not decided yet. **Because** the owner asked to decide later. **Revisit** before this choice is built on.\n\n## Context and Problem Statement\n${dr.question} ${dr.why_now}\n\n## Decision Outcome\nShort term: ${dr.options.find(o=>o.id===dr.default_option).name} as a placeholder the agent keeps easy to replace.\n`});
     else await recordSession(d,{choice:opt.id,mode,slug:slugify(d.title+' '+opt.name),markdown:madrDraft(d,dr,opt,mode),note:((G.notes||{})[d.id]||'').trim()});
   }catch(e){const el=$('sErr');if(el){el.hidden=false;el.textContent=`Couldn't save: ${e.message}`;}return;}
-  G.changing=null;if(G.epick)delete G.epick[d.id];advanceTab();
+  if(G.epick)delete G.epick[d.id];advanceTab();
   toast(mode==='parked'?'Parked. Your agent will keep this easy to replace.':`Recorded: ${opt.name}`);
   renderSession();
 }
@@ -1050,16 +1022,10 @@ app.addEventListener('click',async e=>{
   if(s==='pback'){G.pi--;return renderSession();}
   if(s==='reset'){S.session=null;G={view:null,pi:0,sim:null,etab:null,etier:{},epick:{}};return renderSession();}
   if(b.dataset.pa!=null){const q=SS().plan.profile[G.pi];await saveAnswers({profile_answers:{[q.id]:q.answers[+b.dataset.pa]}});G.pi++;return renderSession();}
-  if(b.dataset.oa!=null){const d=cur(),dr=draftOf(d.id),q=dr.questions.find(x=>x.id===b.dataset.q);await saveAnswers({answers:{[d.id]:{[q.id]:q.answers[+b.dataset.oa].label}}});return renderSession();}
-  if(b.dataset.ok){await saveAnswers({profile_answers:{[b.dataset.ok]:SS().profile_answers[b.dataset.ok]},confirmed:{[b.dataset.ok]:'confirmed'}});return renderSession();}
-  if(b.dataset.lok!=null||b.dataset.lch!=null){const dd=cur(),li=b.dataset.lok!=null?b.dataset.lok:b.dataset.lch,lv=b.dataset.lok!=null?'confirmed':'challenged';const st=Object.assign({},((SS().answers||{})[dd.id]||{}).lean);if(st[li]===lv)delete st[li];else st[li]=lv;await saveAnswers({answers:{[dd.id]:{lean:st}}});return renderSession();}
   if(b.dataset.etab){G.etab=b.dataset.etab;return renderSession();}
   if(b.dataset.etier){G.etier[cur().id]=+b.dataset.etier;return renderSession();}
   if(b.dataset.epick){const dd=cur();G.epick=G.epick||{};G.epick[dd.id]=G.epick[dd.id]===b.dataset.epick?null:b.dataset.epick;return renderSession();}
   if(b.dataset.hyper){const dd=cur();return openHyper(dd.id,b.dataset.hyper);}
-  if(b.dataset.chg){G.changing=G.changing===b.dataset.chg?null:b.dataset.chg;return renderSession();}
-  if(b.dataset.setans){const q=SS().plan.profile.find(x=>x.id===b.dataset.setans),v=q.answers[+b.dataset.i];G.changing=null;
-    await saveAnswers({profile_answers:{[q.id]:v},confirmed:{[q.id]:v===q.assumed&&assumeState(q.id)!=='changed'?'confirmed':'changed'}});return renderSession();}
   if(s==='refine'){const id=cur().id;G.refineOpen=G.refineOpen||{};G.refineOpen[id]=!G.refineOpen[id];renderSession();const t=$('refineIn');if(t)t.focus();return;}
   if(s==='finish'){G.view='done';return renderSession();}
   if(s==='abandon')return abandonSession(cur());
@@ -1072,7 +1038,7 @@ app.addEventListener('input',e=>{if(e.target.id==='refineIn'){G.notes=G.notes||{
 app.addEventListener('change',e=>{if(e.target.id==='newbie'){NEWBIE=e.target.checked;try{localStorage.setItem(NEWBIE_KEY,NEWBIE?'1':'0');}catch(x){}if(/^#\/session/.test(location.hash))renderSession();}});
 document.addEventListener('keydown',e=>{
   if(!/^#\/session/.test(location.hash)||$('whySheet').classList.contains('on')||!/^[1-9]$/.test(e.key)||e.target.tagName==='TEXTAREA')return;
-  const btns=[...app.querySelectorAll('[data-pa],[data-oa]')];const b=btns[+e.key-1];if(b)b.click();
+  const btns=[...app.querySelectorAll('[data-pa]')];const b=btns[+e.key-1];if(b)b.click();
 });
 
 /* ---------- why sheet ---------- */
