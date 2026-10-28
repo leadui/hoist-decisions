@@ -329,6 +329,11 @@ def make_handler(root):
                                                "note": str(body.get("note") or "")[:500]}
                 save_session(root, ses)
                 return self.send(200, session_state(root))
+            if self.path == "/api/session/abandon":
+                st = abandon_decision(root, str(body.get("id", "")))
+                if not st:
+                    return self.send(404, {"error": "No such decision in this task."})
+                return self.send(200, st)
             m = re.fullmatch(r"/api/decisions/(\d{4})", self.path)
             f = decisions_dir(root) / f"{m.group(1)}.json" if m else None
             if not f or not f.exists():
@@ -385,6 +390,18 @@ def wait(did, project):
     print(outcome_message(dec, k, dec["trigger"]["package"]))
 
 
+def abandon_decision(root, did):
+    """The owner sent one decision back to chat. Records an abandoned outcome so `hoist wait` unblocks."""
+    ses = load_session(root)
+    ids = [d["id"] for d in ((session_state(root) or {}).get("plan") or {}).get("decisions", [])]
+    if not ses or did not in ids:
+        return None
+    ses["outcomes"][did] = {"choice": None, "mode": "abandoned", "record": "",
+                            "note": "The owner sent this back to chat."}
+    save_session(root, ses)
+    return session_state(root)
+
+
 def session_open(ses):
     asks = [d["id"] for d in ((ses.get("plan") or {}).get("decisions") or []) if d.get("mode") == "ask"]
     return ses["status"] == "ready" and any(a not in ses.get("outcomes", {}) for a in asks)
@@ -418,6 +435,8 @@ def wait_session(root):
             continue
         if o and o.get("mode") == "parked":
             print(f"- {d['title']}: not decided yet; keep it easy to replace ({o['record']})")
+        elif o and o.get("mode") == "abandoned":
+            print(f"- {d['title']}: sent back to chat — ask the user there instead")
         elif o and o.get("choice"):
             name = next((x["name"] for x in dr.get("options", []) if x["id"] == o["choice"]), o["choice"])
             print(f"- {d['title']}: {name} ({o['record']})" + (f"\n    Condition from the user: {o['note']}" if o.get("note") else ""))
