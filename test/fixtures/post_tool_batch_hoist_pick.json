@@ -1,0 +1,24 @@
+{
+  "hook_event_name": "PostToolBatch",
+  "cwd": "__ROOT__",
+  "tool_calls": [
+    {
+      "tool_name": "request_user_input",
+      "tool_input": {
+        "questions": [
+          {
+            "id": "q0",
+            "header": "Decide",
+            "question": "The design-system choices are hard to change later. How do you want to decide?",
+            "selection": {"mode": "single"},
+            "options": [
+              {"label": "Answer here", "description": "Quick: I'll ask you the questions now."},
+              {"label": "Decide with Hoist instead", "description": "Opens a page that explains each option in plain words and records your choice."}
+            ]
+          }
+        ]
+      },
+      "tool_response": "{\"answers\": [{\"id\": \"q0\", \"selected_label\": \"Decide with Hoist instead\"}]}"
+    }
+  ]
+}

@@ -172,8 +172,26 @@ def questionnaire_answers(call):
     return [a for a in ((resp or {}).get("answers") or []) if isinstance(a, dict)]
 
 
+REC_SUFFIX = " (Recommended)"  # Muse Code marks the recommended option with this suffix
+
+
+def plain_label(label):
+    label = str(label)
+    return label[:-len(REC_SUFFIX)] if label.endswith(REC_SUFFIX) else label
+
+
 def picked_hoist(answers):
-    return any(a.get("selected_label") == HOIST_PICK or HOIST_PICK in (a.get("selected_labels") or []) for a in answers)
+    for a in answers:
+        labels = []
+        if isinstance(a.get("selected_label"), str):
+            labels.append(a["selected_label"])
+        for key in ("selected_labels", "selected", "labels"):  # answer shapes vary; accept them all
+            vals = a.get(key)
+            if isinstance(vals, list):
+                labels += [v for v in vals if isinstance(v, str)]
+        if any(plain_label(label) == HOIST_PICK for label in labels):
+            return True
+    return False
 
 
 def questionnaire_handoff(payload, root):
@@ -184,7 +202,8 @@ def questionnaire_handoff(payload, root):
             continue
         questions = (call.get("tool_input") or {}).get("questions") or []
         hints = "\n".join("- " + str(q.get("question", "")) + " Options the agent offered: "
-                          + ", ".join(str(o.get("label", "")) for o in q.get("options") or [] if o.get("label") != HOIST_PICK)
+                          + ", ".join(l for o in q.get("options") or [] for l in [plain_label(o.get("label", ""))]
+                                       if l and l != HOIST_PICK)
                           for q in questions)
         task_file = root / ".hoist" / "last_task.txt"
         task = task_file.read_text().strip() if task_file.exists() else "The current task"
