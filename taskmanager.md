@@ -162,6 +162,7 @@ supersedes: NNNN-slug        # only on a pivot
 
 ## Working loop
 - One step at a time: implement → verify (it actually runs) → validate (gate above) → commit → update Now.
+- Commits stay local; the owner pushes in batches. Never push without asking — pushes interrupt.
 - Repo must be public on GitHub. Commit messages say what was built during the event.
 - New ideas → Backlog, not the current step.
 
