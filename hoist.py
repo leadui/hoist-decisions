@@ -498,6 +498,9 @@ Contract (reply with JSON only):
    "ruled_out": "" or "reason it cannot work here"}],
  "default_option": "option id", "default_reason": "one sentence",
  "agent_pick": "option id or empty",
+ "lean": {"why": "one sentence: why the agent leans toward its pick, in plain words",
+   "assumptions": ["at most 3 plain sentences about the person this lean depends on"],
+   "flips": ["at most 2 conditions under which another option would fit better, as 'if ...' clauses"]},
  "evidence": [{"source": "file name" | "task" | "profile" | "inferred", "detail": "..."}]}
 
 Rules for questions:
@@ -514,6 +517,11 @@ Rules for options:
 - Put options that cannot work given the evidence in ruled_out with the reason instead of leaving them as weak choices.
 - Every option has at least one bad item and at least one item about later.
 - learn describes the option itself. Never write "you will learn".
+Rules for the lean:
+- lean.why explains the pick in one sentence a newcomer understands. Leave lean out when agent_pick is empty.
+- Each assumption is about the person's situation (budget, team, patience, scale), never about a product.
+  The person confirms or challenges each one; challenged assumptions mark the lean as uncertain.
+- Each flip is a concrete condition under which another option would fit better.
 Rules for analogies and stories:
 - An analogy maps how the trade-off works (what is shared, what is expensive to move, who maintains it), using
   everyday objects (filing cabinets, notebooks, keys, shops). Never use a technical word in an analogy or a plain_name.
@@ -606,9 +614,26 @@ def check_draft(d, profile=None):
         problems.append("the decision needs an everyday analogy")
     if d.get("default_option") not in {o.get("id") for o in viable}:
         problems.append("default_option is not a workable option")
+    if d.get("agent_pick") and d["agent_pick"] not in {o.get("id") for o in viable}:
+        problems.append(f"agent_pick '{d['agent_pick']}' is not a workable option")
+    lean = d.get("lean") or {}
+    if lean and not d.get("agent_pick"):
+        problems.append("lean without agent_pick: no pick, no lean")
+    if d.get("agent_pick") and lean and not lean.get("why"):
+        problems.append("the lean needs one sentence on why the agent leans this way")
+    assumptions = lean.get("assumptions") or []
+    if len(assumptions) > 3:
+        problems.append(f"the lean lists {len(assumptions)} assumptions; at most 3")
+    if any(not str(a).strip() for a in assumptions):
+        problems.append("the lean has an empty assumption")
+    if len(lean.get("flips") or []) > 2:
+        problems.append(f"the lean lists {len(lean['flips'])} flips; at most 2")
+    if any(not str(f).strip() for f in (lean.get("flips") or [])):
+        problems.append("the lean has an empty flip")
     asked = " ".join([str(d.get("question", "")), str(d.get("analogy", ""))]
                      + [str(o.get("plain_name", "")) + " " + str(o.get("analogy", "")) for o in d.get("options") or []] + [str(q.get("text", "")) for q in d.get("questions") or []]
-                     + [str(a.get("label", "")) for q in d.get("questions") or [] for a in q.get("answers") or []]).lower()
+                     + [str(a.get("label", "")) for q in d.get("questions") or [] for a in q.get("answers") or []]
+                     + [str(a) for a in assumptions]).lower()
     named = sorted({b for b in VENDORS if re.search(r"\b" + re.escape(b) + r"\b", asked)})
     if named:
         problems.append(f"the question or answers name {', '.join(named)}: ask about the need, not a product")
@@ -723,6 +748,12 @@ def draft(which, task, project):
         lrn = o.get("learn") or {}
         print(f"     learn: {lrn.get('what', '')}" + (f"\n     check it's current: {o['check_current']}" if o.get("check_current") else "")
               + (f"\n     docs: {lrn['docs_url']}" if lrn.get("docs_url") else ""))
+    if d.get("agent_pick"):
+        print(f"\n  lean: {d['agent_pick']}" + (f" — {(d.get('lean') or {}).get('why', '')}" if (d.get("lean") or {}).get("why") else ""))
+        for a in (d.get("lean") or {}).get("assumptions", []):
+            print(f"     assumes: {a}")
+        for f in (d.get("lean") or {}).get("flips", []):
+            print(f"     flips if: {f}")
     print(f"\n  default if you don't mind: {d.get('default_option')} ({d.get('default_reason')})")
     print(f"  quality check: {'passed' if not problems else 'still failing: ' + '; '.join(problems)}")
     print(f"  saved: {path.relative_to(root)}")
