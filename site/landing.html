@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<!-- Hoist landing page: the pitch. Static, no API calls, no build.
+     The live demo with sample data is the sibling index.html. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hoist — every decision moment, together</title>
+<meta name="description" content="Hoist pauses your coding agent at every one-way door, opens a decision moment, commits the record, and sends your agent back to work.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#050505; --panel:#0b100e; --ink:#f2f5f3; --mut:#9aa6a1; --dim:#6b7570;
+    --line:rgba(255,255,255,.09); --acc:#34d399; --acc-ink:#04110b; --acc-dim:rgba(52,211,153,.14);
+    --ease:cubic-bezier(.32,.72,0,1);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Geist',ui-sans-serif,system-ui,'Segoe UI',sans-serif;font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+  body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(640px 420px at 12% -4%,rgba(52,211,153,.13),transparent 65%),radial-gradient(760px 500px at 88% 22%,rgba(45,212,191,.09),transparent 65%),radial-gradient(900px 620px at 50% 110%,rgba(52,211,153,.07),transparent 65%)}
+  body::after{content:"";position:fixed;inset:0;z-index:50;pointer-events:none;opacity:.032;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E")}
+  ::selection{background:var(--acc);color:var(--acc-ink)}
+  a{color:inherit}
+  :focus-visible{outline:2px solid var(--acc);outline-offset:3px;border-radius:6px}
+  .wrap{position:relative;z-index:1;max-width:1140px;margin:0 auto;padding:0 24px}
+  .island{position:fixed;top:18px;left:50%;transform:translateX(-50%);z-index:40;display:flex;align-items:center;gap:26px;width:max-content;max-width:calc(100vw - 32px);padding:10px 10px 10px 22px;border-radius:999px;background:rgba(8,12,10,.72);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);border:1px solid var(--line)}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px;letter-spacing:-.01em;text-decoration:none}
+  .brand i{width:11px;height:11px;border-radius:50%;background:var(--acc);box-shadow:0 0 14px rgba(52,211,153,.8)}
+  .navlinks{display:flex;gap:4px}
+  .navlinks a{font-size:14px;font-weight:500;color:var(--mut);text-decoration:none;padding:8px 14px;border-radius:999px;transition:color .35s var(--ease),background .35s var(--ease)}
+  .navlinks a:hover{color:var(--ink);background:rgba(255,255,255,.06)}
+  .btn{display:inline-flex;align-items:center;gap:12px;border-radius:999px;padding:8px 8px 8px 22px;font:inherit;font-weight:600;font-size:15px;text-decoration:none;cursor:pointer;border:1px solid transparent;transition:transform .45s var(--ease),background .45s var(--ease),border-color .45s var(--ease)}
+  .btn:active{transform:scale(.97)}
+  .btn .arr{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;background:rgba(4,17,11,.14);font-size:16px;line-height:1;transition:transform .45s var(--ease)}
+  .btn:hover .arr{transform:translate(2px,-2px) scale(1.06)}
+  .btn.pri{background:var(--acc);color:var(--acc-ink)}
+  .btn.pri:hover{background:#4be0a8}
+  .btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+  .btn.ghost .arr{background:rgba(255,255,255,.08)}
+  .btn.ghost:hover{border-color:rgba(255,255,255,.25)}
+  .btn.small{padding:6px 6px 6px 18px;font-size:14px}
+  .btn.small .arr{width:28px;height:28px;font-size:14px}
+  .burger{display:none;position:relative;width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:transparent;cursor:pointer}
+  .burger span{position:absolute;left:11px;right:11px;top:50%;height:1.8px;margin-top:-1px;background:var(--ink);border-radius:2px;transition:transform .5s var(--ease)}
+  .burger span:nth-child(1){transform:translateY(-3.5px)}
+  .burger span:nth-child(2){transform:translateY(3.5px)}
+  .burger.open span:nth-child(1){transform:translateY(0) rotate(45deg)}
+  .burger.open span:nth-child(2){transform:translateY(0) rotate(-45deg)}
+  .menu{position:fixed;inset:0;z-index:39;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:rgba(5,5,5,.86);-webkit-backdrop-filter:blur(28px);backdrop-filter:blur(28px);opacity:0;visibility:hidden;transition:opacity .5s var(--ease),visibility 0s .5s}
+  .menu.open{opacity:1;visibility:visible;transition:opacity .5s var(--ease)}
+  .menu a{font-size:30px;font-weight:650;letter-spacing:-.02em;text-decoration:none;padding:10px;opacity:0;transform:translateY(28px);transition:opacity .55s var(--ease),transform .55s var(--ease)}
+  .menu.open a{opacity:1;transform:none}
+  .menu.open a:nth-child(1){transition-delay:.08s}.menu.open a:nth-child(2){transition-delay:.14s}.menu.open a:nth-child(3){transition-delay:.2s}.menu.open a:nth-child(4){transition-delay:.26s}.menu.open a:nth-child(5){transition-delay:.32s}
+  .hero{min-height:100dvh;display:flex;flex-direction:column;justify-content:center;padding:150px 0 90px;text-align:center}
+  .eb{display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:7px 16px;font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--acc);border:1px solid rgba(52,211,153,.3);background:var(--acc-dim)}
+  .eb i{width:6px;height:6px;border-radius:50%;background:var(--acc);box-shadow:0 0 10px var(--acc)}
+  h1{font-size:clamp(2.9rem,7.5vw,5.9rem);line-height:1.02;letter-spacing:-.035em;font-weight:700;margin:26px auto 22px;max-width:16ch}
+  h1 em{font-style:normal;color:var(--acc)}
+  .lede{font-size:clamp(1.05rem,2vw,1.3rem);color:var(--mut);max-width:60ch;margin:0 auto}
+  .lede strong{color:var(--ink);font-weight:600}
+  .ctas{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:38px}
+  .strip{display:flex;gap:10px 26px;justify-content:center;flex-wrap:wrap;margin-top:56px;font-size:13px;font-weight:500;letter-spacing:.06em;color:var(--dim)}
+  .strip b{color:var(--mut);font-weight:600}
+  .sec{padding:120px 0}
+  .sec-head{max-width:720px;margin-bottom:64px}
+  .sec-head.center{margin-left:auto;margin-right:auto;text-align:center}
+  h2{font-size:clamp(2rem,4.6vw,3.2rem);line-height:1.08;letter-spacing:-.03em;font-weight:700;margin:20px 0 16px}
+  .sec-head p{color:var(--mut);font-size:17px;margin:0}
+  .bezel{background:rgba(255,255,255,.035);border:1px solid var(--line);border-radius:30px;padding:9px}
+  .core{background:linear-gradient(180deg,#0d1311,#070b09);border-radius:21px;padding:30px;box-shadow:inset 0 1px 1px rgba(255,255,255,.09);height:100%}
+  .bento{display:grid;grid-template-columns:repeat(12,1fr);gap:20px}
+  .c7{grid-column:span 7}.c5{grid-column:span 5}.c4{grid-column:span 4}.c6{grid-column:span 6}.c12{grid-column:span 12}
+  .step-n{font-size:13px;font-weight:700;letter-spacing:.16em;color:var(--acc);margin-bottom:12px}
+  .core h3{font-size:21px;letter-spacing:-.015em;margin:0 0 10px}
+  .core p{color:var(--mut);font-size:15px;margin:0}
+  .core p+p{margin-top:10px}
+  .core code{font-family:'Geist Mono',ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;background:rgba(52,211,153,.12);color:var(--acc);border-radius:6px;padding:2px 7px}
+  .reveal{opacity:0;transform:translateY(30px);filter:blur(8px);transition:opacity .9s var(--ease),transform .9s var(--ease),filter .9s var(--ease);transition-delay:var(--d,0s)}
+  .reveal.in{opacity:1;transform:none;filter:none}
+  pre.code{margin:0;font-family:'Geist Mono',ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13.5px;line-height:1.75;color:#c9d4ce;white-space:pre-wrap;word-break:break-word}
+  pre.code .cm{color:#5f6f68}
+  pre.code .hd{color:var(--ink);font-weight:600}
+  pre.code .kw{color:var(--acc)}
+  .term-line{display:flex;gap:12px}
+  .term-line .p{color:var(--acc);user-select:none}
+  .foot{border-top:1px solid var(--line);padding:56px 0 64px;color:var(--dim);font-size:14px}
+  .foot-grid{display:flex;gap:32px;justify-content:space-between;flex-wrap:wrap;align-items:flex-start}
+  .foot nav{display:flex;gap:22px;flex-wrap:wrap}
+  .foot nav a{color:var(--mut);text-decoration:none;transition:color .35s var(--ease)}
+  .foot nav a:hover{color:var(--acc)}
+  @media (max-width:860px){
+    .navlinks,.island .btn{display:none}
+    .burger{display:block}
+    .island{width:calc(100vw - 32px);max-width:calc(100vw - 32px);justify-content:space-between}
+  }
+  @media (max-width:768px){
+    .sec{padding:72px 0}
+    .wrap{padding:0 20px}
+    .bento{grid-template-columns:1fr}
+    .c4,.c5,.c6,.c7,.c12{grid-column:span 1}
+    .core{padding:24px}
+    .hero{padding:130px 0 70px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{transition:none !important;animation:none !important}
+    html{scroll-behavior:auto}
+    .reveal{opacity:1;transform:none;filter:none}
+  }
+</style>
+</head>
+<body>
+<header class="island">
+  <a class="brand" href="#top"><i></i>Hoist</a>
+  <nav class="navlinks" aria-label="Sections">
+    <a href="#problem">Problem</a>
+    <a href="#moment">The moment</a>
+    <a href="#records">Records</a>
+    <a href="#install">Install</a>
+  </nav>
+  <a class="btn pri small" href="index.html#/session">Try the demo <span class="arr">↗</span></a>
+  <button class="burger" id="burger" aria-label="Menu" aria-expanded="false"><span></span><span></span></button>
+</header>
+<div class="menu" id="menu">
+  <a href="#problem">Problem</a>
+  <a href="#moment">The moment</a>
+  <a href="#records">Records</a>
+  <a href="#install">Install</a>
+  <a href="index.html#/session">Try the demo ↗</a>
+</div>
+
+<main id="top">
+<div class="wrap">
+  <section class="hero">
+    <div class="reveal"><span class="eb"><i></i>Meta Global AI Developer Hackathon · Built with Muse</span></div>
+    <h1 class="reveal" style="--d:.1s">Stop rolling the dice on <em>AI decisions.</em></h1>
+    <p class="lede reveal" style="--d:.2s">Coding agents make choices that take <strong>weeks to undo</strong>, often in a single line of a diff. Hoist pauses your agent at every one-way door, opens a <strong>decision moment</strong> — expand each option, hyper-dive the trade-offs — then commits the record and sends your agent back to work.</p>
+    <div class="ctas reveal" style="--d:.3s">
+      <a class="btn pri" href="index.html#/session">Try the live demo <span class="arr">↗</span></a>
+      <a class="btn ghost" href="https://github.com/leadui/hoist-decisions">Star on GitHub <span class="arr">↗</span></a>
+    </div>
+    <div class="strip reveal" style="--d:.4s"><span><b>Muse Code</b> guarded</span><span><b>Muse Spark</b> drafted</span><span><b>MADR</b> records</span><span><b>Stdlib-only</b> runtime</span></div>
+  </section>
+</div>
+<div class="wrap">
+  <section class="sec" id="problem">
+    <div class="sec-head reveal">
+      <span class="eb"><i></i>The problem</span>
+      <h2>One line of diff.<br>Weeks to undo.</h2>
+      <p>Your agent picks a database, an auth scheme, a hosting platform — mid-task, mid-diff, with no pause. Switching later means a migration, a rewrite, or living with it. educated decisions need a moment; Hoist makes that moment.</p>
+    </div>
+    <div class="bento">
+      <div class="bezel c6 reveal"><div class="core">
+        <div class="step-n">WITHOUT HOIST</div>
+        <h3>The agent guesses, you discover</h3>
+        <p><code>npm install mongoose</code> lands in a diff at 2am. Nobody chose MongoDB — it simply happened. Six months later the schema fights you on every feature.</p>
+      </div></div>
+      <div class="bezel c6 reveal" style="--d:.12s"><div class="core">
+        <div class="step-n">WITH HOIST</div>
+        <h3>The agent pauses, you decide</h3>
+        <p>The hook notices what changed, not what was typed. The agent waits. You get a decision moment: each option expanded, trade-offs charted, then one commit sends your agent back with your choice.</p>
+      </div></div>
+    </div>
+  </section>
+</div>
+
+<div class="wrap">
+  <section class="sec" id="moment">
+    <div class="sec-head reveal">
+      <span class="eb"><i></i>The decision moment</span>
+      <h2>Five steps. Ninety seconds. Zero regrets.</h2>
+      <p>From interruption to committed record, the whole loop is built to educate first and decide second.</p>
+    </div>
+    <div class="bento">
+      <div class="bezel c7 reveal"><div class="core">
+        <div class="step-n">01 · EXPAND</div>
+        <h3>Every option opens inline</h3>
+        <p>Tap any option for its full deep dive: the story in plain words, the step-by-step journey, concrete numbers, unlocks and watch-outs, and a growth chart that shows the future you are signing. Lean drafts stream in parallel, so the first moment is interactive in seconds — deep numbers pull lazily, only when you open them.</p>
+      </div></div>
+      <div class="bezel c5 reveal" style="--d:.1s"><div class="core">
+        <div class="step-n">02 · HYPER-DIVE</div>
+        <h3>The full screen, one option</h3>
+        <p>Still unsure? The hyper-dive lays everything flat — story, mechanics, numbers, docs, web search — with the option number pinned up top.</p>
+      </div></div>
+      <div class="bezel c4 reveal"><div class="core">
+        <div class="step-n">03 · INTERRUPT</div>
+        <h3>Paused, not blocked</h3>
+        <p>The hook catches lasting choices from tool calls. Quick-pick here, or walk through it.</p>
+      </div></div>
+      <div class="bezel c4 reveal" style="--d:.1s"><div class="core">
+        <div class="step-n">04 · COMMIT</div>
+        <h3>One tap back to chat</h3>
+        <p>Review the set, commit, and your agent resumes with your choices.</p>
+      </div></div>
+      <div class="bezel c4 reveal" style="--d:.2s"><div class="core">
+        <div class="step-n">05 · GUARD</div>
+        <h3>Records that bite</h3>
+        <p>Later conflicts get blocked with a citation to the record you committed.</p>
+      </div></div>
+    </div>
+  </section>
+</div>
+<div class="wrap">
+  <section class="sec" id="records">
+    <div class="sec-head reveal">
+      <span class="eb"><i></i>Decision records</span>
+      <h2>Decisions you can grep.</h2>
+      <p>Every committed moment lands in <span style="color:var(--ink)">docs/decisions/</span> as a MADR record — readable on GitHub, readable by your next agent, checkable by the hook.</p>
+    </div>
+    <div class="bezel c12 reveal"><div class="core">
+<pre class="code"><span class="cm">---</span>
+<span class="kw">status:</span> accepted  <span class="kw">date:</span> 2026-10-28  <span class="kw">door:</span> one-way
+<span class="kw">deciders:</span> project owner  <span class="kw">confidence:</span> medium
+<span class="cm">---</span>
+<span class="hd"># Choose persistence for users and projects: SQLite on the server</span>
+
+&gt; <span class="hd">Decision:</span> SQLite on the server. <span class="hd">Because</span> it stays boring
+  while the project grows. <span class="hd">Accepted cost:</span> a migration if you
+  outgrow one machine.
+
+<span class="hd">## Decision Drivers</span>
+- Must survive restarts and concurrent saves (the task)
+- No ops team to babysit a server (assumed, not checked)
+
+<span class="hd">### Confirmation</span>
+- [ ] Confirm the hosting disk persists across deploys
+- Hoist flags later changes that conflict with this record.</pre>
+    </div></div>
+    <div class="ctas reveal">
+      <a class="btn ghost" href="index.html#/records">Browse sample records <span class="arr">↗</span></a>
+      <a class="btn ghost" href="https://adr.github.io/madr/">The MADR format <span class="arr">↗</span></a>
+    </div>
+  </section>
+</div>
+
+<div class="wrap">
+  <section class="sec" id="install">
+    <div class="sec-head center reveal">
+      <span class="eb"><i></i>Install</span>
+      <h2>Guarding your repo in one command.</h2>
+      <p>Python 3.9+, Muse Code, zero dependencies. The decision page runs on your machine and makes no API calls.</p>
+    </div>
+    <div class="bezel c12 reveal"><div class="core">
+<pre class="code"><div class="term-line"><span class="p">$</span><span>git clone git@github.com:leadui/hoist-decisions.git</span></div>
+<div class="term-line"><span class="p">$</span><span>python3 hoist-decisions/hoist.py install /path/to/your/project</span></div>
+<div class="term-line"><span class="p">$</span><span>python3 hoist.py serve   <span class="cm"># browse moments at http://127.0.0.1:7317</span></span></div></pre>
+    </div></div>
+    <div class="ctas reveal">
+      <a class="btn pri" href="index.html#/session">Try the live demo first <span class="arr">↗</span></a>
+    </div>
+  </section>
+</div>
+<div class="wrap">
+  <footer class="foot">
+    <div class="foot-grid">
+      <div>
+        <a class="brand" href="#top" style="margin-bottom:12px"><i></i>Hoist</a>
+        <p style="margin:10px 0 0;max-width:44ch">Built for the Meta Global AI Developer Hackathon with Muse Code — the agent Hoist guards — and Muse Spark, which drafts every moment.</p>
+      </div>
+      <nav aria-label="Footer">
+        <a href="index.html#/session">Live demo</a>
+        <a href="index.html#/records">Sample records</a>
+        <a href="https://github.com/leadui/hoist-decisions">GitHub</a>
+        <a href="https://adr.github.io/madr/">MADR</a>
+      </nav>
+    </div>
+  </footer>
+</div>
+</main>
+
+<script>
+(function () {
+  "use strict";
+  var burger = document.getElementById("burger");
+  var menu = document.getElementById("menu");
+  function closeMenu() {
+    burger.classList.remove("open");
+    menu.classList.remove("open");
+    burger.setAttribute("aria-expanded", "false");
+  }
+  burger.addEventListener("click", function () {
+    var open = menu.classList.toggle("open");
+    burger.classList.toggle("open", open);
+    burger.setAttribute("aria-expanded", open ? "true" : "false");
+  });
+  menu.addEventListener("click", function (ev) {
+    if (ev.target && ev.target.closest("a")) closeMenu();
+  });
+  document.addEventListener("keydown", function (ev) {
+    if (ev.key === "Escape") closeMenu();
+  });
+  var els = document.querySelectorAll(".reveal");
+  if ("IntersectionObserver" in window) {
+    var io = new IntersectionObserver(function (entries) {
+      for (var i = 0; i < entries.length; i++) {
+        if (entries[i].isIntersecting) {
+          entries[i].target.classList.add("in");
+          io.unobserve(entries[i].target);
+        }
+      }
+    }, { threshold: 0.12 });
+    for (var j = 0; j < els.length; j++) io.observe(els[j]);
+  } else {
+    for (var k = 0; k < els.length; k++) els[k].classList.add("in");
+  }
+})();
+</script>
+</body>
+</html>
