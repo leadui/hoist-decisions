@@ -1,1112 +1,1638 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<!-- Hoist, rebuilt on the decision-moments engine (Muse POC).
+     Flow, components, and tokens follow examples/decision-moment.html:
+     chat interruption -> tiered education -> selection -> written record.
+     Voice stripped per owner; packs come from live Muse Spark drafts. -->
+<html lang="en" data-theme="light">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="description" content="Hoist: when a coding agent reaches a decision that is hard to undo, Hoist explains the options, you decide, and the decision is recorded.">
-<title>Hoist Decision Card</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hoist — decide the hard parts well</title>
 <style>
-/* Layout: one narrow column. Views: decide (ask → recommend → recorded), records list, one readable record. Evidence in a side sheet. */
-:root{
-  color-scheme:light;
-  --bg:#F5F7F6; --surface:#FFFFFF; --ink:#16201C; --muted:#56635D; --faint:#86918C; --line:#DBE1DE; --soft:#ECF0EE;
-  --accent:#0F7657; --accent-soft:#DFF0E8; --accent-ink:#FFFFFF;
-  --oneway:#B0443D; --oneway-soft:#F6E3E1; --heavy:#94621A; --heavy-soft:#F5EAD7; --scrim:rgba(22,32,28,.28);
-  --sans:"Geist",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
-  --mono:"Geist Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
-  --ease:cubic-bezier(.16,1,.3,1);
-  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
-}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#0E1311; --surface:#151C19; --ink:#E2E9E5; --muted:#9BA8A2; --faint:#6C7973; --line:#26302C; --soft:#1B2420;
-  --accent:#52C49B; --accent-soft:#15342A; --accent-ink:#04130D;
-  --oneway:#E68B83; --oneway-soft:#3A1F1C; --heavy:#E2B062; --heavy-soft:#33280F; --scrim:rgba(0,0,0,.5); color-scheme:dark}}
-:root[data-theme="dark"]{
-  --bg:#0E1311; --surface:#151C19; --ink:#E2E9E5; --muted:#9BA8A2; --faint:#6C7973; --line:#26302C; --soft:#1B2420;
-  --accent:#52C49B; --accent-soft:#15342A; --accent-ink:#04130D;
-  --oneway:#E68B83; --oneway-soft:#3A1F1C; --heavy:#E2B062; --heavy-soft:#33280F; --scrim:rgba(0,0,0,.5); color-scheme:dark}
+  :root, [data-theme="light"] {
+    --bg: #ffffff;
+    --surface: #f4f2ec;
+    --ink: #14181d;
+    --ink-2: #3d4450;
+    --line: #d9dce1;
+    --accent: #0b5fff;
+    --accent-ink: #ffffff;
+    --accent-soft: #e8effd;
+    --code-bg: #10151b;
+    --code-ink: #e8edf2;
+  }
+  [data-theme="dark"] {
+    --bg: #0e1113;
+    --surface: #171c1f;
+    --ink: #f0f3f5;
+    --ink-2: #b9c2cb;
+    --line: #2c343b;
+    --accent: #5b93ff;
+    --accent-ink: #0b1220;
+    --accent-soft: #16233d;
+    --code-bg: #05080b;
+    --code-ink: #dbe4ec;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: ui-sans-serif, system-ui, "Segoe UI", Helvetica, Arial, sans-serif;
+    font-size: 15px; line-height: 1.55;
+  }
+  .page { max-width: 700px; margin: 0 auto; padding: 28px 20px 64px; }
+  .topbar { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 6px; }
+  .topbar h1 { font-size: 24px; letter-spacing: -0.01em; margin: 0; font-weight: 700; }
+  .topnav { display: flex; gap: 8px; align-items: center; }
+  .topnav a {
+    font-size: 13px; font-weight: 600; color: var(--ink-2); text-decoration: none;
+    border: 1px solid var(--line); border-radius: 999px; padding: 5px 14px; white-space: nowrap;
+  }
+  .topnav a.on { color: var(--accent); border-color: var(--accent); }
+  .theme-btn {
+    font: inherit; font-size: 13px; font-weight: 600;
+    background: transparent; color: var(--ink);
+    border: 1px solid var(--line); border-radius: 999px;
+    padding: 6px 14px; cursor: pointer; white-space: nowrap;
+  }
+  .theme-btn:hover { border-color: var(--accent); color: var(--accent); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .lede { color: var(--ink-2); margin: 4px 0 14px; max-width: 56ch; }
+  .offlinebar {
+    display: none; background: var(--accent-soft);
+    border: 1px solid var(--line); border-radius: 10px;
+    padding: 8px 14px; font-size: 13.5px; margin-bottom: 12px;
+  }
+  .offlinebar.on { display: block; }
+  .err { color: #b3261e; font-size: 13.5px; }
+  [data-theme="dark"] .err { color: #ff8a80; }
 
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased}
-body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
-[hidden]{display:none!important}
-button{font:inherit;color:inherit;cursor:pointer}
-a{color:inherit}
-:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px}
+  .qtabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .qtab {
+    font: inherit; font-size: 13px; font-weight: 650; cursor: pointer;
+    background: transparent; color: var(--ink-2);
+    border: 1px solid var(--line); border-radius: 999px; padding: 5px 14px;
+  }
+  .qtab[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
 
-.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
-.bar .in{max-width:880px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:10px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-.mark{font-family:var(--mono);font-weight:500;font-size:15px;text-decoration:none}
-.proj{color:var(--muted);font-size:13.5px}
-.sample{font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--heavy);background:var(--heavy-soft);border-radius:999px;padding:1px 8px}
-nav.tabs{margin-left:auto;display:flex;gap:4px}
-nav.tabs a{font-size:13.5px;color:var(--muted);text-decoration:none;padding:5px 11px;border-radius:999px;display:inline-flex;gap:7px;align-items:center}
-nav.tabs a:hover{color:var(--ink)}
-nav.tabs a[aria-current="page"]{background:var(--surface);color:var(--ink);box-shadow:inset 0 0 0 1px var(--line)}
-.count{font-family:var(--mono);font-size:11px;color:var(--heavy);background:var(--heavy-soft);border-radius:999px;padding:0 7px}
+  .msg { display: flex; gap: 10px; margin-bottom: 12px; }
+  .who {
+    flex: none; width: 30px; height: 30px; border-radius: 50%;
+    background: var(--surface); border: 1px solid var(--line);
+    font-size: 12px; font-weight: 700; color: var(--ink-2);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .msg.agent .who { background: var(--accent-soft); border-color: var(--accent-soft); color: var(--accent); }
+  .bubble {
+    border: 1px solid var(--line); border-radius: 4px 12px 12px 12px;
+    padding: 10px 14px; font-size: 14.5px; max-width: 100%;
+  }
+  .msg.user { justify-content: flex-end; }
+  .msg.user .bubble { background: var(--surface); border-radius: 12px 4px 12px 12px; }
+  .msg.user .who { order: 2; }
 
-.wrap{max-width:660px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:48px 72px}
-@media (max-width:640px){.wrap{padding-block:24px 48px}}
-.step{display:flex;flex-direction:column;gap:22px;animation:in .45s var(--ease)}
-@keyframes in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-.step.still{animation:none}
-.status{display:inline-flex;align-items:center;gap:9px;font-size:13.5px;color:var(--muted)}
-.dot{width:8px;height:8px;border-radius:50%;background:var(--heavy);position:relative;flex:none}
-.dot::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:1px solid var(--heavy);opacity:0;animation:breathe 2.4s var(--ease) infinite}
-.dot.ok{background:var(--accent)} .dot.ok::after{border-color:var(--accent)}
-@keyframes breathe{0%{transform:scale(.6);opacity:.7}100%{transform:scale(1.7);opacity:0}}
-h1{font-size:clamp(28px,4.4vw,38px);line-height:1.1;letter-spacing:-.025em;font-weight:600;margin:0;text-wrap:balance}
-h2{font-size:18px;font-weight:600;letter-spacing:-.01em;margin:0}
-.lead{font-size:17px;color:var(--muted);margin:0;max-width:58ch;text-wrap:pretty}
-.lead b{color:var(--ink);font-weight:500}
-code{font-family:var(--mono);font-size:.88em;background:var(--soft);padding:1px 6px;border-radius:5px;color:var(--ink)}
-.known{font-size:14px;color:var(--muted);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:1px 10px;font-size:12.5px;color:var(--ink)}
-.chip i{width:6px;height:6px;border-radius:50%;background:var(--accent)}
+  .interrupt {
+    border: 2px solid var(--accent); border-radius: 12px;
+    padding: 14px 16px; margin: 6px 0 12px 40px;
+  }
+  .interrupt h2 { font-size: 16px; margin: 0 0 4px; }
+  .interrupt p { font-size: 14px; color: var(--ink-2); margin: 0 0 12px; }
+  .path-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 520px) { .path-row { grid-template-columns: 1fr; } }
+  .path-btn {
+    font: inherit; text-align: left; cursor: pointer;
+    border: 1px solid var(--line); border-radius: 10px;
+    background: var(--bg); color: var(--ink); padding: 10px 14px;
+  }
+  .path-btn:hover { border-color: var(--accent); }
+  .path-btn strong { display: block; font-size: 14.5px; }
+  .path-btn span { font-size: 13px; color: var(--ink-2); }
+  .path-btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .path-btn.primary span { color: var(--accent-ink); opacity: 0.85; }
 
-.qhead{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-top:8px}
-.qnum{font-family:var(--mono);font-size:12px;color:var(--faint)}
-.pips{display:flex;gap:5px}
-.pips i{width:22px;height:3px;border-radius:2px;background:var(--line)}
-.pips i.on{background:var(--ink)}
-.qtext{font-size:21px;font-weight:500;letter-spacing:-.01em;margin:0}
-.qwhy{font-size:14px;color:var(--faint);margin:-12px 0 0}
-.answers{display:flex;flex-direction:column;gap:8px}
-.ans{display:flex;align-items:center;gap:14px;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:14px 16px;font-size:16px;transition:border-color .2s var(--ease),transform .15s var(--ease)}
-.ans:hover{border-color:var(--faint)}
-.ans:active{transform:scale(.99)}
-.ans .key{font-family:var(--mono);font-size:12px;color:var(--faint);border:1px solid var(--line);border-radius:5px;width:22px;height:22px;display:grid;place-items:center;flex:none}
-.ans.sel{border-color:var(--ink)}
-.row{display:flex;gap:16px;flex-wrap:wrap;align-items:center}
-.link{border:0;background:none;padding:0;color:var(--muted);font-size:14px;text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--line)}
-.link:hover{color:var(--ink);text-decoration-color:var(--ink)}
+  .edu { border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin: 0 0 12px 40px; }
+  .edu-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+  .edu h2 { font-size: 17px; margin: 0; }
+  .q-hint { font-size: 13.5px; color: var(--ink-2); margin: 2px 0 12px; }
 
-.rec{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:16px}
-.rec .why{font-size:16.5px;margin:0;max-width:56ch}
-.accept{display:flex;gap:10px;font-size:15px;color:var(--muted);padding-top:14px;border-top:1px solid var(--line)}
-.accept b{color:var(--ink);font-weight:500;white-space:nowrap}
-.btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 16px;font-size:15px;font-weight:500;display:inline-flex;align-items:center;gap:8px;text-decoration:none;transition:transform .15s var(--ease),filter .2s}
-.btn:active{transform:translateY(1px)}
-.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
-.btn.primary:hover{filter:brightness(1.06)}
-.btn[disabled]{opacity:.6;cursor:progress}
-.btn svg{width:16px;height:16px}
-.small{font-size:14px;color:var(--muted);margin:0}
-.lv{font-family:var(--mono);font-size:11px;letter-spacing:.04em;text-transform:uppercase;border-radius:999px;padding:1px 8px;background:var(--heavy-soft);color:var(--heavy)}
-.lv.high{background:var(--accent-soft);color:var(--accent)}
-.lv.low{background:var(--oneway-soft);color:var(--oneway)}
-.err{font-size:14px;color:var(--oneway);margin:0}
+  .tiers { display: flex; gap: 8px; margin-bottom: 12px; }
+  .tier {
+    flex: 1; font: inherit; cursor: pointer; text-align: center;
+    border: 1px solid var(--line); border-radius: 8px; padding: 7px 4px;
+    background: var(--bg); color: var(--ink-2);
+  }
+  .tier b { display: block; font-size: 13.5px; }
+  .tier small { font-size: 11.5px; }
+  .tier[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
 
-.others h2{font-size:13px;font-weight:500;color:var(--faint);margin:0 0 8px}
-.other{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 14px;padding:12px 0;border-top:1px solid var(--line);align-items:center}
-.other:first-of-type{border-top:0}
-.other .n{font-weight:500;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.other .d{font-size:14px;color:var(--muted);grid-column:1/2}
-.other .acts{grid-row:1/3;grid-column:2;display:flex;gap:12px}
-.tag{font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;padding:1px 6px;border-radius:4px;background:var(--heavy-soft);color:var(--heavy)}
-.ruled{font-size:13.5px;color:var(--faint);margin:6px 0 0}
+  .model {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 8px; padding: 8px 12px; margin-bottom: 12px;
+    font-size: 13.5px;
+  }
+  .model strong { display: block; font-size: 12.5px; margin-bottom: 2px; }
 
-/* records */
-.list{display:flex;flex-direction:column;gap:10px}
-.item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 16px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;text-decoration:none;transition:border-color .2s var(--ease)}
-.item:hover{border-color:var(--faint)}
-.item .t{font-weight:500;font-size:16px}
-.item .s{font-size:14px;color:var(--muted);grid-column:1/2}
-.item .m{grid-row:1/3;grid-column:2;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
-.item.wait{border-color:var(--heavy);background:var(--heavy-soft)}
-.pill{font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;border-radius:999px;padding:1px 8px;white-space:nowrap}
-.pill.accepted{background:var(--accent-soft);color:var(--accent)}
-.pill.proposed,.pill.waiting{background:var(--heavy-soft);color:var(--heavy)}
-.pill.superseded{background:var(--soft);color:var(--faint)}
-.pill.d3{color:var(--oneway);border:1px solid var(--oneway-soft)}
-.pill.d2{color:var(--heavy);border:1px solid var(--heavy-soft)}
-.pill.d1{color:var(--accent);border:1px solid var(--accent-soft)}
-.date{font-family:var(--mono);font-size:11.5px;color:var(--faint)}
-.empty{background:var(--surface);border:1px dashed var(--line);border-radius:14px;padding:24px;color:var(--muted);font-size:15px}
+  .opt {
+    display: block; width: 100%; text-align: left; cursor: pointer; font: inherit;
+    background: var(--bg); color: var(--ink);
+    border: 1px solid var(--line); border-radius: 8px;
+    padding: 10px 12px; margin-bottom: 8px;
+  }
+  a.opt { text-decoration: none; }
+  .opt:hover { border-color: var(--ink-2); }
+  .opt[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+  .opt b { font-size: 14.5px; }
+  .opt small { display: block; font-size: 13px; color: var(--ink-2); margin-top: 1px; }
+  .opt .why { display: block; font-size: 13.5px; margin-top: 6px; }
+  .micro { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+  .micro small { font-size: 11.5px; color: var(--ink-2); white-space: nowrap; margin: 0; }
+  .micro-track { flex: 1; height: 8px; border-radius: 4px; background: var(--line); }
+  .micro-fill { height: 100%; border-radius: 4px; background: var(--ink-2); }
+  .opt[aria-pressed="true"] .micro-fill { background: var(--accent); }
+  .journey { display: flex; align-items: stretch; gap: 0; margin-top: 8px; flex-wrap: wrap; }
+  .jstep {
+    flex: 1 1 0; min-width: 100px;
+    font-size: 12px; line-height: 1.4; text-align: center;
+    border: 1px solid var(--line); border-radius: 8px;
+    padding: 6px 8px; background: var(--bg); position: relative;
+  }
+  .jstep:not(:last-child) { margin-right: 18px; }
+  .jstep:not(:last-child)::after {
+    content: "→"; position: absolute; right: -16px; top: 50%;
+    transform: translateY(-50%); color: var(--ink-2); font-size: 13px;
+  }
+  .nums { margin: 8px 0 0; }
+  .num-row {
+    display: grid; grid-template-columns: 120px 1fr; gap: 10px;
+    padding: 5px 0; border-top: 1px solid var(--line); font-size: 13px;
+  }
+  .num-row dt { margin: 0; color: var(--ink-2); }
+  .num-row dd { margin: 0; font-weight: 550; }
+  .chip-row { margin-top: 8px; }
+  .chip-label { font-size: 12px; color: var(--ink-2); margin: 6px 0 4px; display: flex; align-items: center; gap: 5px; }
+  .chip {
+    display: inline-block; font-size: 12.5px; font-weight: 550;
+    border-radius: 999px; padding: 2px 10px; margin: 0 6px 6px 0;
+    border: 1px solid var(--line); background: var(--surface);
+  }
+  .chip.go { background: var(--bg); border-color: var(--accent); }
 
-.back{font-size:14px;color:var(--muted);text-decoration:none}
-.back:hover{color:var(--ink)}
-.chips{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.short{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:6px 22px}
-.short div{display:grid;grid-template-columns:120px minmax(0,1fr);gap:14px;padding:13px 0;border-top:1px solid var(--line);font-size:15.5px}
-.short div:first-child{border-top:0}
-.short b{font-weight:500;color:var(--faint);font-size:13.5px}
-@media (max-width:520px){.short div{grid-template-columns:minmax(0,1fr);gap:2px}}
-.people{font-size:14px;color:var(--muted);display:flex;gap:6px 18px;flex-wrap:wrap}
-.people b{color:var(--ink);font-weight:500}
-.sec{display:flex;flex-direction:column;gap:10px}
-.sec h2{font-size:13px;font-weight:500;color:var(--faint);letter-spacing:0}
-.sec ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
-.sec li{font-size:15px;display:grid;grid-template-columns:14px minmax(0,1fr);gap:10px;align-items:baseline}
-.sec li::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--line);margin-top:8px}
-.sec li.good::before{background:var(--accent)} .sec li.bad::before{background:var(--oneway)}
-.sec li.todo::before{width:9px;height:9px;border-radius:2px;background:none;border:1.5px solid var(--faint);margin-top:6px}
-.sec p{margin:0;font-size:15px}
-.opt{border-top:1px solid var(--line);padding-top:12px;display:flex;flex-direction:column;gap:8px}
-.opt h3{margin:0;font-size:15.5px;font-weight:500;display:flex;gap:8px;align-items:center}
-details.more summary{cursor:pointer;font-size:14px;color:var(--muted)}
-details.more[open] summary{margin-bottom:10px}
-pre.adr{font-family:var(--mono);font-size:12.5px;line-height:1.6;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;white-space:pre-wrap;word-break:break-word;max-height:480px;overflow:auto;margin:0}
+  .chart { margin: 12px 0 4px; }
+  .chart-title { font-size: 13px; font-weight: 700; }
+  .chart-note { font-size: 12px; color: var(--ink-2); margin-top: 2px; }
+  svg.growth text { font-family: ui-sans-serif, system-ui, sans-serif; }
+  .actions { display: flex; justify-content: flex-end; margin-top: 12px; }
+  .btn {
+    font: inherit; font-weight: 650; font-size: 14px; cursor: pointer;
+    border-radius: 8px; padding: 10px 20px;
+    background: var(--accent); border: 1px solid var(--accent); color: var(--accent-ink);
+  }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .quick-pick { display: grid; gap: 8px; margin-top: 10px; }
+  .qcount { font-size: 12.5px; color: var(--ink-2); font-weight: 600; align-self: center; }
+  .escape-row {
+    display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+    margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line);
+    font-size: 13px; color: var(--ink-2);
+  }
+  .escape-btn {
+    font: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+    background: transparent; color: var(--ink);
+    border: 1px solid var(--line); border-radius: 999px; padding: 4px 13px;
+  }
+  .escape-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .custom-row { display: flex; gap: 8px; margin-top: 10px; }
+  .custom-row input {
+    flex: 1; font: inherit; font-size: 14px; color: var(--ink);
+    background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
+    padding: 8px 12px;
+  }
+  .task-input {
+    width: 100%; font: inherit; font-size: 14px; color: var(--ink);
+    background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
+    padding: 8px 12px; min-height: 62px; resize: vertical;
+  }
+  .mini-btn {
+    font: inherit; font-size: 13.5px; font-weight: 650; cursor: pointer; white-space: nowrap;
+    border-radius: 8px; padding: 8px 16px;
+    background: var(--accent); border: 1px solid var(--accent); color: var(--accent-ink);
+  }
+  .custom-pick {
+    margin-top: 10px; font-size: 13.5px;
+    border: 1px solid var(--accent); background: var(--accent-soft);
+    border-radius: 8px; padding: 8px 12px;
+  }
+  .custom-pick button {
+    font: inherit; font-size: 12.5px; font-weight: 650; cursor: pointer;
+    background: none; border: none; padding: 0; color: var(--accent); margin-left: 8px;
+  }
+  .rev-row {
+    display: flex; justify-content: space-between; align-items: center; gap: 10px;
+    padding: 10px 0; border-bottom: 1px solid var(--line);
+  }
+  .rev-row:last-of-type { border-bottom: none; }
+  .rev-row b { display: block; font-size: 14px; }
+  .rev-a { display: block; font-size: 13px; color: var(--ink-2); }
+  .record-q { margin-bottom: 14px; }
+  .record-q > strong { display: block; font-size: 13.5px; margin-bottom: 6px; }
+  .deferred-note {
+    background: var(--surface); border: 1px dashed var(--line);
+    border-radius: 10px; padding: 10px 14px; margin-bottom: 14px; font-size: 13.5px; color: var(--ink-2);
+  }
+  .yours {
+    display: inline-block; font-size: 11.5px; font-weight: 700;
+    color: var(--accent); border: 1px solid var(--accent);
+    border-radius: 999px; padding: 0 9px; margin-left: 8px; vertical-align: 2px;
+  }
+  .researching {
+    margin-top: 10px; font-size: 13.5px; color: var(--ink-2);
+    border: 1px dashed var(--accent); border-radius: 8px; padding: 10px 14px;
+    animation: pulse 1.1s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+  .optrow { display: flex; gap: 8px; align-items: stretch; margin-bottom: 8px; }
+  .optrow .opt { flex: 1; margin-bottom: 0; min-width: 0; }
+  .hyper-btn {
+    flex: none; width: 46px; cursor: pointer;
+    border: 1px solid var(--line); border-radius: 8px;
+    background: var(--bg); color: var(--ink-2);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .hyper-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .opt .chev { float: right; margin-top: 4px; transition: transform 160ms ease; }
+  .opt[aria-pressed="true"] .chev { transform: rotate(180deg); }
+  .expand-hint { font-size: 12.5px; color: var(--ink-2); margin: -4px 0 10px; }
+  .veil {
+    position: fixed; inset: 0; z-index: 50;
+    background: rgba(10, 14, 20, 0.55);
+    display: flex; align-items: flex-start; justify-content: center;
+    padding: 24px 16px; overflow-y: auto;
+  }
+  .sheet {
+    background: var(--bg); color: var(--ink);
+    border-radius: 14px; max-width: 640px; width: 100%;
+    padding: 20px 20px 24px; margin: auto 0;
+  }
+  .sheet-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .sheet h2 { font-size: 20px; margin: 0; }
+  .sheet .sub { font-size: 13.5px; color: var(--ink-2); margin: 2px 0 0; }
+  .x-btn {
+    flex: none; font: inherit; font-size: 13px; font-weight: 650; cursor: pointer;
+    border: 1px solid var(--line); border-radius: 999px; padding: 5px 14px;
+    background: transparent; color: var(--ink); white-space: nowrap;
+  }
+  .x-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .sheet-sec { font-size: 12.5px; font-weight: 700; margin: 16px 0 6px; color: var(--ink-2); }
+  .sheet-story { margin: 0; font-size: 14.5px; }
+  .learn-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  .learn-list a { color: var(--accent); font-size: 14px; }
+  .sheet-actions { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
 
-/* session */
-.newbie{display:inline-flex;align-items:center;gap:8px;font-size:13.5px;color:var(--muted);cursor:pointer;user-select:none}
-.newbie input{accent-color:var(--accent);width:16px;height:16px;margin:0}
-.task{width:100%;min-height:84px;font:inherit;font-size:16px;padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);resize:vertical}
-.task:focus{outline:2px solid var(--accent);outline-offset:1px}
-.examples{display:flex;flex-wrap:wrap;gap:8px}
-.examples button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 12px;font-size:13px;color:var(--muted)}
-.examples button:hover{color:var(--ink)}
-.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
-.steps li{display:grid;grid-template-columns:22px minmax(0,1fr);gap:12px;align-items:start;font-size:15.5px;color:var(--faint)}
-.steps li.on{color:var(--ink)} .steps li.ok{color:var(--muted)}
-.steps .ic{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--line);margin-top:3px;display:grid;place-items:center}
-.steps li.ok .ic{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
-.steps li.ok .ic svg{width:12px;height:12px}
-.steps li.on .ic{border-color:var(--accent);border-top-color:transparent;animation:spin .9s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-.steps small{display:block;font-size:13px;color:var(--faint)}
-.skel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px;display:flex;flex-direction:column;gap:12px}
-.skel i{display:block;height:12px;border-radius:6px;background:linear-gradient(90deg,var(--soft) 0%,var(--line) 50%,var(--soft) 100%);background-size:200% 100%;animation:shimmer 1.4s ease-in-out infinite}
-@keyframes shimmer{from{background-position:100% 0}to{background-position:-100% 0}}
-.group{display:flex;flex-direction:column;gap:8px}
-.group h2{font-size:13px;font-weight:500;color:var(--faint)}
-.row2{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 14px;padding:12px 16px;background:var(--surface);border:1px solid var(--line);border-radius:12px;align-items:center}
-.row2 .t{font-weight:500}
-.row2 .s{font-size:14px;color:var(--muted);grid-column:1/2}
-.row2 .m{grid-row:1/3;grid-column:2}
-.row2.quiet{background:transparent}
-.note{font-size:14px;color:var(--muted);background:var(--soft);border-radius:10px;padding:10px 14px;margin:0}
-.newnote{font-size:14px;color:var(--accent);margin:-10px 0 0}
-.learn{border-top:1px solid var(--line);padding-top:12px;display:flex;flex-direction:column;gap:8px;font-size:14.5px}
-.learn p{margin:0}
-.learn b{font-weight:500}
-.learn dl{margin:0;display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;font-size:14px}
-.learn dt{font-weight:500}
-.learn dd{margin:0;color:var(--muted)}
-.check{font-size:14px;color:var(--heavy);background:var(--heavy-soft);border-radius:8px;padding:8px 12px;margin:0}
-.assumes{font-size:14px;color:var(--faint);margin:-8px 0 0}
-.wrap.wide{max-width:980px}
-.dhead{display:flex;flex-direction:column;gap:8px}
-.danalogy{font-family:Georgia,"Iowan Old Style",serif;font-size:19px;line-height:1.5;color:var(--muted);margin:0;max-width:62ch}
-.stories{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
-.story{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:10px;transition:border-color .2s var(--ease),box-shadow .2s var(--ease);cursor:pointer;text-align:left}
-.story:hover{border-color:var(--faint)}
-.story.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
-.story h3{margin:0;font-size:18px;font-weight:600;letter-spacing:-.01em}
-.story .tech{font-family:var(--mono);font-size:11.5px;color:var(--faint);margin:-6px 0 0}
-.story .an{font-family:Georgia,"Iowan Old Style",serif;font-size:16px;line-height:1.5;margin:0}
-.story .when{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 10px;font-size:14px;color:var(--muted);margin:0}
-.story .when b{font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--faint);font-weight:400;padding-top:2px}
-.story .badges{display:flex;flex-wrap:wrap;gap:6px;min-height:20px}
-.story .acts{display:flex;gap:14px;margin-top:auto;padding-top:4px}
-.bdg{font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;padding:2px 8px;border-radius:999px}
-.bdg.lean{background:var(--heavy-soft);color:var(--heavy)} .bdg.fit{background:var(--accent-soft);color:var(--accent)}
-.concepts{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:10px}
-.concepts h3{margin:0;font-size:16px;font-weight:600}
-.reason{background:var(--soft);border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:12px}
-.reason h2{font-size:15px;font-weight:600;color:var(--ink);margin:0}
-.reason ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;font-size:14.5px}
-.reason li{display:grid;grid-template-columns:14px minmax(0,1fr);gap:8px;align-items:baseline}
-.reason li::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--faint);margin-top:7px}
-.reason li.risk::before{background:var(--oneway)}
-.reason .sub{font-size:12px;font-family:var(--mono);letter-spacing:.04em;text-transform:uppercase;color:var(--faint);margin:4px 0 0}
-.assume{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
-.assume:first-of-type{border-top:0}
-.assume .q{font-size:13px;color:var(--faint)}
-.assume .a{font-size:15px;font-weight:500}
-.assume .basis{font-size:13px;color:var(--muted);grid-column:1/2}
-.assume .ctl{grid-row:1/4;grid-column:2;display:flex;gap:8px;align-items:center}
-.assume .state{font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--faint)}
-.assume .state.ok{color:var(--accent)}
-.chips{display:flex;flex-wrap:wrap;gap:6px;grid-column:1/-1;margin-top:4px}
-.chips button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 12px;font-size:13.5px}
-.chips button[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
-.small-btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:3px 10px;font-size:13px}
-.dbar{display:flex;flex-direction:column;gap:12px;padding-top:6px}
-.refine{width:100%;min-height:70px;font:inherit;font-size:15px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);resize:vertical}
-.offline{max-width:660px;margin:16px auto 0;padding:12px 16px;border-radius:10px;background:var(--oneway-soft);color:var(--oneway);font-size:14px}
-.offline code{background:transparent;color:inherit}
-.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,24px);opacity:0;background:var(--ink);color:var(--surface);font-size:14px;padding:10px 16px;border-radius:10px;transition:transform .4s var(--ease),opacity .3s var(--ease);pointer-events:none;max-width:calc(100vw - 32px);z-index:30}
-.toast.on{transform:translate(-50%,0);opacity:1}
+  .record-wrap { margin: 0 0 12px 40px; }
+  .record-banner {
+    background: var(--accent-soft); border: 1px solid var(--line);
+    border-radius: 10px; padding: 12px 14px; margin-bottom: 12px;
+  }
+  .record-banner h2 { margin: 0 0 4px; font-size: 16px; }
+  .record-banner p { margin: 0; font-size: 13.5px; color: var(--ink-2); }
+  pre.record {
+    background: var(--code-bg); color: var(--code-ink);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12.5px; line-height: 1.6; border-radius: 10px;
+    padding: 14px 16px; overflow-x: auto; white-space: pre-wrap; margin: 0 0 12px;
+  }
+  .restart {
+    font: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer;
+    background: transparent; color: var(--ink);
+    border: 1px solid var(--line); border-radius: 8px; padding: 8px 16px;
+  }
+  .restart:hover { border-color: var(--ink-2); }
 
-.scrim{position:fixed;inset:0;background:var(--scrim);opacity:0;pointer-events:none;transition:opacity .35s var(--ease);z-index:20;border:0}
-.scrim.on{opacity:1;pointer-events:auto}
-.sheet{position:fixed;top:0;right:0;bottom:0;width:min(760px,100vw);background:var(--surface);border-left:1px solid var(--line);z-index:21;transform:translateX(104%);transition:transform .45s var(--ease);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);padding-right:env(safe-area-inset-right,0px)}
-.sheet.on{transform:none}
-.sh{display:flex;align-items:flex-start;gap:14px;padding:20px 22px 14px;border-bottom:1px solid var(--line)}
-.sh h2{font-size:20px}
-.sh p{margin:4px 0 0;font-size:14px;color:var(--muted)}
-.x{margin-left:auto;border:1px solid var(--line);background:var(--surface);border-radius:8px;width:34px;height:34px;display:grid;place-items:center;flex:none}
-.sbody{overflow:auto;padding:18px 22px 28px;display:flex;flex-direction:column;gap:18px;flex:1;min-height:0}
-.sbody>*{flex:none}
-.facts{list-style:none;margin:0;padding:0}
-.facts li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;padding:10px 0;border-top:1px solid var(--line);font-size:14.5px}
-.facts li:first-child{border-top:0}
-.facts .src{font-family:var(--mono);font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.04em;align-self:center}
-.gwrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--bg);padding:12px}
-svg.g{display:block;min-width:620px;width:100%;height:auto}
-svg.g rect{fill:var(--surface);stroke-width:1.4}
-svg.g text{fill:var(--ink);font-family:var(--sans)}
-svg.g path{fill:none}
-table.raw{border-collapse:collapse;font-family:var(--mono);font-size:12px;font-variant-numeric:tabular-nums}
-table.raw td,table.raw th{padding:4px 10px;border-bottom:1px solid var(--line);text-align:right}
-table.raw th{font-weight:400;color:var(--faint)}
-table.raw td:first-child,table.raw th:first-child{text-align:left}
-@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
-/* decision-moments session view, ported from the Muse POC (see taskmanager). */
-.etabs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px}
-.etab{font:inherit;font-size:13px;font-weight:600;cursor:pointer;background:transparent;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:6px 14px;display:inline-flex;align-items:center;gap:6px}
-.etab svg{width:12px;height:12px}
-.etab.on{color:var(--accent);border-color:var(--accent);background:var(--accent-soft)}
-.etab.done{color:var(--ink)}
-.etab.prep{opacity:.55}
-.etab:disabled{cursor:wait}
-.ecount{font-size:12.5px;color:var(--muted);font-weight:600;align-self:center}
-.moment{--m-bg:#ffffff;--m-surface:#f4f2ec;--m-ink:#14181d;--m-ink2:#3d4450;--m-line:#d9dce1;--m-accent:#0b5fff;--m-accink:#ffffff;--m-accsoft:#e8effd;
-  --bg:var(--m-bg);--surface:var(--m-surface);--soft:var(--m-surface);--ink:var(--m-ink);--muted:var(--m-ink2);--line:var(--m-line);--accent:var(--m-accent);--accent-ink:var(--m-accink);--accent-soft:var(--m-accsoft);--oneway:#b3362b;--twoway:#8a6d1b}
-@media (prefers-color-scheme:dark){.moment{--m-bg:#0e1113;--m-surface:#171c1f;--m-ink:#f0f3f5;--m-ink2:#b9c2cb;--m-line:#2c343b;--m-accent:#5b93ff;--m-accink:#0b1220;--m-accsoft:#16233d}}
-.moment .edu-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 4px}
-.moment .edu-head h2{margin:0;font-size:17px;color:var(--ink)}
-.moment .model{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:0 0 12px;font-size:14px;color:var(--ink)}
-.moment .model b{display:block;font-size:12.5px;color:var(--muted);margin-bottom:2px}
-.moment .tiers{display:flex;gap:8px;margin:12px 0}
-.moment .tier{flex:1;font:inherit;cursor:pointer;text-align:center;border:1px solid var(--line);border-radius:10px;padding:8px 4px;background:var(--bg);color:var(--muted)}
-.moment .tier b{display:block;font-size:13.5px}
-.moment .tier small{font-size:11.5px}
-.moment .tier.on{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
-.moment .optrow{display:flex;gap:8px;align-items:stretch;margin-bottom:8px}
-.moment .opt{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px 14px;cursor:pointer;text-align:left;width:100%;font:inherit;color:var(--ink);display:block;flex:1;min-width:0}
-.moment .opt:hover{border-color:var(--accent)}
-.moment .opt.on{border-color:var(--accent);background:var(--accent-soft)}
-.moment .opt h3{margin:0;font-size:15px}
-.moment .opt .tech{margin:0;color:var(--muted);font-size:13px}
-.moment .opt .sum{margin:6px 0 0;font-size:13.5px}
-.moment .micro{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);margin-top:8px}
-.moment .micro-track{flex:1;height:6px;background:var(--surface);border-radius:3px;overflow:hidden}
-.moment .micro-fill{height:100%;background:var(--accent);border-radius:3px}
-.moment .journey{position:relative;margin:10px 0 2px;padding-left:26px;counter-reset:js}
-.moment .journey::before{content:"";position:absolute;left:8px;top:8px;bottom:8px;width:2px;background:var(--line)}
-.moment .jstep{position:relative;font-size:13px;padding:4px 0;color:var(--ink);counter-increment:js}
-.moment .jstep::before{content:counter(js);position:absolute;left:-26px;top:4px;width:17px;height:17px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-size:10.5px;font-weight:700;display:flex;align-items:center;justify-content:center}
-.moment .nums{margin:10px 0 2px;font-size:13px}
-.moment .num-row{display:flex;justify-content:space-between;gap:12px;padding:3px 0;border-top:1px dashed var(--line)}
-.moment .num-row:first-child{border-top:0}
-.moment .num-row span:first-child{color:var(--muted)}
-.moment .mchip-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;align-items:center}
-.moment .mchip-label{font-size:12px;color:var(--muted);font-weight:700}
-.moment .mchip{font-size:12.5px;border:1px solid var(--line);border-radius:999px;padding:3px 10px;background:var(--bg);color:var(--ink)}
-.moment .mchip.bad{border-color:var(--oneway);color:var(--oneway)}
-.moment .chart{margin:14px 0 4px}
-.moment .chart-title{font-size:13px;font-weight:700;margin:0 0 2px;color:var(--ink)}
-.moment .chart-note{font-size:12px;color:var(--muted);margin:2px 0 0}
-.moment .growth{display:block;width:100%;height:auto}
-.moment .hyper-btn{flex:none;width:48px;background:var(--bg);border:1px solid var(--line);border-radius:12px;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center}
-.moment .hyper-btn:hover{border-color:var(--accent);color:var(--accent)}
-.moment .ghost{margin:10px 0;font-size:13px;color:var(--muted)}
-.moment .ghost summary{cursor:pointer;font-weight:600}
-.moment .ghost li{margin:3px 0}
-.moment .escape-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px;padding-top:14px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
-.moment .escape-btn{background:none;border:0;color:var(--accent);cursor:pointer;font-size:13px;padding:0;font-family:inherit;text-decoration:underline}
-.moment .rev-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);color:var(--ink)}
-.moment .rev-row b{display:block;font-size:14px}
-.moment .rev-row span{font-size:12.5px;color:var(--muted)}
-.moment .rev-a{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:3px 12px;cursor:pointer;font-size:12.5px;color:var(--ink);font-family:inherit}
-.m-veil{position:fixed;inset:0;background:rgba(10,14,20,.55);display:flex;align-items:center;justify-content:center;z-index:60;padding:16px}
-.m-sheet{background:var(--m-bg);color:var(--m-ink);border-radius:14px;max-width:640px;width:100%;max-height:88vh;overflow:auto;padding:20px 22px}
-.m-sheet-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
-.m-sheet-top h2{margin:0;font-size:19px}
-.m-sheet-top p{margin:2px 0 0;color:var(--m-ink2);font-size:13px}
-.m-veil .x-btn{background:none;border:1px solid var(--m-line);border-radius:8px;width:30px;height:30px;cursor:pointer;color:var(--m-ink);font-size:14px;flex:none}
-.m-sheet-sec{margin:14px 0 4px;font-size:12.5px;font-weight:700;color:var(--m-ink2)}
-.m-sheet-story{font-size:14.5px;line-height:1.5;margin:0}
-.m-learn-list{list-style:none;margin:8px 0;padding:0;font-size:13.5px}
-.m-learn-list li{margin:4px 0}
-.m-learn-list a{color:var(--m-accent)}
-.m-sheet-actions{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition: none !important; animation: none !important; }
+  }
 </style>
 </head>
 <body>
-<header class="bar"><div class="in">
-  <a class="mark" href="#/">hoist</a>
-  <span class="proj" id="proj"></span>
-  <span class="sample" id="sampleTag" hidden>Sample data</span>
-  <nav class="tabs" aria-label="Views">
-    <a href="#/session" id="tabSession">This task <span class="count" id="sessionCount"></span></a>
-    <a href="#/decide" id="tabDecide">Waiting for you <span class="count" id="openCount"></span></a>
-    <a href="#/records" id="tabRecords">Decision records</a>
-  </nav>
-</div></header>
-
-<div class="offline" id="offline" role="alert" hidden>Hoist stopped running, so choices can't be saved. Start it again with <code>python3 hoist.py serve</code> in your project, then reload this page.</div>
-<main class="wrap" id="app"><p class="small">Loading decisions…</p></main>
-
-<button class="scrim" id="scrim" aria-label="Close" tabindex="-1"></button>
-<aside class="sheet" id="whySheet" role="dialog" aria-modal="true" aria-labelledby="whyTitle" aria-hidden="true">
-  <div class="sh"><div><h2 id="whyTitle"></h2><p id="whySub"></p></div><button class="x" id="whyClose" aria-label="Close"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 3l10 10M13 3L3 13"/></svg></button></div>
-  <div class="sbody" id="whyBody"></div>
-</aside>
-<div class="toast" id="toast" role="status"></div>
-<div id="emodal"></div>
+<div class="page">
+  <div class="topbar">
+    <h1>Hoist</h1>
+    <div class="topnav">
+      <a id="nav-home" href="#/">Open</a>
+      <a id="nav-session" href="#/session">Session</a>
+      <a id="nav-records" href="#/records">Records</a>
+      <button class="theme-btn" id="theme-toggle" type="button">Theme: Light</button>
+    </div>
+  </div>
+  <div class="offlinebar" id="offline">Hoist isn't answering — showing the last thing it said. Start it again and reload.</div>
+  <div id="app" aria-live="polite"></div>
+  <div id="modal"></div>
+</div>
 
 <script>
-const CHECK='<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.5"/></svg>';
-const DOORS={3:'One-way door',2:'Heavy door',1:'Two-way door'};
-const DOORWORD={'one-way':3,'heavy':2,'two-way':1};
-const $=id=>document.getElementById(id);
-const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const lc=s=>s.charAt(0).toLowerCase()+s.slice(1);
-const cap=s=>s?s.charAt(0).toUpperCase()+s.slice(1):s;
-const today=()=>new Date().toISOString().slice(0,10);
-const app=$('app');
-let S=null, CAT=null, LIVE=false;
-let F=null; /* the decision flow in progress: {id, A, qi, step, pick, done} */
+(function () {
+  "use strict";
 
-/* ---------- data ---------- */
-async function loadState(){
-  try{const r=await fetch('/api/state',{cache:'no-store'});if(r.ok){S=await r.json();LIVE=true;$('offline').hidden=true;return;}}catch(e){}
-  if(LIVE){$('offline').hidden=false;return;}
-  S=await (await fetch('sample.json',{cache:'no-store'})).json();LIVE=false;
-}
-async function boot(){
-  try{
-    await loadState();
-    CAT=(await (await fetch('catalog.json',{cache:'no-store'})).json()).kinds;
-  }catch(e){app.innerHTML='<p class="err">Couldn\'t load the decisions. If you opened this file directly, run <code>python3 hoist.py serve</code> and open the address it prints.</p>';return;}
-  $('proj').textContent=S.project||'';
-  $('sampleTag').hidden=LIVE;
-  addEventListener('hashchange',async()=>{if(LIVE)await loadState();render();});
-  if(LIVE)setInterval(async()=>{
-    const busy=S.session&&['planning','drafting'].includes(S.session.status);
-    if(!busy&&F&&!F.done)return;
-    const before=JSON.stringify([S.decisions,S.session&&S.session.status,S.session&&S.session.drafted]);
-    await loadState();
-    if(JSON.stringify([S.decisions,S.session&&S.session.status,S.session&&S.session.drafted])!==before)render();
-  },busyPoll());
-  render();
-}
-const openDecisions=()=>S.decisions.filter(d=>d.status==='open');
+  var ICONS = {
+    check: '<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8.5l3.5 3.5 7-8"/></svg>',
+    warn: '<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.8L15 13.5H1z"/><path d="M8 6v3.4"/><circle cx="8" cy="11.4" r="0.4" fill="currentColor"/></svg>',
+    expand: '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2.5h4v4"/><path d="M13.5 2.5L9 7"/><path d="M6.5 13.5h-4v-4"/><path d="M2.5 13.5L7 9"/></svg>',
+    chev: '<svg class="chev" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg>'
+  };
 
-/* ---------- engine (deterministic; the numbers only order options) ---------- */
-function ans(dec,A){const a={};CAT[dec.kind].questions.forEach(q=>{a[q.id]=q.fact&&dec.facts&&dec.facts[q.id]!=null?dec.facts[q.id]:(A[q.id]??0);});return a;}
-function viable(K,k,a){const ko=K.options[k].ko;return !(ko&&a[ko.fact]===ko.equals);}
-function model(K,a){
-  const w={...K.base},s={};
-  K.questions.forEach(q=>{const x=q.a[a[q.id]];if(x&&x.w)for(const f in x.w)w[f]+=x.w[f];});
-  for(const k in K.options){s[k]={...K.options[k].s};if(a.host===1&&K.options[k].server)Object.assign(s[k],K.options[k].server);}
-  const max=Object.values(w).reduce((x,y)=>x+y,0)*10;
-  const r=Object.keys(K.options).filter(k=>viable(K,k,a)).map(k=>({k,t:Object.keys(w).reduce((x,f)=>x+w[f]*s[k][f],0)})).sort((x,y)=>y.t-x.t);
-  return{w,s,r,out:Object.keys(K.options).filter(k=>!viable(K,k,a)),close:r.length>1&&(r[0].t-r[1].t)/max<0.04};
-}
-function deciding(m){const[a,b]=m.r;return Object.keys(m.w).map(f=>({f,imp:m.w[f]*(m.s[a.k][f]-m.s[b.k][f])})).filter(x=>x.imp>0).sort((x,y)=>y.imp-x.imp).slice(0,2);}
-function flips(K,a,m){
-  const out=[],win=m.r[0].k;
-  K.questions.forEach(q=>q.a.forEach((x,i)=>{if(i===a[q.id])return;const m2=model(K,{...a,[q.id]:i});if(m2.r[0].k!==win)out.push({txt:q.alt[i],win:m2.r[0].k});}));
-  return out;
-}
-function confidence(dec,m,mode){
-  const seen=Object.keys(dec.facts||{}).length,asked=CAT[dec.kind].questions.filter(q=>!(q.fact&&dec.facts&&dec.facts[q.id]!=null)).length;
-  if(mode==='delegated')return{lv:'low',txt:'you didn\'t mind, so Hoist chose'};
-  const parts=[`${asked} from your answers`];if(seen)parts.unshift(`${seen} seen in your repo`);
-  if(m.close)return{lv:'medium',txt:parts.join(', ')+'; the runner-up is close'};
-  return{lv:'high',txt:parts.join(', ')};
-}
-
-/* ---------- routing ---------- */
-function render(){
-  const h=location.hash||'#/';
-  let m;
-  $('openCount').textContent=openDecisions().length||'';
-  $('tabDecide').hidden=!openDecisions().length;
-  $('tabDecide').setAttribute('aria-current',h.startsWith('#/decide')?'page':'false');
-  $('tabRecords').setAttribute('aria-current',h.startsWith('#/records')?'page':'false');
-  const pend=sessionPending();
-  $('tabSession').hidden=!S.session&&LIVE;
-  $('sessionCount').textContent=pend||'';
-  $('tabSession').setAttribute('aria-current',h.startsWith('#/session')?'page':'false');
-  if(h==='#/session')return renderSession();
-  if(h==='#/'&&S.session&&(['planning','drafting'].includes(S.session.status)||pend)){location.replace('#/session');return;}
-  if(h==='#/'&&!LIVE){location.replace('#/session');return;}
-  if((m=h.match(/^#\/decide\/(\d{4})$/)))return renderDecide(m[1]);
-  if(h==='#/decide'){const d=openDecisions()[0];if(d){location.replace('#/decide/'+d.id);return;}}
-  if((m=h.match(/^#\/records\/(\d{4})$/)))return renderRecord(m[1]);
-  if(h==='#/'&&openDecisions().length){location.replace('#/decide/'+openDecisions()[0].id);return;}
-  renderList();
-}
-
-/* ---------- decide ---------- */
-function renderDecide(id){
-  const dec=S.decisions.find(d=>d.id===id);
-  if(!dec){app.innerHTML=`<div class="step"><h1>No decision ${esc(id)}</h1><p class="lead"><a href="#/records">See all decisions</a></p></div>`;return;}
-  if(!F||F.id!==id)F={id,A:{...(dec.answers||{})},qi:0,step:'ask',pick:null,done:dec.status!=='open'?{k:dec.choice,mode:dec.mode}:null};
-  if(F.done)return renderDone(dec);
-  F.step==='ask'?renderAsk(dec):renderRec(dec);
-  scrollTo({top:0});
-}
-const toAsk=dec=>CAT[dec.kind].questions.filter(q=>!(q.fact&&dec.facts&&dec.facts[q.id]!=null));
-function intro(dec){
-  const K=CAT[dec.kind],pkg=dec.trigger&&dec.trigger.package;
-  const known=CAT[dec.kind].questions.filter(q=>q.fact&&dec.facts&&dec.facts[q.id]!=null)
-    .map(q=>`<span class="chip"><i></i>${esc(q.a[dec.facts[q.id]].l)} · from ${esc((dec.fact_sources||{})[q.id]||'your repo')}</span>`).join('');
-  return `<span class="status"><span class="dot"></span>${esc(dec.agent||'Your agent')} is paused and waiting for you</span>
-    <h1>${esc(K.title)}</h1>
-    <p class="lead">${esc(dec.agent||'Your agent')} was about to add ${pkg?`<code>${esc(pkg)}</code>`:'a database'}${dec.task?` while working on <b>“${esc(dec.task)}”</b>`:''}. ${esc(K.undo)}</p>
-    ${known?`<div class="known">Already known: ${known}</div>`:''}`;
-}
-function renderAsk(dec){
-  const qs=toAsk(dec);
-  if(!qs.length){F.step='rec';return renderRec(dec);}
-  const q=qs[F.qi];
-  app.innerHTML=`<div class="step">${intro(dec)}
-    <div class="qhead"><span class="qnum">Question ${F.qi+1} of ${qs.length}</span><span class="pips">${qs.map((_,i)=>`<i class="${i<=F.qi?'on':''}"></i>`).join('')}</span></div>
-    <p class="qtext">${esc(q.t)}</p><p class="qwhy">${esc(q.why)}</p>
-    <div class="answers">${q.a.map((x,i)=>`<button class="ans ${F.A[q.id]===i?'sel':''}" data-a="${i}"><span class="key">${i+1}</span>${esc(x.l)}</button>`).join('')}</div>
-    <div class="row">${F.qi>0?'<button class="link" data-go="back">Back</button>':''}<button class="link" data-go="later">Ask me later</button><button class="link" data-go="nopref">I don't mind, pick for me</button></div>
-  </div>`;
-}
-function renderRec(dec){
-  const K=CAT[dec.kind],a=ans(dec,F.A),m=model(K,a),best=m.r[0].k,chosen=F.pick||best,o=K.options[chosen],cf=confidence(dec,m),fl=flips(K,a,m);
-  const why=chosen===best?`It fits because ${deciding(m).map(d=>K.reasons[d.f]).join(' and ')}. ${o.good[0][1]}`:`You picked this over ${K.options[best].n}, which fits your answers better.`;
-  app.innerHTML=`<div class="step">
-    <span class="status"><span class="dot"></span>${esc(dec.agent||'Your agent')} is paused and waiting for you</span>
-    <div class="rec">
-      <span class="small">${chosen===best?'Recommended for you':'Your choice'}</span>
-      <h1>Use ${esc(o.tn)}</h1>
-      <p class="why">${esc(why)}</p>
-      <div class="accept"><b>You accept</b><span>${esc(o.bad[1][1])} ${esc(o.bad[0][1])}</span></div>
-      <div class="row"><button class="btn primary" data-go="record">${CHECK}Use ${esc(o.tn)}</button><button class="link" data-why="${chosen}">Why?</button></div>
-      <p class="small"><span class="lv ${cf.lv}">Confidence ${cf.lv}</span> &nbsp;${esc(cf.txt)}.${fl.length?` It would change if ${esc(fl[0].txt)}; then ${esc(K.options[fl[0].win].n)} fits better.`:''}</p>
-      <p class="err" id="recErr" hidden></p>
-    </div>
-    <div class="others"><h2>Other options</h2>
-      ${m.r.map(x=>x.k).filter(k=>k!==chosen).map(k=>`<div class="other"><span class="n">${esc(K.options[k].n)}${k===dec.agent_pick?'<span class="tag">Agent\'s pick</span>':''}${k===best?'<span class="tag">Best fit</span>':''}</span>
-        <span class="d">${k===m.r[1].k&&m.close&&chosen===best?'Close second. ':''}${esc(K.options[k].bad[0][1])}</span>
-        <span class="acts"><button class="link" data-why="${k}">Why?</button><button class="link" data-pick="${k}">Use this</button></span></div>`).join('')}
-      ${m.out.map(k=>`<p class="ruled"><s>${esc(K.options[k].n)}</s> ruled out: ${esc(K.options[k].ko.why)}</p>`).join('')}
-    </div>
-    <div class="row">${toAsk(dec).length?'<button class="link" data-go="edit">Change my answers</button>':''}<button class="link" data-go="later">Ask me later</button></div>
-  </div>`;
-}
-function renderDone(dec){
-  const K=CAT[dec.kind],{k,mode}=F.done,parked=mode==='parked',o=K.options[k]||{};
-  app.innerHTML=`<div class="step">
-    <span class="status"><span class="dot ok"></span>${parked?`${esc(dec.agent||'Your agent')} continues without a database for now`:`${esc(dec.agent||'Your agent')} is continuing with your choice`}</span>
-    <h1>${parked?'Parked for now':`Recorded: ${esc(o.n)}`}</h1>
-    <p class="lead">${parked?'Hoist told the agent to keep data in memory until you decide, and saved this as a proposed decision.'
-      :mode==='delegated'?'You didn\'t mind, so Hoist used the best fit and noted that it chose for you.':'Your reasons are saved with the decision, so anyone, or any agent, can see why later.'}
-      ${LIVE?' You can go back to your terminal.':' In a real project, the agent now continues with this choice.'}</p>
-    <div class="row"><a class="btn primary" href="#/records/${dec.id}">Read the record</a><a class="link" href="#/records">All decisions</a></div>
-  </div>`;
-}
-
-/* ---------- MADR record ---------- */
-function madr(dec,k,mode){
-  const K=CAT[dec.kind],a=ans(dec,F.A),m=model(K,a),best=m.r[0].k,deleg=mode==='delegated',cf=confidence(dec,m,mode),fl=flips(K,a,m);
-  const agent=dec.agent||'Your agent',task=dec.task?` (${dec.task})`:'';
-  if(mode==='parked'){
-    return `---\nstatus: proposed\ndate: ${today()}\ndoor: one-way\nproposed-by: ${agent}${task}\ndeciders: project owner (asked to decide later)\nconfidence: low\n---\n# Decide the database later; keep data in memory for now\n\n> **Decision:** Not decided yet. **Because** the owner asked to decide later. **Accepted cost:** data is lost on every restart until a database is chosen. **Revisit** before the first real user signs up.\n\n## Context and Problem Statement\n${K.title}. ${agent} was about to add \`${dec.trigger.package}\`.\n\n## Decision Outcome\nShort term: keep data in memory behind a small repository interface, so a real database can be swapped in. Leading option when parked: ${K.options[best].n}.\n\n### Consequences\n- Good, because work continues without a lasting choice.\n- Bad, because data is lost on every restart.\n\n## More Information\n- Revisit before the first real user signs up.\n`;
+  function $(id) { return document.getElementById(id); }
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
-  const order=[k,...m.r.map(x=>x.k).filter(x=>x!==k)],o=K.options[k];
-  const because=k===best?deciding(m).map(d=>K.reasons[d.f]).join(' and '):`the owner preferred it over ${K.options[best].n}`;
-  const drivers=K.questions.map(q=>`- ${q.t.replace(/\?$/,'')}: ${q.a[a[q.id]].l} (${q.fact&&dec.facts&&dec.facts[q.id]!=null?'seen in '+((dec.fact_sources||{})[q.id]||'the repo'):'your answer'})`);
-  return `---
-status: accepted
-date: ${today()}
-door: ${{3:'one-way',2:'heavy',1:'two-way'}[K.door]}
-proposed-by: ${agent}${task}
-deciders: ${deleg?'Hoist, delegated by the project owner':'project owner'}
-confidence: ${cf.lv}
----
-# ${K.record_title.replace('{tn}',o.tn)}
-
-> **Decision:** Use ${o.tn}. **Because** ${because}. **Accepted cost:** ${lc(o.bad[1][1]).replace(/\.$/,'')}. ${fl.length?`**Revisit if** ${fl[0].txt}.`:''}
-
-## Context and Problem Statement
-${K.title}: ${agent} was about to add \`${dec.trigger.package}\`${dec.task?` while working on "${dec.task}"`:''}. ${K.undo}
-
-## Decision Drivers
-${drivers.join('\n')}
-
-## Considered Options
-${order.map((x,i)=>`${i+1}. ${K.options[x].n}${x===dec.agent_pick?' (the agent\'s pick)':''}`).join('\n')}${m.out.length?'\n'+m.out.map(x=>`- Ruled out: ${K.options[x].n}, because ${lc(K.options[x].ko.why)}`).join('\n'):''}
-
-## Decision Outcome
-Chosen: ${o.n}, because ${because}.
-
-### Consequences
-${o.good.map(g=>`- Good, because ${lc(g[1])}`).join('\n')}
-${o.bad.map(b=>`- Bad, because ${lc(b[1])}`).join('\n')}
-
-### Confirmation
-- Hoist blocks database packages that conflict with this record.
-- [ ] Restore one backup before launch.
-
-## Pros and Cons of the Options
-${order.slice(1).map(x=>`### ${K.options[x].n}\n${K.options[x].good.map(g=>`- Good, because ${lc(g[1])}`).join('\n')}\n${K.options[x].bad.map(b=>`- Bad, because ${lc(b[1])}`).join('\n')}`).join('\n\n')}
-
-## More Information
-- Confidence: ${cf.lv}; ${cf.txt}.
-${fl.map(f=>`- Revisit if ${f.txt}: ${K.options[f.win].n} would fit better.`).join('\n')||'- No single answer change would flip it.'}
-`;
-}
-async function finish(dec,k,mode){
-  const K=CAT[dec.kind],md=madr(dec,k,mode),slug=mode==='parked'?'decide-database-later':K.record_title.replace('{tn}',K.options[k].tn).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
-  const body={choice:mode==='parked'?null:k,mode,answers:F.A,slug,markdown:md};
-  if(LIVE){
-    const btn=app.querySelector('[data-go="record"]');if(btn)btn.disabled=true;
-    try{
-      const r=await fetch('/api/decisions/'+dec.id,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-      if(!r.ok)throw new Error((await r.json()).error||'Could not save');
-      await loadState();
-    }catch(e){const el=$('recErr');if(el){el.hidden=false;el.textContent=`Couldn't save the decision: ${e.message}. Check that hoist serve is still running, then try again.`;}if(btn)btn.disabled=false;return;}
-  }else{
-    Object.assign(dec,{status:mode==='parked'?'parked':'accepted',choice:body.choice,mode,record:`docs/decisions/${dec.id}-${slug}.md`});
-    S.records=S.records.filter(r=>!r.file.startsWith(dec.id+'-')).concat([{file:`${dec.id}-${slug}.md`,markdown:md}]);
+  function lc(s) { s = String(s == null ? "" : s); return s ? s.charAt(0).toLowerCase() + s.slice(1) : s; }
+  function slugify(t) {
+    var s = String(t == null ? "" : t).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    return s.length <= 60 ? s : s.slice(0, 61).replace(/-[^-]*$/, "");
   }
-  F.done={k,mode};render();
-}
+  function today() { var d = new Date(); return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2); }
+  function doorWord(n) { return n === 3 ? "one-way" : n === 2 ? "heavy" : n === 1 ? "two-way" : "one-way"; }
 
-/* ---------- reading records ---------- */
-function parseMadr(md){
-  const out={meta:{},title:'',short:{},sections:[]};let lines=md.replace(/\r/g,'').split('\n'),i=0;
-  if(lines[0]==='---'){i=1;while(i<lines.length&&lines[i]!=='---'){const m=lines[i].match(/^([\w-]+):\s*(.*)$/);if(m)out.meta[m[1]]=m[2];i++;}i++;}
-  let sec=null,sub=null;
-  for(;i<lines.length;i++){
-    const l=lines[i];
-    if(/^# /.test(l)){out.title=l.slice(2).trim();continue;}
-    if(/^> /.test(l)){const t=l.slice(2);const grab=(re)=>{const m=t.match(re);return m?m[1].trim().replace(/\.$/,''):''};
-      out.short={decision:grab(/\*\*Decision:\*\*\s*(.*?)(?=\*\*|$)/),because:grab(/\*\*Because\*\*\s*(.*?)(?=\*\*|$)/),cost:grab(/\*\*Accepted cost:\*\*\s*(.*?)(?=\*\*|$)/),revisit:grab(/\*\*Revisit(?: if)?\*\*\s*(.*?)(?=\*\*|$)/)};continue;}
-    if(/^## /.test(l)){sec={h:l.slice(3).trim(),lines:[],subs:[]};sub=null;out.sections.push(sec);continue;}
-    if(/^### /.test(l)&&sec){sub={h:l.slice(4).trim(),lines:[]};sec.subs.push(sub);continue;}
-    if(l.trim()&&sec)(sub||sec).lines.push(l);
+  var S = null, LIVE = false, CAT = null, PACKS = [], CTX = { kind: "session" }, SIM = null;
+
+  var TIERS = [
+    { id: 1, name: "Glance", sub: "names only" },
+    { id: 2, name: "Compare", sub: "stories + trade-offs" },
+    { id: 3, name: "Deep dive", sub: "numbers + chart" }
+  ];
+
+  var state = { qid: null, phase: "moment", path: null, picked: null, depth: 2,
+    answers: {}, skipped: {}, abandoned: {}, added: {}, showCustom: false,
+    hyper: null, records: {}, err: null, theme: "light" };
+
+  function resetState() {
+    state.qid = null; state.phase = "moment"; state.path = null; state.picked = null;
+    state.depth = 2; state.answers = {}; state.skipped = {}; state.abandoned = {};
+    state.added = {}; state.showCustom = false; state.hyper = null; state.records = {}; state.err = null;
   }
-  return out;
-}
-const inline=t=>esc(t).replace(/`([^`]+)`/g,'<code>$1</code>').replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>');
-function listHtml(lines){
-  const items=lines.map(l=>{
-    let m;
-    if((m=l.match(/^- \[ \] (.*)/)))return`<li class="todo">${inline(m[1])}</li>`;
-    if((m=l.match(/^(?:- |\d+\. )(.*)/))){const t=m[1];return`<li class="${/^Good, because/.test(t)?'good':/^Bad, because/.test(t)?'bad':''}">${inline(t)}</li>`;}
-    return`<p>${inline(l)}</p>`;
-  });
-  return items.some(x=>x.startsWith('<li'))?`<ul>${items.join('')}</ul>`:items.join('');
-}
-const pillDoor=d=>{const n=DOORWORD[d]||0;return n?`<span class="pill d${n}">${DOORS[n]}</span>`:'';};
-const pillStatus=s=>{const t=(s||'').split(' ')[0];return`<span class="pill ${t}">${esc(s||'')}</span>`;};
-function renderList(){
-  const waiting=openDecisions(),recs=[...S.records].sort((x,y)=>y.file.localeCompare(x.file));
-  app.innerHTML=`<div class="step">
-    <h1>Decision records</h1>
-    <p class="lead">Lasting decisions for <b>${esc(S.project||'this project')}</b>, newest first. Each one is a file in <code>docs/decisions/</code> that any person or agent can read.</p>
-    <div class="list">
-      ${waiting.map(d=>`<a class="item wait" href="#/decide/${d.id}"><span class="t">${esc(CAT[d.kind].title)}</span><span class="s">${esc(d.agent||'Your agent')} is paused, waiting for you${d.task?` · “${esc(d.task)}”`:''}</span><span class="m"><span class="pill waiting">Waiting for you</span></span></a>`).join('')}
-      ${recs.map(r=>{const p=parseMadr(r.markdown);return`<a class="item" href="#/records/${r.file.slice(0,4)}"><span class="t">${esc(p.title)}</span><span class="s">${p.short.because?'Because '+esc(p.short.because):''}</span><span class="m">${pillStatus(p.meta.status)}<span class="date">${esc(p.meta.date||'')}</span></span></a>`;}).join('')}
-      ${!waiting.length&&!recs.length?'<div class="empty">No decisions yet. When your agent reaches a choice that is hard to undo, Hoist will ask you here, and the decision will be listed.</div>':''}
-    </div>
-  </div>`;
-  scrollTo({top:0});
-}
-function renderRecord(id){
-  const r=S.records.find(x=>x.file.startsWith(id+'-'));
-  if(!r){const d=S.decisions.find(x=>x.id===id);if(d&&d.status==='open'){location.replace('#/decide/'+id);return;}
-    app.innerHTML=`<div class="step"><a class="back" href="#/records">← All decisions</a><h1>No record ${esc(id)}</h1></div>`;return;}
-  const p=parseMadr(r.markdown),sec=h=>p.sections.find(s=>s.h.toLowerCase().startsWith(h));
-  const outcome=sec('decision outcome'),cons=outcome&&outcome.subs.find(s=>/consequences/i.test(s.h)),conf=outcome&&outcome.subs.find(s=>/confirmation/i.test(s.h));
-  const options=sec('considered options'),pros=sec('pros and cons'),drivers=sec('decision drivers'),ctx=sec('context'),more=sec('more information');
-  const rows=[['Decision',p.short.decision],['Because',p.short.because],['Accepted cost',p.short.cost],['Revisit if',p.short.revisit]].filter(x=>x[1]);
-  app.innerHTML=`<div class="step">
-    <a class="back" href="#/records">← All decisions</a>
-    <div class="chips">${pillStatus(p.meta.status)}${pillDoor(p.meta.door)}<span class="date">${esc(p.meta.date||'')}</span>${p.meta.confidence?`<span class="lv ${esc(p.meta.confidence)}">Confidence ${esc(p.meta.confidence)}</span>`:''}</div>
-    <h1>${esc(p.title)}</h1>
-    ${rows.length?`<div class="short">${rows.map(([k,v])=>`<div><b>${k}</b><span>${inline(v)}</span></div>`).join('')}</div>`:''}
-    <div class="people">${p.meta['proposed-by']?`<span>Proposed by <b>${esc(p.meta['proposed-by'])}</b></span>`:''}${p.meta.deciders?`<span>Decided by <b>${esc(p.meta.deciders)}</b></span>`:''}</div>
-    ${ctx?`<div class="sec"><h2>The question</h2>${listHtml(ctx.lines)}</div>`:''}
-    ${drivers?`<div class="sec"><h2>What it was based on</h2>${listHtml(drivers.lines)}</div>`:''}
-    ${cons?`<div class="sec"><h2>What it means</h2>${listHtml(cons.lines)}</div>`:''}
-    ${options?`<div class="sec"><h2>Options considered</h2>${listHtml(options.lines)}${pros?pros.subs.map(s=>`<div class="opt"><h3>${inline(s.h)}</h3>${listHtml(s.lines)}</div>`).join(''):''}</div>`:''}
-    ${conf?`<div class="sec"><h2>How it stays true</h2>${listHtml(conf.lines)}</div>`:''}
-    ${more?`<div class="sec"><h2>More</h2>${listHtml(more.lines)}</div>`:''}
-    <details class="more"><summary>The file: docs/decisions/${esc(r.file)}</summary><pre class="adr">${esc(r.markdown)}</pre></details>
-  </div>`;
-  scrollTo({top:0});
-}
 
-/* ---------- sessions: Muse Spark drafts a task's decisions; Hoist ranks, explains, records ---------- */
-let G={view:null,pi:0,sim:null,etab:null,etier:{},epick:{}};
-const NEWBIE_KEY='hoist-newbie';
-let NEWBIE=(()=>{try{return localStorage.getItem(NEWBIE_KEY)==='1';}catch(e){return false;}})();
-const busyPoll=()=>1500;
-const SS=()=>S.session;
-function asks(){const p=SS()&&SS().plan;return p?p.decisions.filter(d=>d.mode==='ask'):[];}
-function sessionPending(){const ss=SS();if(!ss||ss.status!=='ready')return 0;return asks().filter(d=>!(ss.outcomes||{})[d.id]).length;}
-function draftOf(id){return (SS().drafts||{})[id];}
-function newbieToggle(){return `<label class="newbie"><input type="checkbox" id="newbie" ${NEWBIE?'checked':''}>I'm new to this: explain terms as I go</label>`;}
-function slugify(t){const s=t.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');return s.length<=60?s:s.slice(0,61).replace(/-[^-]*$/,'');}
-function doorWord(d){return {3:'one-way door',2:'heavy door',1:'two-way door'}[d]||'';}
-async function post(url,body){
-  const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-  if(!r.ok)throw new Error((await r.json().catch(()=>({}))).error||'Request failed');
-  return r.json();
-}
-function initAssumptions(){
-  const ss=SS();if(!ss||!ss.plan)return;ss.confirmed=ss.confirmed||{};
-  (ss.plan.profile||[]).forEach(q=>{if(ss.profile_answers[q.id]==null&&q.answers.includes(q.assumed))ss.profile_answers[q.id]=q.assumed;});
-}
-const assumeState=qid=>((SS().confirmed||{})[qid])||'assumed';
-async function saveAnswers(patch){
-  const ss=SS();Object.assign(ss.profile_answers,patch.profile_answers||{});ss.confirmed=Object.assign(ss.confirmed||{},patch.confirmed||{});
-  for(const[k,v]of Object.entries(patch.answers||{}))ss.answers[k]=Object.assign(ss.answers[k]||{},v);
-  if(LIVE){try{S.session=await post('/api/session/answers',patch);}catch(e){toast('Couldn\'t save that answer. Is Hoist still running?');}}
-}
-
-/* ranking from stated effects: each chosen answer favors (+1) or works against (-1) options, with a reason */
-function rankDraft(dr,did,over){
-  const ss=SS(),opts=dr.options.filter(o=>!o.ruled_out),sc={},why={};
-  opts.forEach(o=>{sc[o.id]=0;why[o.id]=[];});
-  const pa={...ss.profile_answers,...(over&&over.profile||{})},oa={...((ss.answers||{})[did]||{}),...(over&&over.own||{})};
-  const apply=(a,qid,own)=>(a&&a.effects||[]).forEach(e=>{if(!(e.option in sc))return;sc[e.option]+=e.dir==='favors'?1:-1;if(e.dir==='favors')why[e.option].push({reason:e.reason,answer:a.label,qid,own});});
-  (dr.profile_effects||[]).forEach(pe=>apply((pe.answers||[]).find(a=>a.label===pa[pe.profile_id]),pe.profile_id,false));
-  (dr.questions||[]).forEach(q=>apply((q.answers||[]).find(a=>a.label===oa[q.id]),q.id,true));
-  const rankOf=e=>e.own?0:({changed:0,confirmed:1})[((ss.confirmed||{})[e.qid])]??2;
-  for(const k in why)why[k].sort((x,y)=>rankOf(x)-rankOf(y));
-  const order=opts.map((o,i)=>({o,i})).sort((x,y)=>(sc[y.o.id]-sc[x.o.id])||((y.o.id===dr.default_option)-(x.o.id===dr.default_option))||(x.i-y.i)).map(x=>x.o);
-  const close=order.length>1&&sc[order[0].id]-sc[order[1].id]<=1;
-  return{order,sc,why,close};
-}
-/* "Because" ties each reason to the answer behind it: you said “X” (why that matters) */
-const cleanReason=r=>lc(String(r||'').trim().replace(/^(also|and|so)\s+/i,'').replace(/[.;]+$/,''));
-function becauseText(entries){
-  const seen=new Set(),picked=[];
-  for(const e of entries||[]){if(!e||!e.answer||seen.has(e.answer))continue;seen.add(e.answer);picked.push(`“${e.answer}” (${cleanReason(e.reason)})`);if(picked.length===2)break;}
-  return picked.length?'you said '+picked.join(' and '):'';
-}
-const revisitText=f=>`your answer to “${f.q.replace(/\s+$/,'')}” becomes “${f.label}”`;
-const taskLabel=()=>{const ss=SS(),t=String((ss.plan&&ss.plan.task_summary)||ss.task||'').trim().replace(/\.$/,'');return t.length>140?t.slice(0,139).replace(/\s+\S*$/,'')+'…':t;};
-function flipsDraft(dr,did){
-  const ss=SS(),win=rankDraft(dr,did).order[0].id,out=[];
-  const prof=(SS().plan.profile||[]);
-  (dr.profile_effects||[]).forEach(pe=>{const q=prof.find(x=>x.id===pe.profile_id);if(!q)return;
-    q.answers.forEach(lbl=>{if(lbl===ss.profile_answers[q.id])return;const w=rankDraft(dr,did,{profile:{[q.id]:lbl}}).order[0];
-      if(w.id!==win)out.push({q:q.text,label:lbl,txt:`you had answered “${lbl}” to “${q.text}”`,win:w});});});
-  (dr.questions||[]).forEach(q=>q.answers.forEach(a=>{if(a.label===((ss.answers||{})[did]||{})[q.id])return;const w=rankDraft(dr,did,{own:{[q.id]:a.label}}).order[0];
-    if(w.id!==win)out.push({q:q.text,label:a.label,txt:`you had answered “${a.label}” to “${q.text}”`,win:w});}));
-  return out;
-}
-function confDraft(dr,rk,mode){
-  if(mode==='delegated')return{lv:'low',txt:'you didn\'t mind, so Hoist used the default'};
-  const inferred=(dr.evidence||[]).filter(e=>e.source==='inferred').length;
-  if(rk.close)return{lv:'medium',txt:'the runner-up is close'+(inferred?`; ${inferred} fact${inferred>1?'s':''} inferred`:'')};
-  if(inferred)return{lv:'medium',txt:`${inferred} fact${inferred>1?'s were':' was'} inferred by Muse Spark`};
-  return{lv:'high',txt:'your answers point clearly one way'};
-}
-
-function renderSession(){
-  const ss=SS();
-  if(!(G.sim||(ss&&['planning','drafting'].includes(ss.status))))app.dataset.view='';
-  if(G.sim)return renderLoading(G.sim);
-  if(!ss)return renderStart();
-  if(ss.status==='error')return renderSessionError(ss);
-  if(!ss.plan)return renderLoading(ss);
-  initAssumptions();
-  app.classList.remove('wide');
-  if(!G.view)G.view='tabs';
-  if(G.view==='done')return renderSessionDone();
-  return renderTabs();
-}
-function renderStart(){
-  const ex=['Add user accounts with saved projects','Set up color tokens and theming for our design system','Add analytics to see where customers drop off during checkout'];
-  app.innerHTML=`<div class="step moment">
-    <h1>Decide the hard parts well.</h1>
-    <p class="lead">Describe the task. Your agent reads the project, finds the decisions that would be hard to undo, and walks you through each one — glance, compare, or deep dive, your call.</p>
-    <textarea class="task" id="taskIn" placeholder="Add user accounts with saved projects">${LIVE?'':esc(ex[0])}</textarea>
-    <div class="examples">${ex.map(e=>`<button data-ex="${esc(e)}">${esc(e)}</button>`).join('')}</div>
-    <div class="row"><button class="btn primary" data-s="start">Walk through the decisions</button></div>
-    <p class="err" id="startErr" hidden></p>
-  </div>`;
-}
-function renderLoading(ss){
-  const pl=ss.plan,cur=ss.current&&pl?pl.decisions.find(d=>d.id===ss.current):null;
-  const t0=G.t0||(G.t0=Date.now()),secs=Math.round((Date.now()-t0)/1000);
-  const st=(on,ok)=>ok?'ok':on?'on':'';
-  const planning=ss.status==='planning';
-  const again=app.dataset.view==='loading';app.dataset.view='loading';
-  app.innerHTML=`<div class="step moment${again?' still':''}">
-    <span class="status"><span class="dot"></span>Muse Spark is working · ${secs}s</span>
-    <h1>Preparing your decisions</h1>
-    <p class="lead">“${esc(ss.task)}”. Muse Spark writes the questions and options; Hoist checks every draft against its rules before you see it.</p>
-    <ol class="steps">
-      <li class="${st(planning,!planning)}"><span class="ic">${planning?'':CHECK}</span><span>Reading your project and finding the lasting decisions<small>Files, existing decision records, and the task</small></span></li>
-      <li class="${st(!planning,false)}"><span class="ic"></span><span>${pl?`Writing ${ss.total} decision${ss.total===1?'':'s'} for you to make`:'Writing each decision for you to make'}
-        <small>${cur?`Now: ${esc(cur.title)} (${(ss.drafted||[]).length+1} of ${ss.total})`:'Questions about you, options, trade-offs, and plain explanations'}</small></span></li>
-      <li><span class="ic"></span><span>Ready for you<small>Usually under a minute</small></span></li>
-    </ol>
-    <div class="skel" aria-hidden="true"><i style="width:40%"></i><i style="width:85%"></i><i style="width:70%"></i><i style="width:55%"></i></div>
-  </div>`;
-  clearTimeout(renderLoading.t);renderLoading.t=setTimeout(()=>{if(location.hash==='#/session'&&(G.sim||['planning','drafting'].includes((SS()||{}).status)))renderSession();},1000);
-}
-function renderSessionError(ss){
-  app.innerHTML=`<div class="step"><h1>Muse Spark couldn't finish</h1><p class="lead">Preparing the decisions stopped partway. Try again picks up where it stopped and keeps what's already written. Your agent is still waiting.</p><p class="small">Details: ${esc(ss.error||'unknown')}</p>
-    <div class="row"><button class="btn primary" data-s="retry">Try again</button></div></div>`;
-}
-function renderProfileQ(){
-  const prof=SS().plan.profile||[];
-  if(G.pi>=prof.length){G.view='tabs';return renderSession();}
-  const q=prof[G.pi],cur=SS().profile_answers[q.id];
-  app.innerHTML=`<div class="step">
-    <span class="status"><span class="dot"></span>About you and the project</span>
-    <div class="qhead"><span class="qnum">Question ${G.pi+1} of ${prof.length} · asked once, used by every decision</span><span class="pips">${prof.map((_,i)=>`<i class="${i<=G.pi?'on':''}"></i>`).join('')}</span></div>
-    <p class="qtext">${esc(q.text)}</p><p class="qwhy">${esc(q.why)}</p>
-    ${NEWBIE&&q.beginner_note?`<p class="newnote">${esc(q.beginner_note)}</p>`:''}
-    <div class="answers">${q.answers.map((a,i)=>`<button class="ans ${cur===a?'sel':''}" data-pa="${i}"><span class="key">${i+1}</span>${esc(a)}</button>`).join('')}</div>
-    <div class="row">${G.pi>0?'<button class="link" data-s="pback">Back</button>':'<button class="link" data-s="begin">Back to decisions</button>'}${newbieToggle()}</div>
-  </div>`;
-}
-function learnHtml(o){
-  const l=o.learn||{};
-  return `<div class="learn">${l.what?`<p><b>What it is.</b> ${esc(l.what)}</p>`:''}${l.living_with?`<p><b>Living with it.</b> ${esc(l.living_with)}</p>`:''}
-    ${(l.terms||[]).length?`<dl>${l.terms.map(t=>`<dt>${esc(t.term)}</dt><dd>${esc(t.meaning)}</dd>`).join('')}</dl>`:''}
-    ${o.check_current?`<p class="check">Check it's current: ${esc(o.check_current)}</p>`:''}
-    ${l.docs_url?`<p><a href="${esc(l.docs_url)}" target="_blank" rel="noopener">Official documentation</a> <span class="src">link verified live when drafted</span></p>`:''}</div>`;
-}
-function cur(){const a=asks();return a.find(d=>d.id===G.etab)||a.find(d=>!(SS().outcomes||{})[d.id])||a[0];}
-function etabState(d){if((SS().outcomes||{})[d.id])return 'done';return draftOf(d.id)?'ready':'prep';}
-function advanceTab(){const a=asks(),out=SS().outcomes||{};const nx=a.find(d=>!out[d.id]&&draftOf(d.id))||a.find(d=>!out[d.id]);G.etab=nx?nx.id:'review';}
-function renderTabs(){
-  const ss=SS(),a=asks(),out=ss.outcomes||{};
-  app.classList.add('wide');
-  if(G.etab!=='review'&&!a.some(d=>d.id===G.etab))advanceTab();
-  const done=a.filter(d=>out[d.id]).length;
-  const tabs=a.map(d=>{const st=etabState(d);return `<button class="etab ${st}${G.etab===d.id?' on':''}" data-etab="${esc(d.id)}"${st==='prep'?' disabled':''} aria-pressed="${G.etab===d.id}">${st==='done'?CHECK:''}${esc(d.title)}${st==='prep'?' · preparing':''}</button>`;}).join('')+
-    `<button class="etab${G.etab==='review'?' on':''}" data-etab="review" aria-pressed="${G.etab==='review'}">Review</button><span class="ecount">${done} of ${a.length} decided</span>`;
-  app.innerHTML=`<div class="step moment"><div class="etabs" role="group" aria-label="Decisions">${tabs}</div><div id="epane"></div></div>`;
-  $('epane').innerHTML=G.etab==='review'?reviewHtml():engineHtml(a.find(d=>d.id===G.etab));
-}
-function engineHtml(d){
-  const ss=SS(),dr=draftOf(d.id);
-  if(!dr){
-    if((ss.failed||[]).includes(d.id))return `<h1>${esc(d.title)}</h1><p class="lead">This decision wasn't drafted. <button class="link" data-s="skip">Use the default: ${esc(d.default)}</button></p>`;
-    const curD=ss.current&&ss.plan?ss.plan.decisions.find(x=>x.id===ss.current):null;
-    return `<span class="status"><span class="dot"></span>Muse Spark is writing this one${curD&&curD.id===d.id?' now':''}</span><h1>${esc(d.title)}</h1><p class="lead">${esc(d.why||'Almost ready. Start a decision that is ready while this one finishes.')}</p><div class="skel" aria-hidden="true"><i style="width:40%"></i><i style="width:85%"></i><i style="width:70%"></i></div>`;
+  function Q() {
+    for (var i = 0; i < PACKS.length; i++) if (PACKS[i].id === state.qid) return PACKS[i];
+    return PACKS[0] || null;
   }
-  const tier=G.etier[d.id]||2,pick=((G.epick||{})[d.id])||null;
-  const rk=rankDraft(dr,d.id),best=rk.order[0],viable=rk.order;
-  const opt=viable.find(o=>o.id===pick),fl=flipsDraft(dr,d.id);
-  const leanOpt=viable.find(o=>o.id===dr.agent_pick);
-  const ruled=dr.options.filter(o=>o.ruled_out);
-  const signals=(dr.evidence||[]).filter(e=>e.source!=='profile');
-  const tiers=[[1,'Glance','names only'],[2,'Compare','stories + trade-offs'],[3,'Deep dive','numbers + charts']].map(([i,n,s])=>`<button class="tier${tier===i?' on':''}" data-etier="${i}" aria-pressed="${tier===i}"><b>${n}</b><small>${s}</small></button>`).join('');
-  const rows=viable.map(o=>{
-    const on=o.id===pick,hasMicro=typeof o.micro==='number';
-    let inner=`<h3>${esc(cap(o.plain_name||o.name))}</h3><p class="tech">${esc(o.name)}</p>`;
-    if(tier>=2&&hasMicro)inner+=`<div class="micro"><span>${esc(dr.micro_label||'How they compare')}</span><div class="micro-track"><div class="micro-fill" style="width:${Math.max(4,Math.round(o.micro*10))}%"></div></div></div>`;
-    if(tier>=2)inner+=`<p class="sum">${esc(o.summary||'')}</p>`;
-    if(tier>=2&&on&&(o.journey||[]).length)inner+=`<div class="journey">${o.journey.map(s=>`<div class="jstep">${esc(s)}</div>`).join('')}</div>`;
-    if(tier>=3&&on&&(o.numbers||[]).length)inner+=`<div class="nums">${o.numbers.map(n=>`<div class="num-row"><span>${esc(n[0])}</span><span>${esc(n[1])}</span></div>`).join('')}</div>`;
-    if(tier>=3&&on)inner+=`<div class="mchip-row"><span class="mchip-label">Unlocks</span>${(o.good||[]).map(g=>`<span class="mchip">${esc(g.text)}</span>`).join('')}</div><div class="mchip-row"><span class="mchip-label">Watch out</span>${(o.bad||[]).map(x=>`<span class="mchip bad">${esc(x.text)}</span>`).join('')}</div>`;
-    return `<div class="optrow"><button class="opt${on?' on':''}" data-epick="${esc(o.id)}" aria-pressed="${on}">${inner}</button><button class="hyper-btn" data-hyper="${esc(o.id)}" aria-label="Deep dive into ${esc(o.name)}"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2.5h4v4"/><path d="M13.5 2.5L9 7"/><path d="M6.5 13.5h-4v-4"/><path d="M2.5 13.5L7 9"/></svg></button></div>`;
-  }).join('');
-  const trajs=viable.filter(o=>Array.isArray(o.trajectory)&&o.trajectory.length===2);
-  const chart=(tier>=3&&dr.growth&&trajs.length===viable.length&&viable.length)?growthHtml(dr,viable,pick):'';
-  return `<div class="qhead"><span class="qnum">${esc(d.title)} · ${doorWord(dr.door||d.door)}</span></div>
-    <h1>${esc(dr.question)}</h1>
-    ${dr.analogy?`<div class="model"><b>The one idea</b>${esc(dr.analogy)}</div>`:''}
-    <p class="small">${esc(dr.undo)}${dr.assumes?` ${esc(dr.assumes)}`:''}</p>
-    <div class="edu-head"><h2>Walk through it</h2></div>
-    <div class="tiers" role="group" aria-label="Explanation depth">${tiers}</div>
-    ${rows}
-    ${chart}
-    ${ruled.length?`<details class="ghost"><summary>Rejected: ${ruled.length}</summary><ul>${ruled.map(o=>`<li><b>${esc(o.plain_name||o.name)}</b> — ${esc(o.ruled_out)}</li>`).join('')}</ul></details>`:''}
-    ${tier>=3&&signals.length?`<p class="sub">What it noticed</p><ul>${signals.slice(0,4).map(e=>`<li><span>${esc(e.detail)}</span></li>`).join('')}</ul>`:''}
-    ${tier>=3&&(dr.risks||[]).length?`<p class="sub">What it's watching out for</p><ul>${dr.risks.map(r=>`<li class="risk"><span>${esc(r)}</span></li>`).join('')}</ul>`:''}
-    <div class="row"><button class="btn primary" data-s="choose" data-o="${opt?esc(opt.id):''}"${opt?'':' disabled'}>${CHECK}Confirm${opt?' '+esc(lc(opt.plain_name||opt.name)):''}</button></div>
-    <div class="escape-row"><span>Not sold?</span>
-      ${leanOpt?`<button class="escape-btn" data-s="delegate">Let the agent decide</button>`:`<button class="escape-btn" data-s="delegate">I don't mind, use the default</button>`}
-      <button class="escape-btn" data-s="refine">${(G.refineOpen||{})[d.id]?'Hide condition':'Add a condition'}</button>
-      <button class="escape-btn" data-s="park">Not now</button>
-      <button class="escape-btn" data-s="abandon">Back to chat</button></div>
-    ${(G.refineOpen||{})[d.id]?`<textarea class="refine" id="refineIn" placeholder="For example: use this, but keep everything exportable as plain files.">${esc((G.notes||{})[d.id]||'')}</textarea>`:''}
-    <p class="small">${opt&&opt!==best?`You picked this over ${esc(best.plain_name||best.name)}, which fits your answers better. `:''}${fl.length?`If ${esc(revisitText(fl[0]))}, ${esc(fl[0].win.plain_name||fl[0].win.name)} would fit better.`:'No single answer change would flip this.'}</p>
-    <p class="err" id="sErr" hidden></p>`;
-}
-function reviewHtml(){
-  const ss=SS(),a=asks(),out=ss.outcomes||{};
-  const rows=a.map(d=>{const o=out[d.id],dr=draftOf(d.id);
-    let label='Unanswered',act='';
-    if(!dr){label='Preparing…';}
-    else if(!o){label='Unanswered';act=`<button class="rev-a" data-etab="${esc(d.id)}">Answer</button>`;}
-    else{const nm=o.choice&&dr?((dr.options.find(x=>x.id===o.choice)||{}).name||o.choice):'';
-      label=o.mode==='parked'?'Parked for later':o.mode==='delegated'?nm+' (delegated)':o.mode==='abandoned'?'Sent back to chat':nm;
-      const id=o.record?o.record.split('/').pop().slice(0,4):null;
-      act=id?`<a class="link" href="#/records/${id}">Record</a>`:'';
+  function allOptions() {
+    var q = Q();
+    return q.options.concat(state.added[q.id] || []);
+  }
+  function optBy(v) {
+    var opts = allOptions();
+    for (var i = 0; i < opts.length; i++) if (opts[i].value === v) return opts[i];
+    return null;
+  }
+
+  function msgHtml(who, text) {
+    return '<div class="msg ' + who + '"><span class="who">' + (who === "agent" ? "H" : "You") + "</span>" +
+      '<div class="bubble">' + text + "</div></div>";
+  }
+
+  function journeyHtml(o) {
+    if (!o.journey || !o.journey.length) return "";
+    var html = '<div class="journey" aria-label="What happens step by step">';
+    for (var i = 0; i < o.journey.length; i++) {
+      html += '<div class="jstep">' + esc(o.journey[i]) + "</div>";
     }
-    return `<div class="rev-row"><div><b>${esc(d.title)}</b><span>${esc(label)}</span></div>${act}</div>`;}).join('');
-  const allDone=!a.length||a.every(d=>out[d.id]);
-  return `<h1>Review before you finish</h1><p class="lead">Check every decision landed where you meant it, then finish so your agent continues.</p>${rows}<div class="row"><button class="btn primary" data-s="finish"${allDone?'':' disabled'}>Finish</button></div>${allDone?'':'<p class="small">Decide, delegate, park, or send back each decision to finish.</p>'}`;
-}
-function growthHtml(dr,opts,pick){
-  const g=dr.growth,mx=10,bw=34,gap=26,labelH=46,H=140,W=opts.length*(bw*2+gap)+gap;
-  const y=v=>H-8-(v/mx)*(H-20);
-  const bars=opts.map((o,i)=>{const x=gap+i*(bw*2+gap),on=o.id===pick;
-    return `<rect x="${x}" y="${y(o.trajectory[0])}" width="${bw}" height="${H-8-y(o.trajectory[0])}" rx="3" style="fill:${on?'var(--accent)':'var(--line)'}"><title>${esc(o.name)}: ${esc(g.now)}</title></rect><rect x="${x+bw+2}" y="${y(o.trajectory[1])}" width="${bw}" height="${H-8-y(o.trajectory[1])}" rx="3" style="fill:${on?'var(--accent)':'var(--muted)'}" opacity="${on?'1':'0.55'}"><title>${esc(o.name)}: ${esc(g.later)}</title></rect><text x="${x+bw}" y="${H+14}" text-anchor="middle" font-size="10" style="fill:var(--muted)">${esc(o.plain_name||o.name)}</text>`;}).join('');
-  const pk=opts.find(o=>o.id===pick);
-  return `<div class="chart"><p class="chart-title">${esc(g.title)}</p><svg class="growth" viewBox="0 0 ${W} ${H+labelH}" role="img" aria-label="${esc(g.title)}">${bars}</svg><p class="chart-note">${pk?`${esc(pk.plain_name||pk.name)} grows from ${esc(g.now)} to ${esc(g.later)}. Shapes, not forecasts.`:'Shapes, not forecasts.'}</p></div>`;
-}
-function closeEmodal(){const m=$('emodal');if(m)m.innerHTML='';}
-function openHyper(did,oid){
-  const dr=draftOf(did),o=(dr.options||[]).find(x=>x.id===oid);if(!o)return;
-  const docs=[...new Set((dr.options||[]).map(x=>((x.learn||{}).docs_url||'').trim()).filter(Boolean))].slice(0,2);
-  $('emodal').innerHTML=`<div class="m-veil moment"><div class="m-sheet" role="dialog" aria-modal="true" aria-label="${esc(o.name)}">
-    <div class="m-sheet-top"><div><h2>${esc(cap(o.plain_name||o.name))}</h2><p>${esc(o.name)}${dr.agent_pick===o.id?' · your agent leans here':''}</p></div><button class="x-btn" data-eveil aria-label="Close">✕</button></div>
-    <p class="m-sheet-story">${esc(o.summary||'')}</p>
-    ${(o.journey||[]).length?`<p class="m-sheet-sec">How it works</p><div class="journey">${o.journey.map(s=>`<div class="jstep">${esc(s)}</div>`).join('')}</div>`:''}
-    ${(o.numbers||[]).length?`<p class="m-sheet-sec">The trade-offs</p><div class="nums">${o.numbers.map(n=>`<div class="num-row"><span>${esc(n[0])}</span><span>${esc(n[1])}</span></div>`).join('')}</div>`:''}
-    <div class="mchip-row"><span class="mchip-label">Unlocks</span>${(o.good||[]).map(g=>`<span class="mchip">${esc(g.text)}</span>`).join('')}</div>
-    <div class="mchip-row"><span class="mchip-label">Watch out</span>${(o.bad||[]).map(x=>`<span class="mchip bad">${esc(x.text)}</span>`).join('')}</div>
-    ${o.learn?`<p class="m-sheet-sec">Living with it</p><p class="m-sheet-story" style="font-size:13.5px">${esc(o.learn.what||'')}${o.learn.living_with?' '+esc(o.learn.living_with):''}</p>`:''}
-    <p class="m-sheet-sec">Keep learning</p><ul class="m-learn-list">${docs.map(u=>`<li><a href="${esc(u)}" target="_blank" rel="noopener">${esc(u.replace(/^https?:\/\//,'').split('/')[0])}</a></li>`).join('')}<li><a href="https://duckduckgo.com/?q=${encodeURIComponent(o.name+' vs alternatives')}" target="_blank" rel="noopener">Search the web for comparisons</a></li></ul>
-    <div class="m-sheet-actions"><button class="btn primary" id="hyperChoose">Choose ${esc(o.name)}</button></div>
-  </div></div>`;
-  $('hyperChoose').onclick=()=>{closeEmodal();chooseSession('chosen',oid);};
-}
-async function abandonSession(d){
-  try{
-    if(LIVE){S.session=await post('/api/session/abandon',{id:d.id});}
-    else{SS().outcomes[d.id]={choice:null,mode:'abandoned',record:'',note:'Sent back to chat.'};}
-  }catch(e){const el=$('sErr');if(el){el.hidden=false;el.textContent=`Couldn't save: ${e.message}`;}return;}
-  advanceTab();toast('Sent back to chat. Your agent will ask there instead.');renderSession();
-}
-function madrDraft(d,dr,opt,mode){
-  const ss=SS(),rk=rankDraft(dr,d.id),fl=flipsDraft(dr,d.id),cf=confDraft(dr,rk,mode),prof=ss.plan.profile||[];
-  const because=mode==='delegated'?`you didn't mind, so Hoist used ${opt.name}: ${cleanReason((opt.id===dr.agent_pick&&(dr.lean||{}).why)||dr.default_reason||'it fits most projects like this')}`:
-    (dr.agent_pick&&opt.id===dr.agent_pick&&(dr.lean||{}).why)?cleanReason(dr.lean.why):
-    opt.id===rk.order[0].id?(becauseText(rk.why[opt.id])||cleanReason(dr.default_reason||'it fits your answers best')):
-    `you preferred it over ${rk.order[0].name}, which fit your answers better`;
-  const tag=q=>({confirmed:'you confirmed it',changed:'you changed it'})[assumeState(q.id)]||'assumed by your agent, not checked';
-  const used=(dr.profile_effects||[]).map(pe=>{const q=prof.find(x=>x.id===pe.profile_id);return q&&ss.profile_answers[q.id]?`- ${q.text.replace(/\?$/,'')}: ${ss.profile_answers[q.id]} (${tag(q)})`:null;}).filter(Boolean);
-  const note=((G.notes||{})[d.id]||'').trim();
-  const own=(dr.questions||[]).map(q=>{const a=((ss.answers||{})[d.id]||{})[q.id];return a?`- ${q.text.replace(/\?$/,'')}: ${a} (your answer)`:null;}).filter(Boolean);
-  const lst=((ss.answers||{})[d.id]||{}).lean||{};
-  const lassump=((dr.lean||{}).assumptions||[]).map((a,i)=>`- Assumed: ${a.replace(/\.$/,'')} (${lst[i]==='confirmed'?'you confirmed it':lst[i]==='challenged'?'you challenged it, so treat the lean as uncertain':'assumed, not checked'})`);
-  const ev=(dr.evidence||[]).filter(e=>e.source!=='profile').map(e=>`- ${e.detail} (${e.source==='inferred'?'inferred by Muse Spark':e.source==='profile'?'your answers':e.source==='task'?'the task':'seen in '+e.source})`);
-  const order=[opt,...rk.order.filter(o=>o!==opt)],ruled=dr.options.filter(o=>o.ruled_out);
-  const later=(opt.bad||[]).find(b=>b.when==='later')||(opt.bad||[])[0];
-  const revA=((dr.lean||{}).flips||[]).map(f=>`- Revisit if ${lc(f).replace(/\.$/,'')}.`);
-  return `---
-status: accepted
-date: ${today()}
-door: ${{3:'one-way',2:'heavy',1:'two-way'}[dr.door||d.door]}
-proposed-by: ${LIVE?'Muse Code':'your agent'} (task: ${taskLabel()})
-consulted: Muse Spark (drafted the questions and options)
-deciders: ${mode==='delegated'?'Hoist, delegated by the project owner':'project owner'}
-confidence: ${cf.lv}
----
-# ${d.title}: ${opt.name}
-
-> **Decision:** ${opt.name}${note?`, with the condition: ${note.replace(/\.$/,'')}`:''}. **Because** ${because}. **Accepted cost:** ${later?cleanReason(later.text):'none recorded'}. ${fl.length?`**Revisit if** ${revisitText(fl[0])}.`:''}
-
-## Context and Problem Statement
-${dr.question} ${dr.why_now} ${dr.undo}${dr.assumes?`\n${/^assum/i.test(dr.assumes)?'':'Assumes: '}${dr.assumes}`:''}
-
-## Decision Drivers
-${[...used,...own,...lassump,...ev].join('\n')||'- No drivers recorded'}
-
-## Considered Options
-${order.map((o,i)=>`${i+1}. ${o.name}${o.id===dr.agent_pick?' (the agent\'s pick)':''}`).join('\n')}${ruled.length?'\n'+ruled.map(o=>`- Ruled out: ${o.name}, because ${lc(o.ruled_out)}`).join('\n'):''}
-
-## Decision Outcome
-Chosen: ${opt.name}, because ${because}.${opt.analogy?`\n\nIn plain words: ${opt.analogy} Now: ${lc((opt.story||{}).now||'')} In 6 months: ${lc(((opt.story||{}).later||'').replace(/^in 6 months,?\s*/i,''))}`:''}${note?`\n\n### Condition from the owner\n${note}`:''}
-
-### Consequences
-${(opt.good||[]).map(g=>`- Good, because ${lc(g.text)}`).join('\n')}
-${(opt.bad||[]).map(b=>`- Bad, because ${lc(b.text)}`).join('\n')}
-
-### Confirmation
-${opt.check_current?`- [ ] ${opt.check_current}\n`:''}- Hoist flags later changes that conflict with this record.
-
-## Pros and Cons of the Options
-${order.slice(1).map(o=>`### ${o.name}\n${(o.good||[]).map(g=>`- Good, because ${lc(g.text)}`).join('\n')}\n${(o.bad||[]).map(b=>`- Bad, because ${lc(b.text)}`).join('\n')}`).join('\n\n')}
-
-## More Information
-- Confidence: ${cf.lv}; ${cf.txt}.
-${[...revA,...fl.map(f=>`- Revisit if ${revisitText(f)}: ${f.win.name} would fit better.`)].join('\n')||'- No single answer change would flip it.'}${(opt.learn||{}).docs_url?`\n- Documentation: ${opt.learn.docs_url}`:''}
-`;
-}
-function madrDefault(d){
-  const ss=SS(),budget=!!d.budget_note;
-  const why=budget?"it's the safe default for projects like this, and Hoist recorded it instead of asking you, to keep the task short"
-    :"a careful practitioner would pick it without asking, and it's easy to review later";
-  return `---
-status: accepted
-date: ${today()}
-door: ${{3:'one-way',2:'heavy',1:'two-way'}[d.door]}
-proposed-by: Hoist plan (task: ${taskLabel()})
-deciders: Hoist default; the project owner can review it
-confidence: low
----
-# ${d.title}: ${d.default}
-
-> **Decision:** ${d.default}. **Because** ${why}. **Revisit** when you review this task's defaults, or before this choice is built on.
-
-## Context and Problem Statement
-${d.why}
-
-## Decision Drivers
-- ${budget?`Hoist asks at most a few questions per task (${d.budget_note})`:'A safe, common default exists'}
-- Not asked, so no answer of yours shaped it
-
-## Decision Outcome
-Chosen: ${d.default}, as a default.
-
-## More Information
-- Confidence: low; nobody chose this on purpose yet.
-`;
-}
-async function recordSession(d,payload){
-  const ss=SS();
-  if(LIVE){S.session=await post('/api/session/decisions/'+d.id,payload);}
-  else{
-    const n=String(Math.max(0,...S.records.map(r=>+r.file.slice(0,4)))+1).padStart(4,'0'),file=`${n}-${payload.slug}.md`;
-    S.records.push({file,markdown:payload.markdown});ss.outcomes[d.id]={choice:payload.choice,mode:payload.mode,record:'docs/decisions/'+file};
+    return html + "</div>";
   }
-}
-async function chooseSession(mode,optId){
-  const d=cur(),dr=draftOf(d.id);
-  const leanD=dr.options.find(o=>o.id===dr.agent_pick&&!o.ruled_out);
-  const opt=mode==='delegated'?(leanD||dr.options.find(o=>o.id===dr.default_option)):dr.options.find(o=>o.id===optId);
-  try{
-    if(mode==='parked')await recordSession(d,{choice:null,mode,slug:slugify(d.title+' later'),markdown:`---\nstatus: proposed\ndate: ${today()}\ndoor: ${{3:'one-way',2:'heavy',1:'two-way'}[dr.door||d.door]}\nproposed-by: ${SS().task}\ndeciders: project owner (asked to decide later)\nconfidence: low\n---\n# ${d.title}: decide later\n\n> **Decision:** Not decided yet. **Because** the owner asked to decide later. **Revisit** before this choice is built on.\n\n## Context and Problem Statement\n${dr.question} ${dr.why_now}\n\n## Decision Outcome\nShort term: ${dr.options.find(o=>o.id===dr.default_option).name} as a placeholder the agent keeps easy to replace.\n`});
-    else await recordSession(d,{choice:opt.id,mode,slug:slugify(d.title+' '+opt.name),markdown:madrDraft(d,dr,opt,mode),note:((G.notes||{})[d.id]||'').trim()});
-  }catch(e){const el=$('sErr');if(el){el.hidden=false;el.textContent=`Couldn't save: ${e.message}`;}return;}
-  if(G.epick)delete G.epick[d.id];advanceTab();
-  toast(mode==='parked'?'Parked. Your agent will keep this easy to replace.':`Recorded: ${opt.name}`);
-  renderSession();
-}
-async function renderSessionDone(){
-  const ss=SS(),pl=ss.plan,def=pl.decisions.filter(d=>d.mode==='default');
-  if(!ss.defaults_recorded){ss.defaults_recorded=true;for(const d of def){if((ss.outcomes||{})[d.id])continue;try{await recordSession(d,{choice:d.default,mode:'default',slug:slugify(d.title+' default'),markdown:madrDefault(d)});}catch(e){}}}
-  const rows=pl.decisions.filter(d=>d.mode!=='log').map(d=>{const o=(SS().outcomes||{})[d.id];const id=o&&o.record?o.record.split('/').pop().slice(0,4):null;
-    const dr=draftOf(d.id),name=o&&o.choice&&dr?((dr.options.find(x=>x.id===o.choice)||{}).name||o.choice):(o&&o.choice)||'';
-    return `<a class="item" href="${id?'#/records/'+id:'#/records'}"><span class="t">${esc(d.title)}</span><span class="s">${o?(o.mode==='parked'?'Parked for later':o.mode==='default'?'Default: '+esc(name):o.mode==='delegated'?esc(name)+' (you didn\'t mind)':esc(name)):'Not recorded'}</span><span class="m">${o&&o.mode==='default'?'<span class="pill proposed">Review later</span>':'<span class="pill accepted">Recorded</span>'}</span></a>`;}).join('');
-  app.innerHTML=`<div class="step moment">
-    <span class="status"><span class="dot ok"></span>${LIVE?'Your agent can continue':'All decided'}</span>
-    <h1>All set</h1>
-    <p class="lead">Every decision for “${esc(ss.task)}” is recorded in <code>docs/decisions/</code>, with your reasons. ${LIVE?'Your agent continues with these choices.':'In a real project, your agent now continues with these choices.'}</p>
-    <div class="list">${rows}</div>
-    <div class="row"><a class="btn primary" href="#/records">See all decision records</a>${LIVE?'':'<button class="link" data-s="reset">Try another task</button>'}</div>
-  </div>`;
-}
-async function startSession(task,resume){
-  if(!task){const el=$('startErr');el.hidden=false;el.textContent='Describe the task first.';return;}
-  G={view:null,pi:0,sim:null,etab:null,etier:{},epick:{},t0:Date.now()};
-  if(LIVE){try{S.session=await post('/api/session',{task,resume:!!resume});}catch(e){const el=$('startErr');if(el){el.hidden=false;el.textContent=e.message;}return;}renderSession();return;}
-  /* sample mode: replay the preparation with the recorded fieldnotes session */
-  const base=JSON.parse(JSON.stringify(S.sample_session)),total=base.plan.decisions.filter(d=>d.mode==='ask').length;
-  G.sim={task,status:'planning',plan:null,drafted:[],total:0};renderSession();
-  const step=(f,ms)=>new Promise(r=>setTimeout(()=>{f();r();},ms));
-  await step(()=>{G.sim={...G.sim,status:'drafting',plan:base.plan,total,current:base.plan.decisions.find(d=>d.mode==='ask').id};},2400);
-  const ids=base.plan.decisions.filter(d=>d.mode==='ask').map(d=>d.id);
-  for(let i=0;i<ids.length;i++)await step(()=>{G.sim={...G.sim,drafted:ids.slice(0,i+1),current:ids[i+1]||null};},1600);
-  await step(()=>{S.session={...base,task:base.task,status:'ready',profile_answers:{},answers:{},outcomes:{}};G.sim=null;},400);
-  if(location.hash==='#/session')renderSession();
-}
-app.addEventListener('click',async e=>{
-  if(!/^#\/session/.test(location.hash))return;
-  const b=e.target.closest('button');if(!b)return;
-  if(b.dataset.ex){$('taskIn').value=b.dataset.ex;return;}
-  const s=b.dataset.s;
-  if(s==='start')return startSession($('taskIn').value.trim());
-  if(s==='retry')return startSession(SS().task,true);
-  if(s==='begin'){G.view='tabs';return renderSession();}
-  if(s==='pback'){G.pi--;return renderSession();}
-  if(s==='reset'){S.session=null;G={view:null,pi:0,sim:null,etab:null,etier:{},epick:{}};return renderSession();}
-  if(b.dataset.pa!=null){const q=SS().plan.profile[G.pi];await saveAnswers({profile_answers:{[q.id]:q.answers[+b.dataset.pa]}});G.pi++;return renderSession();}
-  if(b.dataset.etab){G.etab=b.dataset.etab;return renderSession();}
-  if(b.dataset.etier){G.etier[cur().id]=+b.dataset.etier;return renderSession();}
-  if(b.dataset.epick){const dd=cur();G.epick=G.epick||{};G.epick[dd.id]=G.epick[dd.id]===b.dataset.epick?null:b.dataset.epick;return renderSession();}
-  if(b.dataset.hyper){const dd=cur();return openHyper(dd.id,b.dataset.hyper);}
-  if(s==='refine'){const id=cur().id;G.refineOpen=G.refineOpen||{};G.refineOpen[id]=!G.refineOpen[id];renderSession();const t=$('refineIn');if(t)t.focus();return;}
-  if(s==='finish'){G.view='done';return renderSession();}
-  if(s==='abandon')return abandonSession(cur());
-  if(s==='choose')return chooseSession('chosen',b.dataset.o);
-  if(s==='delegate')return chooseSession('delegated');
-  if(s==='park')return chooseSession('parked');
-  if(s==='skip'){const d=cur();return recordSession(d,{choice:d.default,mode:'default',slug:slugify(d.title+' default'),markdown:madrDefault(d)}).then(()=>{advanceTab();renderSession();});}
-});
-app.addEventListener('input',e=>{if(e.target.id==='refineIn'){G.notes=G.notes||{};G.notes[cur().id]=e.target.value;}});
-app.addEventListener('change',e=>{if(e.target.id==='newbie'){NEWBIE=e.target.checked;try{localStorage.setItem(NEWBIE_KEY,NEWBIE?'1':'0');}catch(x){}if(/^#\/session/.test(location.hash))renderSession();}});
-document.addEventListener('keydown',e=>{
-  if(!/^#\/session/.test(location.hash)||$('whySheet').classList.contains('on')||!/^[1-9]$/.test(e.key)||e.target.tagName==='TEXTAREA')return;
-  const btns=[...app.querySelectorAll('[data-pa]')];const b=btns[+e.key-1];if(b)b.click();
-});
 
-/* ---------- why sheet ---------- */
-function openWhy(dec,k){
-  const K=CAT[dec.kind],a=ans(dec,F.A),m=model(K,a),o=K.options[k],s=m.s[k],ko=!viable(K,k,a);
-  $('whyTitle').textContent=o.n;$('whySub').textContent=ko?`Ruled out: ${o.ko.why}`:o.sub;
-  const facts=[];
-  K.questions.forEach(q=>{const known=q.fact&&dec.facts&&dec.facts[q.id]!=null;facts.push([q.a[a[q.id]].l,known?((dec.fact_sources||{})[q.id]||'your repo'):'your answer',q]);});
-  if(dec.task)facts.push([`Task: “${dec.task}”`,`${dec.agent||'agent'}'s task`,null]);
-  const rows=Object.keys(m.w).sort((x,y)=>m.w[y]-m.w[x]);
-  $('whyBody').innerHTML=`
-    <ul class="facts">${o.good.map(g=>`<li><span>${esc(g[1])}</span><span class="src" style="color:var(--accent)">good · ${g[0]}</span></li>`).join('')}${o.bad.map(b=>`<li><span>${esc(b[1])}</span><span class="src" style="color:var(--oneway)">bad · ${b[0]}</span></li>`).join('')}</ul>
-    <p class="small"><b>What Hoist based this on</b></p>
-    <ul class="facts">${facts.map(([t,src])=>`<li><span>${esc(t)}</span><span class="src">${esc(src)}</span></li>`).join('')}</ul>
-    <details class="more"><summary>See how the facts connect</summary><div class="gwrap">${graph(K,dec,a,m,k)}</div></details>
-    <details class="more"><summary>See the numbers behind the ranking</summary>
-      <p class="small" style="margin-bottom:8px">Your answers set how much each factor matters; Hoist's catalog rates each option. The numbers only put options in order.</p>
-      <table class="raw"><tr><th>Factor</th><th>Weight</th><th>Rating</th></tr>${rows.map(f=>`<tr><td>${esc(K.factors[f])}</td><td>${m.w[f]}</td><td>${ko&&f==='host'?'ruled out':s[f]+'/10'}</td></tr>`).join('')}</table></details>`;
-  $('whySheet').classList.add('on');$('whySheet').setAttribute('aria-hidden','false');$('scrim').classList.add('on');setTimeout(()=>$('whyClose').focus(),60);
-}
-function graph(K,dec,a,m,k){
-  const src=K.questions.map(q=>({t:q.a[a[q.id]].l,f:q.id==='host'?['host']:Object.keys((q.a.find(x=>x.w)||{}).w||{}),known:q.fact&&dec.facts&&dec.facts[q.id]!=null}));
-  const fac=Object.keys(K.factors),s=m.s[k],ko=!viable(K,k,a);
-  const X=[8,240,470],W=[210,200,150],NH=34,G=10,H=Math.max(src.length,fac.length)*(NH+G);
-  const pos=(c,i,n)=>({x:X[c],y:(H-(n*(NH+G)-G))/2+i*(NH+G),w:W[c]});
-  const P=(a,b,col,wd)=>{const x1=a.x+a.w,y1=a.y+NH/2,x2=b.x,y2=b.y+NH/2,dx=(x2-x1)/2;return`<path d="M${x1},${y1} C${x1+dx},${y1} ${x2-dx},${y2} ${x2},${y2}" stroke="${col}" stroke-width="${wd}"/>`;};
-  let out='';const op=pos(2,0,1);
-  src.forEach((n,i)=>n.f.forEach(f=>{const j=fac.indexOf(f);if(j>=0)out+=P(pos(0,i,src.length),pos(1,j,fac.length),'var(--faint)',1.2);}));
-  fac.forEach((f,j)=>{const bad=(ko&&f==='host')||s[f]<=5,good=s[f]>=8&&!bad;out+=P(pos(1,j,fac.length),op,good?'var(--accent)':bad?'var(--oneway)':'var(--faint)',1+m.w[f]/2);});
-  const box=(p,t,col,dash)=>`<rect x="${p.x}" y="${p.y}" width="${p.w}" height="${NH}" rx="8" stroke="${col}" ${dash?'stroke-dasharray="4 3"':''}/><text x="${p.x+10}" y="${p.y+21}" font-size="12">${esc(t.length>30?t.slice(0,29)+'…':t)}</text>`;
-  src.forEach((n,i)=>out+=box(pos(0,i,src.length),n.t,n.known?'var(--accent)':'var(--ink)'));
-  fac.forEach((f,j)=>out+=box(pos(1,j,fac.length),K.factors[f],'var(--line)'));
-  out+=box(op,K.options[k].n,ko?'var(--oneway)':'var(--accent)');
-  return`<svg class="g" viewBox="0 0 630 ${H}" role="img" aria-label="How your answers connect to this option">${out}</svg>`;
-}
-function closeWhy(){$('whySheet').classList.remove('on');$('whySheet').setAttribute('aria-hidden','true');$('scrim').classList.remove('on');}
+  function chipsHtml(items, cls) {
+    var html = "";
+    for (var i = 0; i < items.length; i++) html += '<span class="chip ' + cls + '">' + esc(items[i]) + "</span>";
+    return html;
+  }
 
-/* ---------- events ---------- */
-function toast(t){const el=$('toast');el.textContent=t;el.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('on'),3000);}
-function answer(dec,i){const qs=toAsk(dec);F.A[qs[F.qi].id]=i;if(F.qi<qs.length-1)F.qi++;else F.step='rec';renderDecide(dec.id);}
-app.addEventListener('click',e=>{
-  const b=e.target.closest('button');if(!b||!F)return;
-  const dec=S.decisions.find(d=>d.id===F.id);if(!dec)return;
-  const K=CAT[dec.kind];
-  if(b.dataset.a!=null)return answer(dec,+b.dataset.a);
-  if(b.dataset.why)return openWhy(dec,b.dataset.why);
-  if(b.dataset.pick){const best=model(K,ans(dec,F.A)).r[0].k;F.pick=b.dataset.pick===best?null:b.dataset.pick;return renderDecide(dec.id);}
-  const go=b.dataset.go,best=()=>model(K,ans(dec,F.A)).r[0].k;
-  if(go==='back'){F.qi--;renderDecide(dec.id);}
-  if(go==='edit'){F.step='ask';F.qi=0;renderDecide(dec.id);}
-  if(go==='later')finish(dec,best(),'parked');
-  if(go==='nopref'){F.pick=null;finish(dec,best(),'delegated');}
-  if(go==='record')finish(dec,F.pick||best(),F.pick?'chosen':'chosen');
-});
-$('whyClose').onclick=closeWhy;$('scrim').onclick=closeWhy;
-document.addEventListener('click',e=>{
-  const t=e.target;
-  if(t&&t.classList&&t.classList.contains('m-veil'))return closeEmodal();
-  const x=t&&t.closest?t.closest('[data-eveil]'):null;
-  if(x)return closeEmodal();
-});
-document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){closeEmodal();return closeWhy();}
-  if(!F||F.done||F.step!=='ask'||!/^#\/decide\//.test(location.hash)||$('whySheet').classList.contains('on'))return;
-  const dec=S.decisions.find(d=>d.id===F.id);if(!dec)return;const q=toAsk(dec)[F.qi];
-  if(q&&/^[1-9]$/.test(e.key)&&+e.key<=q.a.length)answer(dec,+e.key-1);
-});
-boot();
+  function deepHtml(o) {
+    var nums = o.numbers || [], un = o.unlocks || [], wa = o.watch || [];
+    if (!nums.length && !un.length && !wa.length) return "";
+    var html = "";
+    if (nums.length) {
+      html += '<dl class="nums">';
+      for (var i = 0; i < nums.length; i++) {
+        html += '<div class="num-row"><dt>' + esc(nums[i][0]) + "</dt><dd>" + esc(nums[i][1]) + "</dd></div>";
+      }
+      html += "</dl>";
+    }
+    if (un.length || wa.length) {
+      html += '<div class="chip-row">';
+      if (un.length) html += '<div class="chip-label">' + ICONS.check + "Unlocks</div>" + chipsHtml(un, "go");
+      if (wa.length) html += '<div class="chip-label">' + ICONS.warn + "Watch out for</div>" + chipsHtml(wa, "");
+      html += "</div>";
+    }
+    return html;
+  }
+
+  function growthHtml() {
+    var q = Q();
+    var g = q.growth;
+    if (!g) return "";
+    var W = 560, rowH = 46, labelW = 190, max = g.max || 10;
+    var gopts = allOptions();
+    var H = gopts.length * rowH + 26;
+    var bw = function (v) { return Math.max(2, Math.round(((v == null ? 5 : v) / max) * (W - labelW - 40))); };
+    var html = '<div class="chart"><div class="chart-title">' + esc(g.title) + "</div>" +
+      '<svg class="growth" viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="' + esc(g.title) + '">';
+    for (var i = 0; i < gopts.length; i++) {
+      var o = gopts[i];
+      var y = i * rowH + 4;
+      var isPick = state.picked === o.value;
+      html += '<text x="0" y="' + (y + 18) + '" font-size="12" style="fill:var(--ink-2)">' + esc(o.name) + "</text>" +
+        '<rect x="' + labelW + '" y="' + y + '" width="' + bw(o.mNow) + '" height="12" rx="3" style="fill:var(--line)"/>' +
+        '<rect x="' + labelW + '" y="' + (y + 16) + '" width="' + bw(o.mLater) + '" height="12" rx="3" style="fill:' +
+        (isPick ? "var(--accent)" : "var(--ink-2)") + '" opacity="' + (isPick ? "1" : "0.35") + '"/>';
+    }
+    var ly = gopts.length * rowH + 14;
+    html += '<rect x="' + labelW + '" y="' + ly + '" width="12" height="12" rx="3" style="fill:var(--line)"/>' +
+      '<text x="' + (labelW + 18) + '" y="' + (ly + 11) + '" font-size="11" style="fill:var(--ink-2)">' + esc(g.now) + "</text>" +
+      '<rect x="' + (labelW + 110) + '" y="' + ly + '" width="12" height="12" rx="3" style="fill:var(--accent)"/>' +
+      '<text x="' + (labelW + 128) + '" y="' + (ly + 11) + '" font-size="11" style="fill:var(--ink-2)">' + esc(g.later) + "</text>";
+    var picked = optBy(state.picked);
+    var caption = picked
+      ? "Your pick: " + picked.name + " — follow its second bar. That's the future you're signing."
+      : "Pick an option above and its future bar highlights here.";
+    return html + '</svg><div class="chart-note">' + esc(caption) + " Shapes, not forecasts.</div></div>";
+  }
+
+  function microHtml(q, o, d) {
+    if (d < 2 || o.micro == null || !q.microLabel) return "";
+    var pct = Math.max(3, Math.round((o.micro / 10) * 100));
+    return '<span class="micro"><small>' + esc(q.microLabel) + "</small>" +
+      '<span class="micro-track"><span class="micro-fill" style="display:block;width:' + pct + '%"></span></span></span>';
+  }
+
+  function tabsHtml() {
+    var html = "";
+    var done = 0;
+    for (var i = 0; i < PACKS.length; i++) {
+      var id = PACKS[i].id;
+      var mark = state.answers[id] ? "✓ " : (state.skipped[id] ? "– " : "");
+      if (state.answers[id] || state.skipped[id]) done++;
+      html += '<button type="button" class="qtab" data-action="q" data-v="' + esc(id) + '" aria-pressed="' +
+        (state.qid === id ? "true" : "false") + '">' + esc(mark + PACKS[i].tab) + "</button>";
+    }
+    html += '<span class="qcount">' + done + " of " + PACKS.length + "</span>";
+    html += '<button type="button" class="qtab" data-action="review">Review &amp; file</button>';
+    return html;
+  }
+
+  function momentHtml() {
+    var q = Q();
+    return msgHtml("user", esc(q.chatAsk)) +
+      msgHtml("agent", q.agentAsk) +
+      '<div class="interrupt"><h2>The interruption</h2><p>One question, two paths. Then learn as much as you want.</p>' +
+      '<div class="path-row">' +
+      '<button type="button" class="path-btn" data-action="path" data-v="quick"><strong>Answer here</strong><span>Quick: pick now, thin record.</span></button>' +
+      '<button type="button" class="path-btn primary" data-action="path" data-v="hoist"><strong>Decide with Hoist instead</strong><span>Learn the options, then pick. Grounded record.</span></button>' +
+      "</div></div>";
+  }
+
+  function hoistHtml() {
+    var q = Q();
+    var d = state.depth;
+    if (q.preparing) {
+      return msgHtml("agent", "One moment — <strong>" + esc(q.title) + "</strong> is still being written.") +
+        '<div class="edu"><div class="researching">Muse Spark is writing this decision — it will appear here on its own.</div></div>';
+    }
+    var html = msgHtml("agent", "Hoist walk-through: <strong>" + esc(q.shortTitle) + "?</strong> Pick a depth, then an option.") +
+      '<div class="edu"><div class="edu-head"><h2>' + esc(q.title) + "</h2></div>" +
+      '<div class="tiers" role="group" aria-label="Explanation depth">';
+    for (var t = 0; t < TIERS.length; t++) {
+      html += '<button type="button" class="tier" data-action="depth" data-v="' + TIERS[t].id + '" aria-pressed="' +
+        (d === TIERS[t].id ? "true" : "false") + '"><b>' + esc(TIERS[t].name) + "</b><small>" + esc(TIERS[t].sub) + "</small></button>";
+    }
+    html += "</div>";
+    if (d >= 2 && q.model) {
+      html += '<div class="model"><strong>The one idea that decides this</strong>' + esc(q.model) + "</div>";
+    }
+    var opts = allOptions();
+    if (!state.picked) html += '<p class="expand-hint">Select an option to open its deep dive — or open the full-screen hyper dive.</p>';
+    for (var i = 0; i < opts.length; i++) {
+      var o = opts[i];
+      var on = state.picked === o.value;
+      html += '<div class="optrow"><button type="button" class="opt" data-action="pick" data-v="' + esc(o.value) + '" aria-pressed="' + (on ? "true" : "false") + '">' +
+        "<b>" + ICONS.chev + esc(o.name) + (o.added ? '<span class="yours">Added by you</span>' : "") + "</b><small>" + esc(o.desc) + "</small>" +
+        microHtml(q, o, d) +
+        (on && d >= 2 ? '<span class="why">' + esc(o.why) + "</span>" + journeyHtml(o) : "") +
+        (on && d >= 3 ? deepHtml(o) : "") + "</button>" +
+        '<button type="button" class="hyper-btn" data-action="hyper" data-v="' + esc(o.value) + '" aria-label="Hyper dive into ' + esc(o.name) + '">' + ICONS.expand + "</button></div>";
+    }
+    if (d >= 3) html += growthHtml();
+    var pickedOpt = optBy(state.picked);
+    html += '<div class="actions"><button type="button" class="btn" data-action="confirm"' +
+      (state.picked ? "" : " disabled") + ">Confirm choice</button></div>";
+    if (state.err) html += '<p class="err">' + esc(state.err) + "</p>";
+    html += '<div class="escape-row"><span>Not sold?</span>' +
+      '<button type="button" class="escape-btn" data-action="escape" data-v="custom">Add your option</button>';
+    if (q.agentPick) html += '<button type="button" class="escape-btn" data-action="delegate">Let the agent decide</button>';
+    if (!q.noAbandon) html += '<button type="button" class="escape-btn" data-action="escape" data-v="chat">Back to chat</button>';
+    html += '<button type="button" class="escape-btn" data-action="escape" data-v="skip">' + (CTX.kind === "decide" ? "Decide later" : "Skip question") + "</button>" +
+      ((pickedOpt && pickedOpt.added) ? '<button type="button" class="escape-btn" data-action="drop">Remove ' + esc(pickedOpt.name) + "</button>" : "") + "</div>";
+    if (state.showCustom) {
+      html += '<div class="custom-row"><input id="custom-input" type="text" placeholder="e.g. Vercel…" aria-label="Your alternative">' +
+        '<button type="button" class="mini-btn" data-action="propose">Add it</button></div>';
+    }
+    html += "</div>";
+    return html;
+  }
+
+  function quickHtml() {
+    var q = Q();
+    var html = msgHtml("agent", "Quick version, no walk-through — <strong>pick one:</strong>") +
+      '<div class="edu"><div class="quick-pick">';
+    for (var i = 0; i < q.options.length; i++) {
+      html += '<button type="button" class="opt" data-action="quickpick" data-v="' + esc(q.options[i].value) + '" aria-pressed="false">' +
+        "<b>" + esc(q.options[i].name) + "</b><small>" + esc(q.options[i].desc) + "</small></button>";
+    }
+    html += "</div>";
+    if (state.err) html += '<p class="err">' + esc(state.err) + "</p>";
+    html += '<div class="escape-row"><span>Not sold?</span>';
+    if (q.agentPick) html += '<button type="button" class="escape-btn" data-action="delegate">Let the agent decide</button>';
+    if (!q.noAbandon) html += '<button type="button" class="escape-btn" data-action="escape" data-v="chat">Back to chat</button>';
+    html += '<button type="button" class="escape-btn" data-action="escape" data-v="skip">' + (CTX.kind === "decide" ? "Decide later" : "Skip question") + "</button></div>";
+    return html + "</div>";
+  }
+
+  function depthLabel(d) {
+    if (typeof d !== "number") d = state.depth;
+    return d === 1 ? "glance" : d === 2 ? "comparison" : "deep dive";
+  }
+
+  function answerLabel(ans) {
+    if (!ans) return "Unanswered";
+    if (ans.custom) return ans.name + " (your proposal)";
+    return ans.name + " · " + (ans.path === "hoist" ? depthLabel(ans.depth) : "quick") + (ans.mode === "delegated" ? " · agent" : "");
+  }
+
+  function reviewRows() {
+    var rows = [];
+    for (var i = 0; i < PACKS.length; i++) {
+      var q = PACKS[i];
+      var a = state.answers[q.id];
+      if (a) rows.push({ id: q.id, title: q.title, label: answerLabel(a), done: true, changeable: true });
+      else if (state.abandoned[q.id]) rows.push({ id: q.id, title: q.title, label: "Sent back to chat — your agent will ask there", done: true, changeable: true });
+      else if (state.skipped[q.id]) rows.push({ id: q.id, title: q.title, label: "Skipped — deferred", done: true, changeable: true });
+      else rows.push({ id: q.id, title: q.title, label: "Unanswered", done: false, changeable: !q.preparing });
+    }
+    var defs = defaultRows();
+    for (var j = 0; j < defs.length; j++) rows.push(defs[j]);
+    return rows;
+  }
+
+  function reviewHtml() {
+    var rows = reviewRows();
+    var html = msgHtml("agent", "Here's the whole questionnaire — <strong>review before anything is filed:</strong>") +
+      '<div class="edu">';
+    var allDone = true;
+    for (var i = 0; i < rows.length; i++) {
+      var r = rows[i];
+      if (!r.done) allDone = false;
+      html += '<div class="rev-row"><div><b>' + esc(r.title) + "</b>" +
+        '<span class="rev-a">' + esc(r.label) + "</span></div>" +
+        (r.changeable ? '<button type="button" class="escape-btn" data-action="change" data-v="' + esc(r.id) + '">' +
+          (r.done ? "Change" : "Answer") + "</button>" : "") + "</div>";
+    }
+    html += "</div>";
+    if (state.err) html += '<p class="err">' + esc(state.err) + "</p>";
+    html += '<div class="actions"><button type="button" class="btn" data-action="file"' +
+      (allDone ? "" : " disabled") + ">File records</button></div>";
+    if (!allDone) html += '<p class="q-hint">Answer or skip every question to file. Nothing is written yet.</p>';
+    return html;
+  }
+
+  function recordHtml() {
+    var filed = 0, deferred = 0;
+    for (var i = 0; i < PACKS.length; i++) {
+      if (state.answers[PACKS[i].id]) filed++;
+      else if (state.skipped[PACKS[i].id]) deferred++;
+    }
+    var html = msgHtml("agent", "Filed <strong>" + filed + " record" + (filed === 1 ? "" : "s") + "</strong>" +
+      (deferred ? " — <strong>" + deferred + " deferred</strong>" : "") + ". Here's the set:") +
+      '<div class="record-wrap">';
+    for (var j = 0; j < PACKS.length; j++) {
+      var q = PACKS[j];
+      var a = state.answers[q.id];
+      var rec = state.records[q.id];
+      if (a && rec && rec.markdown) {
+        html += '<div class="record-q"><strong>' + esc(q.title) + "</strong>" +
+          '<pre class="record">' + esc(rec.markdown) + "</pre></div>";
+      } else if (a) {
+        html += '<div class="deferred-note"><strong>' + esc(q.title) + " — " + esc(a.name) + ".</strong> " +
+          (rec && rec.record ? "Filed as " + esc(rec.record) + "." : "") + "</div>";
+      } else if (state.abandoned[q.id]) {
+        html += '<div class="deferred-note"><strong>' + esc(q.title) + " — sent back to chat.</strong> " +
+          "No choice made; your agent will ask there instead.</div>";
+      } else if (state.skipped[q.id]) {
+        html += '<div class="deferred-note"><strong>' + esc(q.title) + " — deferred.</strong> " +
+          "No choice made; this question stays open for later." +
+          (rec && rec.record ? " Placeholder filed as " + esc(rec.record) + "." : "") + "</div>";
+      }
+    }
+    var defs = defaultRows();
+    for (var k = 0; k < defs.length; k++) {
+      html += '<div class="deferred-note"><strong>' + esc(defs[k].title) + " — default stands.</strong> " + esc(defs[k].label) + "</div>";
+    }
+    html += '<button type="button" class="restart" data-action="restart">' +
+      (CTX.kind === "decide" ? "Back to start" : "Start another task") + "</button></div>";
+    return html;
+  }
+
+  function hyperHtml(o) {
+    var q = Q();
+    var ddg = "https://duckduckgo.com/?q=" + encodeURIComponent(o.name + " " + q.decision);
+    var html = '<div class="veil" data-action="hyperclose"><div class="sheet" role="dialog" aria-modal="true" aria-label="' + esc(o.name) + ' hyper dive">';
+    html += '<div class="sheet-top"><div><h2>' + esc(o.name) + '</h2><p class="sub">' + esc(o.desc) + "</p></div>" +
+      '<button type="button" class="x-btn" data-action="hyperx">Close</button></div>';
+    html += '<div class="sheet-sec">The story</div><p class="sheet-story">' + esc(o.why) + "</p>";
+    if (o.journey && o.journey.length) html += '<div class="sheet-sec">How it works</div>' + journeyHtml(o);
+    var deep = deepHtml(o);
+    if (deep) html += '<div class="sheet-sec">Numbers and trade-offs</div>' + deep;
+    if (o.living) html += '<div class="sheet-sec">Living with it</div><p class="sheet-story">' + esc(o.living) + "</p>";
+    html += '<div class="sheet-sec">Keep learning</div><ul class="learn-list">';
+    for (var i = 0; i < q.links.length; i++) {
+      html += '<li><a href="' + esc(q.links[i].u) + '" target="_blank" rel="noopener">' + esc(q.links[i].t) + "</a></li>";
+    }
+    html += '<li><a href="' + esc(ddg) + '" target="_blank" rel="noopener">Search the web for ' + esc(o.name) + "</a></li></ul>";
+    html += '<div class="sheet-actions">' +
+      '<button type="button" class="btn" data-action="hyperpick" data-v="' + esc(o.value) + '">Choose ' + esc(o.name) + "</button></div>";
+    return html + "</div></div>";
+  }
+  function openHyper(v) {
+    if (!optBy(v)) return;
+    state.hyper = v;
+    render();
+    if (document.querySelector) {
+      var c = document.querySelector(".sheet .x-btn");
+      if (c && c.focus) c.focus();
+    }
+  }
+  function closeHyper() { state.hyper = null; render(); }
+
+  function switchQ(id) {
+    var ok = false;
+    for (var i = 0; i < PACKS.length; i++) if (PACKS[i].id === id) ok = true;
+    if (!ok) return;
+    state.qid = id;
+    state.phase = "moment";
+    state.path = null;
+    state.picked = null;
+    state.showCustom = false;
+    state.hyper = null;
+    state.depth = 2;
+    state.err = null;
+    render();
+  }
+  function choosePath(p) {
+    if (p !== "hoist" && p !== "quick") return;
+    var q = Q();
+    if (q.preparing) return;
+    state.path = p;
+    state.phase = p;
+    state.picked = null;
+    state.showCustom = false;
+    state.hyper = null;
+    state.err = null;
+    render();
+  }
+  function pick(v) {
+    var q = Q();
+    if (q.preparing || !optBy(v)) return;
+    state.picked = (state.picked === v) ? null : v;
+    render();
+  }
+  function setDepth(d) {
+    d = parseInt(d, 10);
+    if (d !== 1 && d !== 2 && d !== 3) return;
+    state.depth = d;
+    render();
+  }
+  function currentAnswer() {
+    var o = optBy(state.picked);
+    if (!o) return null;
+    return { name: o.name, value: o.value, custom: !!o.added, path: state.path, depth: state.depth };
+  }
+  function nextUnanswered() {
+    for (var i = 0; i < PACKS.length; i++) {
+      var id = PACKS[i].id;
+      if (!state.answers[id] && !state.skipped[id] && !PACKS[i].preparing) return id;
+    }
+    return null;
+  }
+  function advance() {
+    var next = nextUnanswered();
+    state.picked = null; state.showCustom = false; state.hyper = null; state.depth = 2; state.err = null;
+    if (next) { state.qid = next; state.phase = "moment"; state.path = null; }
+    else state.phase = "review";
+    render();
+  }
+  function confirm(mode) {
+    var a = currentAnswer();
+    if (!a) return;
+    var q = Q();
+    var opt = optBy(a.value);
+    mode = mode || "chosen";
+    state.err = null;
+    render();
+    saveChoice(q, opt, mode, state.path, state.depth).then(function (rec) {
+      state.answers[q.id] = { name: opt.name, value: opt.value, custom: !!opt.added, path: state.path, depth: state.depth, mode: mode };
+      state.records[q.id] = rec;
+      delete state.skipped[q.id];
+      delete state.abandoned[q.id];
+      advance();
+    }).catch(function (e) {
+      state.err = (e && e.message) || "Couldn't save.";
+      render();
+    });
+  }
+  function skipQuestion() {
+    var q = Q();
+    state.err = null;
+    render();
+    saveParked(q).then(function (rec) {
+      delete state.answers[q.id];
+      state.skipped[q.id] = true;
+      delete state.abandoned[q.id];
+      state.records[q.id] = rec;
+      advance();
+    }).catch(function (e) {
+      state.err = (e && e.message) || "Couldn't save.";
+      render();
+    });
+  }
+  function abandon() {
+    var q = Q();
+    if (q.noAbandon) return;
+    state.err = null;
+    render();
+    saveAbandoned(q).then(function () {
+      delete state.answers[q.id];
+      state.skipped[q.id] = true;
+      state.abandoned[q.id] = true;
+      advance();
+    }).catch(function (e) {
+      state.err = (e && e.message) || "Couldn't save.";
+      render();
+    });
+  }
+  function delegate() {
+    var q = Q();
+    if (!q.agentPick || !optBy(q.agentPick)) return;
+    state.picked = q.agentPick;
+    confirm("delegated");
+  }
+  function doEscape(kind) {
+    if (kind === "chat") { abandon(); return; }
+    if (kind === "skip") { skipQuestion(); return; }
+    if (kind === "custom") {
+      state.showCustom = true;
+      state.err = null;
+      render();
+      var el = $("custom-input");
+      if (el && el.focus) el.focus();
+    }
+  }
+  function propose() {
+    var el = $("custom-input");
+    var v = el && el.value ? el.value.trim().slice(0, 120) : "";
+    if (!v) return;
+    var qid = state.qid;
+    var arr = state.added[qid] || (state.added[qid] = []);
+    var chal = { value: "x-" + qid + "-" + arr.length, name: v, added: true,
+      desc: "Added by you · needs research.",
+      why: "Your proposal — standing on your judgment until researched.",
+      journey: ["You propose it", "Blanks get flagged", "You verify", "Then it competes"],
+      numbers: [["Status", "Unresearched — verify me"], ["Confidence", "Low until researched"]],
+      unlocks: ["Your instinct, captured"], watch: ["Unverified claims"],
+      cost: "Unknown — needs research.", reversibility: "Unknown.",
+      micro: 5, mNow: 5, mLater: 5 };
+    arr.push(chal);
+    state.showCustom = false;
+    state.picked = chal.value;
+    render();
+  }
+  function dropChallenger() {
+    var o = optBy(state.picked);
+    if (!o || !o.added) return;
+    var arr = state.added[state.qid] || [];
+    for (var i = 0; i < arr.length; i++) if (arr[i].value === o.value) arr.splice(i, 1);
+    state.picked = null;
+    render();
+  }
+  function changeQ(id) {
+    var ok = false;
+    for (var i = 0; i < PACKS.length; i++) if (PACKS[i].id === id) ok = true;
+    if (!ok) return;
+    var a = state.answers[id];
+    state.qid = id; state.phase = "hoist"; state.path = "hoist"; state.depth = 2; state.hyper = null;
+    state.picked = a ? a.value : null;
+    state.showCustom = false;
+    state.err = null;
+    render();
+  }
+  function fileRecords() {
+    var rows = reviewRows();
+    for (var i = 0; i < rows.length; i++) if (!rows[i].done) return;
+    state.err = null;
+    render();
+    var done = function () { state.phase = "record"; render(); };
+    var fail = function (e) { state.err = (e && e.message) || "Couldn't file."; render(); };
+    if (CTX.kind === "session") fileDefaults().then(done, fail);
+    else done();
+  }
+
+  function post(url, body) {
+    return fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
+      .then(function (r) {
+        if (!r.ok) return r.json().catch(function () { return {}; }).then(function (j) { throw new Error(j.error || "Request failed"); });
+        return r.json();
+      });
+  }
+
+  function loadState() {
+    return fetch("/api/state", { cache: "no-store" }).then(function (r) {
+      if (!r.ok) throw new Error("bad state");
+      return r.json();
+    }).then(function (j) {
+      S = j; LIVE = true;
+      var off = $("offline");
+      if (off) off.classList.remove("on");
+    }).catch(function () {
+      if (LIVE) {
+        var off = $("offline");
+        if (off) off.classList.add("on");
+        return;
+      }
+      return fetch("sample.json", { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (j) {
+        S = j; LIVE = false;
+      });
+    });
+  }
+
+  function ensureCAT() {
+    if (CAT) return Promise.resolve(CAT);
+    var url = LIVE ? "/catalog.json" : "catalog.json";
+    return fetch(url, { cache: "no-store" }).then(function (r) {
+      if (!r.ok) throw new Error("no catalog");
+      return r.json();
+    }).then(function (j) { CAT = j.kinds; return CAT; });
+  }
+
+  function shortTab(title) {
+    return String(title || "").replace(/^(choose|define|pick|select)\s+/i, "").replace(/\s+for\s+you\s+to\s+make.*$/i, "");
+  }
+  function humanId(id) {
+    var w = String(id || "").split("-").filter(Boolean);
+    if (!w.length) return "";
+    w[0] = w[0].charAt(0).toUpperCase() + w[0].slice(1);
+    return w.join(" ");
+  }
+
+  function mapDraftOption(x, dr) {
+    var story = x.story || {};
+    var why = [story.now, story.later].filter(Boolean).join(" ") || x.summary || "";
+    var traj = x.trajectory || [];
+    var good = (x.good || []).map(function (g) { return g.text; }).filter(Boolean);
+    var bad = (x.bad || []).map(function (b) { return b.text; }).filter(Boolean);
+    var later = (x.bad || []).filter(function (b) { return b.when === "later"; })[0] || (x.bad || [])[0];
+    var learn = x.learn || {};
+    return {
+      value: x.id, name: x.name, desc: x.summary || "",
+      why: why, living: learn.living_with || "",
+      journey: x.journey || [], numbers: x.numbers || [],
+      unlocks: good, watch: bad,
+      cost: later ? later.text : "none recorded",
+      reversibility: dr.undo || "Unknown.",
+      micro: (typeof x.micro === "number") ? x.micro : null,
+      mNow: (typeof traj[0] === "number") ? traj[0] : null,
+      mLater: (typeof traj[1] === "number") ? traj[1] : null,
+      docs: learn.docs_url || "", check: x.check_current || ""
+    };
+  }
+
+  function draftLinks(dr) {
+    var seen = {}, out = [];
+    (dr.options || []).forEach(function (x) {
+      var u = x.learn && x.learn.docs_url;
+      if (!u || seen[u]) return;
+      seen[u] = true;
+      var t = String(u).replace(/^https?:\/\//, "").split("/")[0];
+      out.push({ t: t, u: u });
+    });
+    return out;
+  }
+
+  function buildSessionPacks() {
+    var ses = (S && S.session) || SIM;
+    PACKS = [];
+    if (!ses || !ses.plan) return PACKS;
+    var asks = ses.plan.decisions.filter(function (d) { return d.mode === "ask"; });
+    for (var i = 0; i < asks.length; i++) {
+      var d = asks[i];
+      var dr = (ses.drafts || {})[d.id];
+      if (!dr) {
+        if (ses.status === "ready") continue;
+        PACKS.push({ id: d.id, tab: humanId(d.id) || shortTab(d.title), title: d.title, shortTitle: shortTab(d.title),
+          chatAsk: ses.task, agentAsk: "", decision: "", model: "", microLabel: "", growth: null,
+          links: [], options: [], preparing: true, plan: d, draft: null });
+        continue;
+      }
+      var viable = (dr.options || []).filter(function (x) { return !x.ruled_out; });
+      var agentPick = dr.agent_pick;
+      var pickOk = viable.some(function (x) { return x.id === agentPick; });
+      if (!pickOk) agentPick = dr.default_option;
+      if (!viable.some(function (x) { return x.id === agentPick; })) agentPick = viable.length ? viable[0].id : null;
+      var growth = null;
+      if (dr.growth && dr.growth.title && viable.some(function (x) { return (x.trajectory || []).length >= 2; })) {
+        growth = { title: dr.growth.title, now: dr.growth.now || "now", later: dr.growth.later || "later", max: 10 };
+      }
+      var undoTxt = dr.undo || d.why || "";
+      PACKS.push({
+        id: d.id, tab: humanId(d.id) || shortTab(d.title), title: dr.question || d.title,
+        shortTitle: shortTab(dr.question || d.title).replace(/\?$/, ""),
+        chatAsk: ses.task,
+        agentAsk: "Before I start — <strong>" + esc(undoTxt) + "</strong> " + esc(dr.why_now || "") + " How do you want to decide?",
+        decision: shortTab(d.title).toLowerCase(),
+        model: dr.analogy || "", microLabel: dr.micro_label || "",
+        growth: growth, links: draftLinks(dr),
+        options: viable.map(function (x) { return mapDraftOption(x, dr); }),
+        agentPick: agentPick, plan: d, draft: dr
+      });
+    }
+    return PACKS;
+  }
+
+  function buildDecidePack(dec) {
+    var K = CAT[dec.kind];
+    var opts = Object.keys(K.options || {}).map(function (key) {
+      var x = K.options[key];
+      var good = (x.good || []).map(function (g) { return g[1]; });
+      var bad = (x.bad || []).map(function (b) { return b[1]; });
+      var later = null;
+      for (var i = 0; i < (x.bad || []).length; i++) if (x.bad[i][0] === "Later") later = x.bad[i][1];
+      return {
+        value: key, name: x.n, desc: x.sub || "",
+        why: x.use || "", living: "",
+        journey: [], numbers: [],
+        unlocks: good, watch: bad,
+        cost: later || (bad[0] || "none recorded"),
+        reversibility: K.undo || "Unknown.",
+        micro: (x.s && typeof x.s.cost === "number") ? 10 - x.s.cost : null,
+        mNow: null, mLater: null, docs: "", check: ""
+      };
+    });
+    var agentPick = dec.agent_pick && K.options[dec.agent_pick] ? dec.agent_pick : (opts.length ? opts[0].value : null);
+    var pkg = dec.trigger && dec.trigger.package;
+    PACKS = [{
+      id: dec.id, tab: K.title, title: K.title, shortTitle: shortTab(K.title),
+      chatAsk: dec.task || "Carry on working.",
+      agentAsk: esc(dec.agent || "Your agent") + (pkg ? " was about to add <code>" + esc(pkg) + "</code> — " : " hit a hard choice — ") +
+        "<strong>" + esc(K.undo || "This is hard to undo.") + "</strong> How do you want to decide?",
+      decision: K.title.toLowerCase(), model: "", microLabel: "estimated cost",
+      growth: null, links: [], options: opts,
+      agentPick: agentPick, noAbandon: true, dec: dec, catalog: K
+    }];
+    return PACKS;
+  }
+
+  function defaultRows() {
+    if (CTX.kind !== "session") return [];
+    var ses = S && S.session;
+    if (!ses || !ses.plan) return [];
+    var rows = [];
+    var all = ses.plan.decisions.filter(function (d) { return d.mode === "default"; });
+    for (var i = 0; i < all.length; i++) {
+      rows.push({ id: all[i].id, title: all[i].title, label: "Default stands: " + all[i].default + " · review later", done: true, changeable: false });
+    }
+    var asks = ses.plan.decisions.filter(function (d) { return d.mode === "ask"; });
+    for (var j = 0; j < asks.length; j++) {
+      var d = asks[j];
+      if (ses.status === "ready" && !(ses.drafts || {})[d.id]) {
+        rows.push({ id: d.id, title: d.title, label: "Couldn't prepare — default stands: " + d.default, done: true, changeable: false });
+      }
+    }
+    return rows;
+  }
+
+  function restoreFromOutcomes() {
+    var ses = S && S.session;
+    if (CTX.kind !== "session" || !ses || !ses.plan) return;
+    var out = ses.outcomes || {};
+    for (var i = 0; i < PACKS.length; i++) {
+      var q = PACKS[i];
+      var o = out[q.id];
+      if (!o) continue;
+      if (o.mode === "abandoned") { state.skipped[q.id] = true; state.abandoned[q.id] = true; continue; }
+      if (o.mode === "parked") { state.skipped[q.id] = true; state.records[q.id] = { record: o.record, markdown: "" }; continue; }
+      if (o.choice) {
+        var opt = null;
+        for (var j = 0; j < q.options.length; j++) if (q.options[j].value === o.choice) opt = q.options[j];
+        state.answers[q.id] = { name: opt ? opt.name : o.choice, value: o.choice, custom: !opt, path: "hoist", depth: 2, mode: o.mode };
+        state.records[q.id] = { record: o.record, markdown: "" };
+      }
+    }
+    if (PACKS.length && PACKS.every(function (q) { return state.answers[q.id] || state.skipped[q.id]; })) state.phase = "record";
+  }
+
+  function rawOf(q, opt) {
+    if (!q.draft || !opt || opt.added) return null;
+    var list = q.draft.options || [];
+    for (var i = 0; i < list.length; i++) if (list[i].id === opt.value) return list[i];
+    return null;
+  }
+
+  function confLine(path, depth, mode) {
+    if (mode === "delegated") return { lv: "low", txt: "you didn't compare; the agent's pick stands" };
+    if (path !== "hoist") return { lv: "low", txt: "quick-picked without comparison. Revisit recommended" };
+    return { lv: "medium", txt: "chosen after a " + depthLabel(depth) + " of all options" };
+  }
+
+  function madrSession(q, opt, mode, path, depth) {
+    var d = q.plan, dr = q.draft, raw = rawOf(q, opt);
+    var cf = confLine(path, depth, mode);
+    var custom = !!(opt && opt.added);
+    var because = custom ? "suggested during the walk-through instead of the listed options"
+      : mode === "delegated" ? "you didn't mind, so Hoist used " + opt.name + ": " + lc(dr.default_reason || opt.desc || "it fits most projects like this")
+      : path !== "hoist" ? lc(opt.desc || opt.why) + " (quick-picked without comparison)"
+      : lc(opt.why || opt.desc);
+    var ev = (dr.evidence || []).map(function (e) {
+      var src = e.source === "profile" ? "assumed by your agent, not checked"
+        : e.source === "inferred" ? "inferred by Muse Spark" : e.source === "task" ? "the task" : "seen in " + e.source;
+      return "- " + (e.detail || e.Detail || "") + " (" + src + ")";
+    });
+    var viable = (dr.options || []).filter(function (x) { return !x.ruled_out; });
+    var ruled = (dr.options || []).filter(function (x) { return x.ruled_out; });
+    var order = custom ? viable : [raw].concat(viable.filter(function (x) { return x !== raw; })).filter(Boolean);
+    var goods = custom ? [] : ((raw && raw.good) || []).map(function (g) { return "- Good, because " + lc(g.text); });
+    var bads = custom ? [] : ((raw && raw.bad) || []).map(function (b) { return "- Bad, because " + lc(b.text); });
+    var flips = ((dr.lean || {}).flips || []).map(function (f) { return "- Revisit if " + lc(f).replace(/\.$/, "") + "."; });
+    var docs = (q.links || []).map(function (l) { return "- Documentation: " + l.u; });
+    var check = raw && raw.check_current ? "- [ ] " + raw.check_current + "\n" : "";
+    var story = raw && raw.story ? "\n\nIn plain words: " + (raw.analogy || "") + " Now: " + lc(raw.story.now || "") + " Later: " + lc(raw.story.later || "") : "";
+    var head = custom ? "# " + d.title + ": " + opt.name + " (your proposal)" : "# " + d.title + ": " + opt.name;
+    return ["---",
+      "status: " + (custom ? "proposed" : "accepted"),
+      "date: " + today(),
+      "door: " + doorWord(dr.door || d.door),
+      "proposed-by: " + (LIVE ? "Muse Code" : "your agent") + " (task: " + ((S.session || {}).task || "") + ")",
+      "consulted: Muse Spark (drafted the questions and options)",
+      "deciders: " + (mode === "delegated" ? "Hoist, delegated by the project owner" : "project owner"),
+      "confidence: " + cf.lv,
+      "---",
+      head, "",
+      "> **Decision:** " + opt.name + ". **Because** " + because + ". **Accepted cost:** " + lc(opt.cost || "none recorded").replace(/\.$/, "") + "." +
+        (custom ? " **Revisit** after a follow-up round compares it properly." : ""), "",
+      "## Context and Problem Statement",
+      [dr.question, dr.why_now, dr.undo].filter(Boolean).join(" ") + (dr.assumes ? "\nAssumes: " + dr.assumes : ""), "",
+      "## Decision Drivers",
+      ev.join("\n") || "- No drivers recorded", "",
+      "## Considered Options",
+      order.map(function (o, i) { return (i + 1) + ". " + o.name + (o.id === dr.agent_pick ? " (the agent's pick)" : ""); }).join("\n") +
+        (ruled.length ? "\n" + ruled.map(function (o) { return "- Ruled out: " + o.name + ", because " + lc(o.ruled_out); }).join("\n") : ""), "",
+      "## Decision Outcome",
+      "Chosen: " + opt.name + ", because " + because + "." + story, "",
+      "### Consequences",
+      goods.join("\n") + "\n" + bads.join("\n"), "",
+      "### Confirmation",
+      check + "- Hoist flags later changes that conflict with this record.", "",
+      "## Pros and Cons of the Options",
+      order.slice(1).map(function (o) {
+        return "### " + o.name + "\n" + (o.good || []).map(function (g) { return "- Good, because " + lc(g.text); }).join("\n") +
+          "\n" + (o.bad || []).map(function (b) { return "- Bad, because " + lc(b.text); }).join("\n");
+      }).join("\n\n") || "- None", "",
+      "## More Information",
+      "- Confidence: " + cf.lv + "; " + cf.txt + "." + (flips.length || docs.length ? "\n" + flips.concat(docs).join("\n") : ""),
+      ""
+    ].join("\n");
+  }
+
+  function madrParked(q) {
+    if (CTX.kind === "decide") {
+      var K = q.catalog, dec = q.dec;
+      var lead = q.options.length ? q.options[0].name : "the leading option";
+      return ["---", "status: proposed", "date: " + today(), "door: " + doorWord(K.door),
+        "proposed-by: " + (dec.agent || "Your agent") + (dec.task ? " (" + dec.task + ")" : ""),
+        "deciders: project owner (asked to decide later)", "confidence: low", "---",
+        "# " + K.title + " later", "",
+        "> **Decision:** Not decided yet. **Because** the owner asked to decide later. **Revisit** before this choice is built on.", "",
+        "## Context and Problem Statement",
+        K.title + ". " + (dec.agent || "Your agent") + " was about to add `" + ((dec.trigger || {}).package || "?") + "`. " + (K.undo || ""), "",
+        "## Decision Outcome",
+        "Short term: hold off and keep the current approach behind a small interface, so the choice stays easy. Leading option when parked: " + lead + ".", ""
+      ].join("\n");
+    }
+    var d = q.plan, dr = q.draft;
+    var holder = "the default";
+    for (var i = 0; i < (dr.options || []).length; i++) if (dr.options[i].id === dr.default_option) holder = dr.options[i].name;
+    return ["---", "status: proposed", "date: " + today(), "door: " + doorWord(dr.door || d.door),
+      "proposed-by: " + ((S.session || {}).task || "Hoist session"), "deciders: project owner (asked to decide later)", "confidence: low", "---",
+      "# " + d.title + ": decide later", "",
+      "> **Decision:** Not decided yet. **Because** the owner asked to decide later. **Revisit** before this choice is built on.", "",
+      "## Context and Problem Statement",
+      dr.question + " " + (dr.why_now || ""), "",
+      "## Decision Outcome",
+      "Short term: " + holder + " as a placeholder the agent keeps easy to replace.", ""
+    ].join("\n");
+  }
+
+  function madrDefault(d) {
+    var budget = !!d.budget_note;
+    var why = budget ? "it's the safe default for projects like this, and Hoist recorded it instead of asking you, to keep the task short"
+      : "a careful practitioner would pick it without asking, and it's easy to review later";
+    return ["---", "status: accepted", "date: " + today(), "door: " + doorWord(d.door),
+      "proposed-by: Hoist plan (task: " + ((S.session || {}).task || "") + ")",
+      "deciders: Hoist default; the project owner can review it", "confidence: low", "---",
+      "# " + d.title + ": " + d.default, "",
+      "> **Decision:** " + d.default + ". **Because** " + why + ". **Revisit** when you review this task's defaults, or before this choice is built on.", "",
+      "## Context and Problem Statement",
+      d.why || "", "",
+      "## Decision Drivers",
+      "- " + (budget ? "Hoist asks at most a few questions per task (" + d.budget_note + ")" : "A safe, common default exists"),
+      "- Not asked, so no answer of yours shaped it", "",
+      "## Decision Outcome",
+      "Chosen: " + d.default + ", as a default.", "",
+      "## More Information",
+      "- Confidence: low; nobody chose this on purpose yet.", ""
+    ].join("\n");
+  }
+
+  function madrDecide(q, opt, mode, path, depth) {
+    var K = q.catalog, dec = q.dec;
+    var custom = !!(opt && opt.added);
+    var cf = confLine(path, depth, mode);
+    var o = custom ? null : K.options[opt.value];
+    var disp = custom ? opt.name : o.tn;
+    var because = custom ? "suggested during the walk-through instead of the listed options"
+      : mode === "delegated" ? "you didn't mind, so Hoist used " + o.n + ": " + lc(o.use || o.sub || "it fits most projects like this")
+      : path !== "hoist" ? lc(o.sub || o.use) + " (quick-picked without comparison)"
+      : lc(o.use || o.sub);
+    var order = custom ? Object.keys(K.options) : [opt.value].concat(Object.keys(K.options).filter(function (k) { return k !== opt.value; }));
+    var goods = custom ? [] : (o.good || []).map(function (g) { return "- Good, because " + lc(g[1]); });
+    var bads = custom ? [] : (o.bad || []).map(function (b) { return "- Bad, because " + lc(b[1]); });
+    var pkg = (dec.trigger || {}).package;
+    return ["---",
+      "status: " + (custom ? "proposed" : "accepted"),
+      "date: " + today(),
+      "door: " + doorWord(K.door),
+      "proposed-by: " + (dec.agent || "Your agent") + (dec.task ? " (" + dec.task + ")" : ""),
+      "deciders: " + (mode === "delegated" ? "Hoist, delegated by the project owner" : "project owner"),
+      "confidence: " + cf.lv,
+      "---",
+      "# " + K.record_title.replace("{tn}", disp), "",
+      "> **Decision:** Use " + disp + ". **Because** " + because + ". **Accepted cost:** " + lc(opt.cost || "none recorded").replace(/\.$/, "") + ".", "",
+      "## Context and Problem Statement",
+      K.title + ": " + (dec.agent || "Your agent") + (pkg ? " was about to add `" + pkg + "`" : " hit a hard choice") + (dec.task ? ' while working on "' + dec.task + '"' : "") + ". " + (K.undo || ""), "",
+      "## Considered Options",
+      order.map(function (k, i) { return (i + 1) + ". " + K.options[k].n + (k === dec.agent_pick ? " (the agent's pick)" : ""); }).join("\n"), "",
+      "## Decision Outcome",
+      "Chosen: " + (custom ? opt.name : o.n) + ", because " + because + ".", "",
+      "### Consequences",
+      goods.join("\n") + "\n" + bads.join("\n"), "",
+      "### Confirmation",
+      "- Hoist blocks changes that conflict with this record.", "",
+      "## Pros and Cons of the Options",
+      order.slice(1).map(function (k) {
+        var x = K.options[k];
+        return "### " + x.n + "\n" + (x.good || []).map(function (g) { return "- Good, because " + lc(g[1]); }).join("\n") +
+          "\n" + (x.bad || []).map(function (b) { return "- Bad, because " + lc(b[1]); }).join("\n");
+      }).join("\n\n") || "- None", "",
+      "## More Information",
+      "- Confidence: " + cf.lv + "; " + cf.txt + ".", ""
+    ].join("\n");
+  }
+
+  function nextLocalFile(slug) {
+    var n = 0;
+    (S.records || []).forEach(function (r) {
+      var m = /^(\d{4})-/.exec(r.file || "");
+      if (m && +m[1] > n) n = +m[1];
+    });
+    n = String(n + 1);
+    while (n.length < 4) n = "0" + n;
+    return n + "-" + slug + ".md";
+  }
+
+  function saveChoice(q, opt, mode, path, depth) {
+    var custom = !!(opt && opt.added);
+    if (CTX.kind === "decide") {
+      var md = madrDecide(q, opt, mode, path, depth);
+      var slug = slugify(q.catalog.record_title.replace("{tn}", custom ? opt.name : q.catalog.options[opt.value].tn));
+      var body = { choice: custom ? opt.name : opt.value, mode: mode, answers: {}, slug: slug, markdown: md };
+      if (LIVE) {
+        return post("/api/decisions/" + q.dec.id, body).then(function () {
+          return loadState().then(function () {
+            var dec = null;
+            (S.decisions || []).forEach(function (x) { if (x.id === q.dec.id) dec = x; });
+            return { markdown: md, record: dec ? dec.record : "", mode: mode };
+          });
+        });
+      }
+      var dec = q.dec;
+      dec.status = "accepted"; dec.choice = body.choice; dec.mode = mode;
+      dec.record = "docs/decisions/" + dec.id + "-" + slug + ".md";
+      S.records = (S.records || []).filter(function (r) { return (r.file || "").indexOf(dec.id + "-") !== 0; });
+      S.records.push({ file: dec.id + "-" + slug + ".md", markdown: md });
+      return Promise.resolve({ markdown: md, record: dec.record, mode: mode });
+    }
+    var md2 = madrSession(q, opt, mode, path, depth);
+    var slug2 = slugify(q.plan.title + " " + opt.name);
+    var payload = { choice: custom ? opt.name : opt.value, mode: mode, slug: slug2, markdown: md2 };
+    if (LIVE) {
+      return post("/api/session/decisions/" + q.id, payload).then(function (ses) {
+        S.session = ses;
+        var o = (ses.outcomes || {})[q.id] || {};
+        return { markdown: md2, record: o.record || "", mode: mode };
+      });
+    }
+    var file = nextLocalFile(slug2);
+    S.records.push({ file: file, markdown: md2 });
+    S.session.outcomes[q.id] = { choice: payload.choice, mode: mode, record: "docs/decisions/" + file };
+    return Promise.resolve({ markdown: md2, record: "docs/decisions/" + file, mode: mode });
+  }
+
+  function saveParked(q) {
+    var md = madrParked(q);
+    if (CTX.kind === "decide") {
+      var body = { choice: null, mode: "parked", answers: {}, slug: "decide-later", markdown: md };
+      if (LIVE) {
+        return post("/api/decisions/" + q.dec.id, body).then(function () {
+          return loadState().then(function () {
+            var dec = null;
+            (S.decisions || []).forEach(function (x) { if (x.id === q.dec.id) dec = x; });
+            return { markdown: md, record: dec ? dec.record : "", mode: "parked" };
+          });
+        });
+      }
+      var dec = q.dec;
+      dec.status = "parked"; dec.choice = null; dec.mode = "parked";
+      dec.record = "docs/decisions/" + dec.id + "-decide-later.md";
+      S.records.push({ file: dec.id + "-decide-later.md", markdown: md });
+      return Promise.resolve({ markdown: md, record: dec.record, mode: "parked" });
+    }
+    var slug = slugify(q.plan.title + " later");
+    if (LIVE) {
+      return post("/api/session/decisions/" + q.id, { choice: null, mode: "parked", slug: slug, markdown: md }).then(function (ses) {
+        S.session = ses;
+        var o = (ses.outcomes || {})[q.id] || {};
+        return { markdown: md, record: o.record || "", mode: "parked" };
+      });
+    }
+    var file = nextLocalFile(slug);
+    S.records.push({ file: file, markdown: md });
+    S.session.outcomes[q.id] = { choice: null, mode: "parked", record: "docs/decisions/" + file };
+    return Promise.resolve({ markdown: md, record: "docs/decisions/" + file, mode: "parked" });
+  }
+
+  function saveAbandoned(q) {
+    if (LIVE) {
+      return post("/api/session/abandon", { id: q.id }).then(function (ses) { S.session = ses; return {}; });
+    }
+    S.session.outcomes[q.id] = { choice: null, mode: "abandoned", record: "", note: "Sent back to chat." };
+    return Promise.resolve({});
+  }
+
+  function fileDefaults() {
+    var ses = S.session;
+    var chain = Promise.resolve();
+    var defs = (ses.plan.decisions || []).filter(function (d) { return d.mode === "default"; });
+    var asks = (ses.plan.decisions || []).filter(function (d) { return d.mode === "ask"; });
+    for (var i = 0; i < asks.length; i++) {
+      if (ses.status === "ready" && !(ses.drafts || {})[asks[i].id]) defs.push(asks[i]);
+    }
+    defs.forEach(function (d) {
+      chain = chain.then(function () {
+        if (((S.session || {}).outcomes || {})[d.id]) return null;
+        var md = madrDefault(d);
+        var slug = slugify(d.title + " default");
+        if (LIVE) {
+          return post("/api/session/decisions/" + d.id, { choice: d.default, mode: "default", slug: slug, markdown: md }).then(function (s) { S.session = s; });
+        }
+        var file = nextLocalFile(slug);
+        S.records.push({ file: file, markdown: md });
+        S.session.outcomes[d.id] = { choice: d.default, mode: "default", record: "docs/decisions/" + file };
+        return null;
+      });
+    });
+    return chain;
+  }
+
+  var EXAMPLES = ["Add user accounts with saved projects",
+    "Set up color tokens and theming for our design system",
+    "Add analytics to see where customers drop off during checkout"];
+
+  function startHtml() {
+    var html = msgHtml("agent", "Tell me the task — I'll find the decisions that are <strong>hard to undo</strong>, and walk you through each one.") +
+      '<div class="edu"><h2>Decide the hard parts well.</h2>' +
+      '<p class="q-hint">Your agent reads the project, Muse Spark writes the options, and you pick at your own depth: glance, compare, or deep dive.</p>' +
+      '<textarea class="task-input" id="taskIn" aria-label="Task">' + (LIVE ? "" : esc(EXAMPLES[0])) + "</textarea>" +
+      '<div class="ex-row">' + EXAMPLES.map(function (e) {
+        return '<button type="button" class="escape-btn" data-action="ex" data-v="' + esc(e) + '">' + esc(e) + "</button>";
+      }).join("") + "</div>" +
+      '<div class="actions"><button type="button" class="btn" data-action="start">Walk through the decisions</button></div>' +
+      (state.err ? '<p class="err">' + esc(state.err) + "</p>" : "") + "</div>";
+    return html;
+  }
+
+  function progressHtml(ses) {
+    var total = ses.total || 0, n = (ses.drafted || []).length;
+    var line = ses.status === "planning" ? "Reading your project and finding the lasting decisions…"
+      : "Writing decision " + Math.min(n + 1, total || 1) + " of " + (total || "?") + " — deciding starts with the first draft.";
+    return msgHtml("agent", "Working on <strong>" + esc(ses.task || "") + ".</strong>") +
+      '<div class="edu"><div class="researching">' + esc(line) + "</div>" +
+      '<p class="q-hint">Muse Spark writes the questions and options; Hoist checks every draft against its rules before you see it.</p></div>';
+  }
+
+  function errorHtml(ses) {
+    return msgHtml("agent", "Muse Spark <strong>couldn't finish</strong> preparing the decisions.") +
+      '<div class="edu"><p class="q-hint">Try again picks up where it stopped and keeps what is already written. Your agent is still waiting.' +
+      (ses.error ? " Details: " + esc(ses.error) : "") + "</p>" +
+      '<div class="actions"><button type="button" class="btn" data-action="retry">Try again</button></div>' +
+      (state.err ? '<p class="err">' + esc(state.err) + "</p>" : "") + "</div>";
+  }
+
+  function startSession(task, resume) {
+    task = (task || "").trim();
+    if (!task) { state.err = "Describe the task first."; render(); return; }
+    state.err = null;
+    resetState();
+    if (LIVE) {
+      render();
+      post("/api/session", { task: task, resume: !!resume }).then(function (ses) {
+        S.session = ses;
+        render();
+      }).catch(function (e) {
+        state.err = (e && e.message) || "Couldn't start.";
+        render();
+      });
+      return;
+    }
+    var base = JSON.parse(JSON.stringify(S.sample_session));
+    var ids = base.plan.decisions.filter(function (d) { return d.mode === "ask"; }).map(function (d) { return d.id; });
+    SIM = { task: task, status: "planning", plan: null, drafts: {}, drafted: [], total: ids.length, outcomes: {} };
+    render();
+    var step = function (ms) { return new Promise(function (res) { setTimeout(res, ms); }); };
+    step(1400).then(function () {
+      SIM.status = "drafting"; SIM.plan = base.plan;
+      buildSessionPacks();
+      if (!state.qid && PACKS.length) state.qid = PACKS[0].id;
+      render();
+      var chain = Promise.resolve();
+      ids.forEach(function (id, i) {
+        chain = chain.then(function () {
+          return step(1200).then(function () {
+            SIM.drafts[id] = base.drafts[id];
+            SIM.drafted.push(id);
+            buildSessionPacks();
+            render();
+          });
+        });
+      });
+      return chain;
+    }).then(function () {
+      return step(300);
+    }).then(function () {
+      S.session = { task: base.task, status: "ready", plan: base.plan, drafts: base.drafts,
+        drafted: ids.slice(), total: ids.length, profile_answers: {}, answers: {}, outcomes: {} };
+      SIM = null;
+      buildSessionPacks();
+      if (!state.qid && PACKS.length) state.qid = PACKS[0].id;
+      if ((location.hash || "") === "#/session") render();
+    });
+  }
+
+  function engineHtml() {
+    var lede = CTX.kind === "decide" ? "One engine, any hard question. Learn at your depth, commit — one record at the end."
+      : "One engine, any hard question. Pick a question, learn at your depth, commit — one record at the end.";
+    var html = '<p class="lede">' + esc(lede) + "</p>" +
+      '<div class="qtabs" role="group" aria-label="Question">' + tabsHtml() + "</div>";
+    if (state.phase === "moment") html += momentHtml();
+    else if (state.phase === "hoist") html += hoistHtml();
+    else if (state.phase === "quick") html += quickHtml();
+    else if (state.phase === "review") html += reviewHtml();
+    else if (state.phase === "record") html += recordHtml();
+    return html;
+  }
+
+  function sessionHtml() {
+    var ses = S.session || SIM;
+    if (!ses) return startHtml();
+    if (ses.status === "error") return errorHtml(ses);
+    if (ses.status === "planning" || (ses.status === "drafting" && !ses.plan)) return progressHtml(ses);
+    buildSessionPacks();
+    if (!PACKS.length) return progressHtml(ses);
+    if (!state.qid || !PACKS.some(function (q) { return q.id === state.qid; })) {
+      var first = null;
+      for (var i = 0; i < PACKS.length; i++) {
+        if (!state.answers[PACKS[i].id] && !state.skipped[PACKS[i].id]) { first = PACKS[i].id; break; }
+      }
+      state.qid = first || PACKS[0].id;
+    }
+    return engineHtml();
+  }
+
+  function homeHtml() {
+    var open = (S.decisions || []).filter(function (d) { return d.status === "open"; });
+    var ses = S.session;
+    var html = msgHtml("agent", "Hoist holds the decisions that are <strong>hard to undo.</strong> Pick one up, or walk a whole task.") +
+      '<div class="edu"><h2>Open now</h2><p class="q-hint">Single interruptions land here; task sessions walk question by question.</p>';
+    if (!open.length && !ses) html += '<p class="q-hint">Nothing is waiting. Start a task session to try the walk-through.</p>';
+    for (var i = 0; i < open.length; i++) {
+      html += '<a class="opt" href="#/decide/' + esc(open[i].id) + '"><b>' + esc(open[i].task || open[i].kind) + "</b><small>" +
+        esc("Single decision · waiting on you") + "</small></a>";
+    }
+    if (ses && ses.plan) {
+      var asks = ses.plan.decisions.filter(function (d) { return d.mode === "ask"; });
+      var left = asks.filter(function (d) { return !(ses.outcomes || {})[d.id]; }).length;
+      html += '<a class="opt" href="#/session"><b>' + esc(ses.task || "Task session") + "</b><small>" +
+        esc(ses.status === "ready" ? left + " of " + asks.length + " left to decide" : "Muse Spark is preparing it…") + "</small></a>";
+    } else if (ses) {
+      html += '<a class="opt" href="#/session"><b>' + esc(ses.task || "Task session") + "</b><small>Muse Spark is preparing it…</small></a>";
+    }
+    html += '<a class="opt" href="#/session"><b>Start a task session</b><small>Describe a task; decide its hard parts well.</small></a>';
+    html += "</div>";
+    return html;
+  }
+
+  function recordsHtml() {
+    var recs = (S.records || []).slice().reverse();
+    var html = '<p class="lede">Every filed decision, newest first.</p><div class="edu"><h2>Decision records</h2>';
+    if (!recs.length) html += '<p class="q-hint">No records yet. Finish a walk-through and they land here.</p>';
+    for (var i = 0; i < recs.length; i++) {
+      var title = "Record";
+      var m = /^#\s+(.+)$/m.exec(recs[i].markdown || "");
+      if (m) title = m[1];
+      html += '<a class="opt" href="#/records/' + esc(recs[i].file) + '"><b>' + esc(title) + "</b><small>" + esc(recs[i].file) + "</small></a>";
+    }
+    return html + "</div>";
+  }
+
+  function recordOneHtml(param) {
+    var rec = null;
+    (S.records || []).forEach(function (r) {
+      if (r.file === param || (r.file || "").indexOf(param) === 0) rec = r;
+    });
+    if (!rec) return msgHtml("agent", "No record by that name.") + '<div class="edu"><a class="opt" href="#/records"><b>All records</b></a></div>';
+    return msgHtml("agent", "Filed as <strong>" + esc(rec.file) + ".</strong>") +
+      '<div class="record-wrap"><pre class="record">' + esc(rec.markdown || "") + "</pre>" +
+      '<a class="opt" href="#/records"><b>All records</b></a></div>';
+  }
+
+  function render() {
+    var h = (typeof location !== "undefined" && location.hash) || "#/";
+    var nav = function (id, on) { var el = $(id); if (el) { if (on) el.classList.add("on"); else el.classList.remove("on"); } };
+    var app = $("app");
+    if (!app) return;
+    if (h.indexOf("#/decide/") === 0) {
+      nav("nav-home", true); nav("nav-session", false); nav("nav-records", false);
+      var id = h.slice(9);
+      var dec = null;
+      (S.decisions || []).forEach(function (x) { if (x.id === id) dec = x; });
+      if (!dec) { app.innerHTML = msgHtml("agent", "No decision by that name.") + '<div class="edu"><a class="opt" href="#/"><b>Open now</b></a></div>'; paintModal(); return; }
+      if (dec.status !== "open") {
+        var rec = null;
+        (S.records || []).forEach(function (r) { if (dec.record && (dec.record || "").indexOf(r.file) !== -1) rec = r; });
+        app.innerHTML = msgHtml("agent", "This one is <strong>decided.</strong>") + '<div class="record-wrap">' +
+          (rec ? '<pre class="record">' + esc(rec.markdown || "") + "</pre>" : '<p class="q-hint">Filed as ' + esc(dec.record || "") + ".</p>") +
+          '<a class="opt" href="#/"><b>Open now</b></a></div>';
+        paintModal();
+        return;
+      }
+      if (!CAT) { app.innerHTML = progressHtml({ task: "Loading the decision…", status: "planning", total: 1, drafted: [] }); paintModal(); return; }
+      if (CTX.kind !== "decide" || CTX.id !== id || !PACKS.length) { CTX = { kind: "decide", id: id }; buildDecidePack(dec); resetState(); state.qid = PACKS[0].id; }
+      app.innerHTML = engineHtml();
+      paintModal();
+      return;
+    }
+    if (h.indexOf("#/records/") === 0) {
+      nav("nav-home", false); nav("nav-session", false); nav("nav-records", true);
+      app.innerHTML = recordOneHtml(decodeURIComponent(h.slice(10)));
+      paintModal();
+      return;
+    }
+    if (h === "#/records") {
+      nav("nav-home", false); nav("nav-session", false); nav("nav-records", true);
+      app.innerHTML = recordsHtml();
+      paintModal();
+      return;
+    }
+    if (h === "#/session") {
+      nav("nav-home", false); nav("nav-session", true); nav("nav-records", false);
+      if (CTX.kind !== "session") { CTX = { kind: "session" }; resetState(); buildSessionPacks(); restoreFromOutcomes(); }
+      app.innerHTML = sessionHtml();
+      paintModal();
+      return;
+    }
+    nav("nav-home", true); nav("nav-session", false); nav("nav-records", false);
+    app.innerHTML = homeHtml();
+    paintModal();
+  }
+
+  function paintModal() {
+    var mo = $("modal");
+    if (mo) mo.innerHTML = (state.hyper && optBy(state.hyper) && (state.phase === "hoist" || state.phase === "quick")) ? hyperHtml(optBy(state.hyper)) : "";
+    if (!state.hyper && mo) mo.innerHTML = "";
+  }
+
+  function onClick(ev) {
+    var t = ev.target && ev.target.closest ? ev.target.closest("[data-action]") : null;
+    if (!t) return;
+    var action = t.getAttribute("data-action");
+    var v = t.getAttribute("data-v");
+    if (action === "q") switchQ(v);
+    else if (action === "path") choosePath(v);
+    else if (action === "pick") pick(v);
+    else if (action === "quickpick") { pick(v); confirm("chosen"); }
+    else if (action === "depth") setDepth(v);
+    else if (action === "escape") doEscape(v);
+    else if (action === "delegate") delegate();
+    else if (action === "propose") propose();
+    else if (action === "drop") dropChallenger();
+    else if (action === "review") { state.phase = "review"; state.err = null; render(); }
+    else if (action === "change") changeQ(v);
+    else if (action === "file") fileRecords();
+    else if (action === "confirm") confirm("chosen");
+    else if (action === "restart") {
+      if (CTX.kind === "decide") { location.hash = "#/"; return; }
+      S.session = null; SIM = null;
+      CTX = { kind: "session" }; resetState();
+      render();
+    }
+    else if (action === "hyper") openHyper(v);
+    else if (action === "hyperx") closeHyper();
+    else if (action === "hyperclose") {
+      if (ev.target && ev.target.closest && ev.target.closest(".sheet")) return;
+      closeHyper();
+    }
+    else if (action === "hyperpick") { state.hyper = null; pick(v); }
+    else if (action === "ex") { var el = $("taskIn"); if (el) el.value = v; }
+    else if (action === "start") { var ti = $("taskIn"); startSession(ti ? ti.value : "", false); }
+    else if (action === "retry") startSession((S.session || {}).task || "", true);
+  }
+
+  function loadTheme() {
+    var saved = null;
+    try { saved = window.localStorage ? window.localStorage.getItem("hoist-theme") : null; } catch (e) { saved = null; }
+    if (saved === "light" || saved === "dark") return saved;
+    if (typeof window.matchMedia === "function" &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches) return "dark";
+    return "light";
+  }
+  function applyTheme() {
+    document.documentElement.setAttribute("data-theme", state.theme);
+    var btn = $("theme-toggle");
+    if (btn) btn.textContent = "Theme: " + (state.theme === "dark" ? "Dark" : "Light");
+    try { if (window.localStorage) window.localStorage.setItem("hoist-theme", state.theme); } catch (e) { /* private mode */ }
+  }
+  function toggleTheme() {
+    state.theme = state.theme === "dark" ? "light" : "dark";
+    applyTheme();
+  }
+
+  function needCAT() {
+    return ((typeof location !== "undefined" && location.hash) || "").indexOf("#/decide/") === 0 && !CAT;
+  }
+
+  function boot() {
+    state.theme = loadTheme();
+    applyTheme();
+    loadState().then(function () {
+      if (!S) {
+        $("app").innerHTML = '<p class="err">Couldn\'t load the decisions. If you opened this file directly, run <code>python3 hoist.py serve</code> and open the address it prints.</p>';
+        return;
+      }
+      render();
+      if (needCAT()) ensureCAT().then(render, render);
+      document.addEventListener("click", onClick);
+      document.addEventListener("keydown", function (ev) {
+        if (ev.key === "Escape" && state.hyper) closeHyper();
+      });
+      window.addEventListener("hashchange", function () {
+        if (needCAT()) ensureCAT().then(render, render);
+        else render();
+      });
+      var tb = $("theme-toggle");
+      if (tb && tb.addEventListener) tb.addEventListener("click", toggleTheme);
+      setInterval(function () {
+        var ses = S.session;
+        var busy = !!SIM || (ses && (ses.status === "planning" || ses.status === "drafting"));
+        if (!busy || !LIVE) return;
+        var before = JSON.stringify([ses && ses.status, ses && ses.drafted, (S.decisions || []).map(function (d) { return d.id + d.status; })]);
+        loadState().then(function () {
+          var after = JSON.stringify([S.session && S.session.status, S.session && S.session.drafted,
+            (S.decisions || []).map(function (d) { return d.id + d.status; })]);
+          if (after !== before) render();
+        });
+      }, 1500);
+    });
+  }
+
+  window.__hoist = { state: state, boot: boot, render: render, packs: function () { return PACKS; },
+    switchQ: switchQ, choosePath: choosePath, pick: pick, setDepth: setDepth,
+    confirm: confirm, propose: propose, startSession: startSession, ctx: function () { return CTX; } };
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
+  else boot();
+})();
 </script>
 </body>
 </html>

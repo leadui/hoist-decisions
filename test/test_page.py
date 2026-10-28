@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Page-shape tests: the session view is decision-moments native.
+"""Page-shape tests: site/index.html is the decision-moments engine.
 
-Asserts over the exact bytes of site/index.html that the moments
-foundation is present (tabs, tiers, journeys, micro-bars, growth,
-hyper-dive modal, escape row) and that retired blocks (agent-lean
-display, per-decision Q&A) are fully gone — markup, styles, handlers.
+Asserts over the exact bytes that the moments foundation is present
+(tabs, tiers, journeys, micro-bars, growth chart, veil + sheet modal
+with three close paths, escape row, review gate) wired to the Hoist
+API, and that retired blocks (lean display, Q&A, voice, old shells)
+are fully gone.
 
 Run:  python3 test/test_page.py
 Standard library only.
@@ -26,46 +27,70 @@ def check(name, cond, detail=""):
 
 
 PRESENT = [
-    # tiered moments engine wiring
-    ("tabs switch decisions", 'data-etab='),
-    ("tiers switch depth", 'data-etier='),
-    ("rows expand options", 'data-epick='),
-    ("hyper-dive opens", 'data-hyper='),
-    ("glance tier labeled", "'Glance'"),
-    ("compare tier labeled", "'Compare'"),
-    ("deep tier labeled", "'Deep dive'"),
+    # interruption + tabs + tiers
+    ("interruption box", "The interruption"),
+    ("two paths", "Decide with Hoist instead"),
+    ("tabs switch questions", 'data-action="q"'),
+    ("tiers switch depth", 'data-action="depth"'),
+    ("rows expand options", 'data-action="pick"'),
+    ("glance tier labeled", '"Glance"'),
+    ("compare tier labeled", '"Compare"'),
+    ("deep tier labeled", '"Deep dive"'),
+    ("model box", "The one idea that decides this"),
     # moments components
-    ("journey steps styled", 'jstep'),
-    ("journey steps numbered", 'counter(js)'),
-    ("micro-bars styled", 'micro-track'),
-    ("growth chart styled", 'growthHtml'),
-    # modal opens and closes three ways
-    ("modal veil styled", 'm-veil'),
-    ("modal sheet rendered", 'm-sheet'),
-    ("modal close helper", 'closeEmodal'),
-    ("modal closes on backdrop", "contains('m-veil')"),
-    ("modal closes on escape", "'Escape'"),
-    # escape row unblocks the agent
-    ("delegate escape", 'data-s="delegate"'),
-    ("park escape", 'data-s="park"'),
-    ("abandon escape", 'data-s="abandon"'),
+    ("journey steps", "jstep"),
+    ("journey arrows", "What happens step by step"),
+    ("micro-bars", "micro-track"),
+    ("numbers table", "num-row"),
+    ("chips", "Watch out for"),
+    ("growth chart", 'class="growth"'),
+    ("hyper-dive opens", 'data-action="hyper"'),
+    # modal closes three ways
+    ("modal veil", 'class="veil"'),
+    ("modal sheet", 'role="dialog"'),
+    ("modal X action", "hyperx"),
+    ("modal backdrop action", "hyperclose"),
+    ("modal escape key", '"Escape"'),
+    # escape row + review gate
+    ("custom option escape", 'data-v="custom"'),
+    ("back-to-chat escape", 'data-v="chat"'),
+    ("skip escape", 'data-v="skip"'),
+    ("delegate escape", "Let the agent decide"),
+    ("confirm + review + file", 'data-action="file"'),
+    ("theme toggle", "theme-toggle"),
+    # Hoist wiring underneath
+    ("loads live state", "/api/state"),
+    ("replays sample offline", "sample.json"),
+    ("files session records", "/api/session/decisions/"),
+    ("abandons to chat", "/api/session/abandon"),
+    ("files single decisions", "/api/decisions/"),
+    ("Muse Spark progress", "Muse Spark"),
 ]
 
 ABSENT = [
     # retired: agent-lean display
-    ("no lean box styles", 'lean-box'),
-    ("no lean strip builder", 'leanStrip'),
+    ("no lean box", "lean-box"),
+    ("no lean strip builder", "leanStrip"),
     ("no lean wording", "agent's lean"),
-    ("no lean confirm handler", 'dataset.lok'),
-    ("no lean challenge handler", 'dataset.lch'),
     # retired: per-decision Q&A
-    ("no Q&A block styles", 'm-qa'),
-    ("no Q&A pick styles", 'm-pick'),
-    ("no assume-block builder", 'assume('),
-    ("no per-decision answer handler", 'data-oa='),
-    ("no assume confirm handler", 'data-ok='),
-    ("no assume change handler", 'data-chg='),
-    ("no assume answer handler", 'data-setans='),
+    ("no Q&A blocks", "m-qa"),
+    ("no Q&A pills", ".m-pick"),
+    ("no assume handlers", "data-setans"),
+    # retired: old port inventions
+    ("no old tab wiring", "data-etab"),
+    ("no old tier wiring", "data-etier"),
+    ("no old pick wiring", "data-epick"),
+    ("no old modal names", "m-veil"),
+    ("no old sheet names", "m-sheet"),
+    ("no old modal mount", "emodal"),
+    # retired: voice
+    ("no speech synthesis", "speechSynthesis"),
+    ("no voice scripts", "voiceOpen"),
+    ("no listen buttons", "listen-btn"),
+    ("no hyper speech", "hyperspeak"),
+    # retired: old house shell
+    ("no house font", "Geist"),
+    ("no old step shell", 'class="step'),
 ]
 
 
