@@ -56,6 +56,7 @@
   .menu.open a{opacity:1;transform:none}
   .menu.open a:nth-child(1){transition-delay:.08s}.menu.open a:nth-child(2){transition-delay:.14s}.menu.open a:nth-child(3){transition-delay:.2s}.menu.open a:nth-child(4){transition-delay:.26s}.menu.open a:nth-child(5){transition-delay:.32s}
   .hero{position:relative;width:100%;height:100vh;height:100svh;min-height:560px;overflow:hidden;background:#000}
+  .hero::after{content:"";position:absolute;left:0;right:0;bottom:0;height:130px;z-index:1;pointer-events:none;background:linear-gradient(transparent,var(--bg))}
   #scene{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab;touch-action:none}
   #scene.dragging{cursor:grabbing}
   .ui{position:absolute;inset:0;pointer-events:none;z-index:2}
@@ -67,9 +68,9 @@
   .arrow:hover{background:#fff;color:#000}
   .hero-tag{position:absolute;left:var(--padx);bottom:clamp(40px,7.5vh,70px);max-width:min(460px,82vw)}
   .hero-tag .eb{margin-bottom:16px}
-  .tagline{margin:0;font-family:'Poppins','Geist',ui-sans-serif,system-ui,sans-serif;font-size:clamp(24px,2.65vw,44px);line-height:1.2;font-weight:300;letter-spacing:-0.01em}
+  .tagline{margin:0;font-family:'Poppins','Geist',ui-sans-serif,system-ui,sans-serif;font-size:clamp(24px,2.65vw,44px);line-height:1.2;font-weight:300;letter-spacing:-0.01em;text-shadow:0 1px 14px rgba(0,0,0,.85),0 0 2px rgba(0,0,0,.9)}
   .tagline strong{font-weight:700;display:block}
-  .hero-sub{color:var(--mut);font-size:15px;line-height:1.6;max-width:40ch;margin:14px 0 0}
+  .hero-sub{color:var(--mut);font-size:15px;line-height:1.6;max-width:40ch;margin:14px 0 0;text-shadow:0 1px 12px rgba(0,0,0,.9),0 0 2px rgba(0,0,0,.9)}
   .cta-row{position:absolute;left:45.6%;right:-1vw;top:88.7%;transform:translateY(-50%);display:flex;align-items:center}
   .cta-row .btn{flex:none}
   .cta-line{flex:1;height:1.5px;background:rgba(255,255,255,.8);min-width:40px;margin-left:28px}
@@ -81,7 +82,8 @@
   h1{font-size:clamp(2.9rem,7.5vw,5.9rem);line-height:1.02;letter-spacing:-.035em;font-weight:700;margin:26px auto 22px;max-width:16ch}
   h1 em{font-style:normal;color:var(--acc)}
   .ctas{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:38px}
-  .sec{padding:120px 0}
+  .sec{position:relative;padding:120px 0}
+  .sec-num{position:absolute;top:56px;right:0;font-family:'Poppins','Geist',ui-sans-serif,system-ui,sans-serif;font-size:clamp(96px,10vw,170px);font-weight:600;line-height:1;color:transparent;-webkit-text-stroke:1px rgba(255,255,255,.16);user-select:none;pointer-events:none}
   .sec-head{max-width:720px;margin-bottom:64px}
   .sec-head.center{margin-left:auto;margin-right:auto;text-align:center}
   h2{font-size:clamp(2rem,4.6vw,3.2rem);line-height:1.08;letter-spacing:-.03em;font-weight:700;margin:20px 0 16px}
@@ -115,6 +117,7 @@
   }
   @media (max-width:768px){
     .sec{padding:72px 0}
+    .sec-num{top:36px;font-size:72px}
     .wrap{padding:0 20px}
     .bento{grid-template-columns:1fr}
     .c4,.c5,.c6,.c7,.c12{grid-column:span 1}
@@ -170,7 +173,7 @@
   <section class="hero" id="hero">
     <canvas id="scene" aria-label="Rotatable glass cube refracting the headline. Drag to rotate."></canvas>
     <div class="ui">
-      <h1 class="sr-only">Decide Every Moment</h1>
+      <h1 class="sr-only">Decide With AI</h1>
       <div class="arrows">
         <button class="arrow" id="prev" aria-label="Rotate cube left"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button>
         <button class="arrow" id="next" aria-label="Rotate cube right"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
@@ -190,8 +193,9 @@
   </section>
 <div class="wrap">
   <section class="sec" id="problem">
+    <span class="sec-num" aria-hidden="true">02</span>
     <div class="sec-head reveal">
-      <span class="eb"><i></i>The problem</span>
+      <span class="eb"><i></i>02 · The problem</span>
       <h2>One line of diff.<br>Weeks to undo.</h2>
       <p>Your agent picks a database, an auth scheme, a hosting platform — mid-task, mid-diff, with no pause. Switching later means a migration, a rewrite, or living with it. educated decisions need a moment; Hoist makes that moment.</p>
     </div>
@@ -212,8 +216,9 @@
 
 <div class="wrap">
   <section class="sec" id="moment">
+    <span class="sec-num" aria-hidden="true">03</span>
     <div class="sec-head reveal">
-      <span class="eb"><i></i>The decision moment</span>
+      <span class="eb"><i></i>03 · The decision moment</span>
       <h2>Five steps. Ninety seconds. Zero regrets.</h2>
       <p>From interruption to committed record, the whole loop is built to educate first and decide second.</p>
     </div>
@@ -248,8 +253,9 @@
 </div>
 <div class="wrap">
   <section class="sec" id="records">
+    <span class="sec-num" aria-hidden="true">04</span>
     <div class="sec-head reveal">
-      <span class="eb"><i></i>Decision records</span>
+      <span class="eb"><i></i>04 · Decision records</span>
       <h2>Decisions you can grep.</h2>
       <p>Every committed moment lands in <span style="color:var(--ink)">docs/decisions/</span> as a MADR record — readable on GitHub, readable by your next agent, checkable by the hook.</p>
     </div>
@@ -281,8 +287,9 @@
 
 <div class="wrap">
   <section class="sec" id="install">
+    <span class="sec-num" aria-hidden="true">05</span>
     <div class="sec-head center reveal">
-      <span class="eb"><i></i>Install</span>
+      <span class="eb"><i></i>05 · Install</span>
       <h2>Guarding your repo in one command.</h2>
       <p>Python 3.9+, Muse Code, zero dependencies. The decision page runs on your machine and makes no API calls.</p>
     </div>
@@ -364,7 +371,7 @@ import { mergeVertices, mergeGeometries } from 'three/addons/utils/BufferGeometr
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
 const MODEL_URL = 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260929_212926_92423081-b0e4-4f5a-b650-14af6c05c058.glb';
-const LINES = ['Decide', 'Every', 'Moment'];
+const LINES = ['Decide', 'With', 'AI'];
 const REDUCED = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 const canvas = document.getElementById('scene');
@@ -397,18 +404,18 @@ function drawHeadline() {
   hctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   hctx.fillStyle = '#000';
   hctx.fillRect(0, 0, W, H);
-  let fs = Math.min(H * 0.21, W * (mobile ? 0.21 : 0.118));
+  let fs = Math.min(H * 0.21, W * (mobile ? 0.21 : 0.095));
   const setFont = () => { hctx.font = `800 ${fs}px Poppins`; };
   setFont();
   hctx.fillStyle = '#e9e9e9';
   hctx.textAlign = 'center';
   hctx.textBaseline = 'alphabetic';
-  const limit = W * (mobile ? 0.9 : 0.5);
+  const limit = W * (mobile ? 0.9 : 0.42);
   let widest = 0;
   for (const ln of LINES) widest = Math.max(widest, hctx.measureText(ln).width);
   if (widest > limit) { fs *= limit / widest; setFont(); }
-  const cx = W * (mobile ? 0.5 : 0.505);
-  const cy = H * (mobile ? 0.45 : 0.468);
+  const cx = W * (mobile ? 0.5 : 0.56);
+  const cy = H * (mobile ? 0.38 : 0.41);
   const gap = fs * 1.07, cap = fs * 0.7;
   for (let i = 0; i < 3; i++) hctx.fillText(LINES[i], cx, cy + cap / 2 + (i - 1) * gap);
   headTex.needsUpdate = true;
@@ -610,9 +617,9 @@ function layout() {
   drawHeadline();
   const visH = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * 10;
   const visW = visH * camera.aspect;
-  const sx = mobile ? 0.5 : 0.517, sy = mobile ? 0.45 : 0.488;
+  const sx = mobile ? 0.5 : 0.56, sy = mobile ? 0.4 : 0.44;
   pivot.position.set((sx - 0.5) * visW, (0.5 - sy) * visH, 0);
-  const px = Math.min(H * 0.44, W * (mobile ? 0.45 : 0.29));
+  const px = Math.min(H * 0.44, W * (mobile ? 0.45 : 0.27));
   pivot.scale.setScalar((px / H) * visH);
 }
 window.addEventListener('resize', layout);
