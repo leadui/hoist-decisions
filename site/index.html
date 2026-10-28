@@ -908,7 +908,7 @@
       }
       return fetch("sample.json", { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (j) {
         S = j; LIVE = false;
-      });
+      }).catch(function () { S = null; LIVE = false; });
     });
   }
 
@@ -1642,7 +1642,7 @@
     applyTheme();
     loadState().then(function () {
       if (!S) {
-        $("app").innerHTML = '<p class="err">Couldn\'t load the decisions. If you opened this file directly, run <code>python3 hoist.py serve</code> and open the address it prints.</p>';
+        $("app").innerHTML = '<p class="err">Couldn\'t load the decisions. Browsers block data files when this page is opened directly — serve it with <code>cd site && python3 -m http.server 8000</code> and open <code>http://localhost:8000/#/session</code>, or run <code>python3 hoist.py serve</code> for the live session.</p>';
         return;
       }
       render();
