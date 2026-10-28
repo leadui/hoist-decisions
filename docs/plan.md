@@ -50,6 +50,10 @@ Updated with every landed slice. Phases are shippable slices, smallest first.
   2 options with Bad-because, 1 tagged evidence link, 1 about-you question,
   lean strip with 1 flip + ≤3 chips). Demo beat: flip the decision by changing
   a chip.
+  - [x] Draft contract: authored lean (why + ≤3 assumptions + ≤2 flips) + checks + 10 tests
+  - [x] Page: lean strip + Right/Change chips persist + record tags + verified-live docs tag
+  - [x] Sample: persistence-layer draft carries lean for click-through
+  - [ ] Owner click-through: chip change flows to the record
 - [ ] **P2 — Review gate + batch record** (Oct 31–Nov 1): answered/skipped tabs,
   escape row that truly unblocks wait, review gate, batch MADR with path-tied
   confidence + Ruled-out reasons.
