@@ -715,7 +715,7 @@ function learnHtml(o){
   return `<div class="learn">${l.what?`<p><b>What it is.</b> ${esc(l.what)}</p>`:''}${l.living_with?`<p><b>Living with it.</b> ${esc(l.living_with)}</p>`:''}
     ${(l.terms||[]).length?`<dl>${l.terms.map(t=>`<dt>${esc(t.term)}</dt><dd>${esc(t.meaning)}</dd>`).join('')}</dl>`:''}
     ${o.check_current?`<p class="check">Check it's current: ${esc(o.check_current)}</p>`:''}
-    ${l.docs_url?`<p><a href="${esc(l.docs_url)}" target="_blank" rel="noopener">Official documentation</a></p>`:''}</div>`;
+    ${l.docs_url?`<p><a href="${esc(l.docs_url)}" target="_blank" rel="noopener">Official documentation</a> <span class="src">link verified live when drafted</span></p>`:''}</div>`;
 }
 function renderSessionDecision(d){
   const dr=draftOf(d.id),ss=SS(),n=asks().length;
@@ -728,6 +728,11 @@ function renderSessionDecision(d){
   const own=(dr.questions||[])[0],ownAns=((ss.answers||{})[d.id]||{})[own&&own.id];
   const ruled=dr.options.filter(o=>o.ruled_out),open=dr.options.find(o=>o.id===G.learnOpen);
   const signals=(dr.evidence||[]).filter(e=>e.source!=='profile');
+  const leanOpt=viable.find(o=>o.id===dr.agent_pick);
+  const leanSt=i=>(((ss.answers||{})[d.id]||{}).lean||{})[i]||'unchecked';
+  const leanStrip=(dr.lean&&dr.lean.why&&leanOpt)?`<p class="sub">The agent's lean</p><p>It leans toward <b>${esc(lc(leanOpt.plain_name||leanOpt.name))}</b> — ${esc(dr.lean.why)}</p>`+
+    (dr.lean.flips||[]).map(f=>`<p class="basis">Would flip if ${esc(lc(f).replace(/\.$/,''))}.</p>`).join('')+
+    (dr.lean.assumptions||[]).map((a,i)=>{const st=leanSt(i);return `<div class="assume"><span class="q">${esc(a)}</span><span class="ctl"><button class="small-btn" data-lok="${i}" aria-pressed="${st==='confirmed'}">Right</button><button class="small-btn" data-lch="${i}" aria-pressed="${st==='challenged'}">Change</button>${st==='unchecked'?'':`<span class="state ok">${st==='challenged'?'Challenged':'Confirmed'}</span>`}</span></div>`;}).join(''):'';
   const head=`<div class="qhead"><span class="qnum">Decision ${G.di+1} of ${n} · ${doorWord(dr.door||d.door)}</span><span class="pips">${asks().map((_,i)=>`<i class="${i<=G.di?'on':''}"></i>`).join('')}</span></div>`;
   const story=o=>`<div class="story ${o===sel?'sel':''}" data-use="${esc(o.id)}" role="button" tabindex="0" aria-pressed="${o===sel}">
       <div class="badges">${o===lean?`<span class="bdg lean">${dr.agent_pick?'Your agent leans here':'Safe default'}</span>`:''}${o===best?'<span class="bdg fit">Fits your answers best</span>':''}</div>
@@ -753,6 +758,7 @@ function renderSessionDecision(d){
     ${ruled.map(o=>`<p class="ruled"><s>${esc(o.plain_name||o.name)}</s> ruled out: ${esc(o.ruled_out)}</p>`).join('')}
     <div class="reason">
       <h2>${dr.agent_pick?`Why your agent leans toward ${esc(lc(lean.plain_name||lean.name))}`:`Why ${esc(lc(lean.plain_name||lean.name))} is the safe default`}</h2>
+      ${leanStrip}
       ${signals.length?`<p class="sub">What it noticed</p><ul>${signals.slice(0,4).map(e=>`<li><span>${esc(e.detail)}</span></li>`).join('')}</ul>`:''}
       ${(dr.risks||[]).length?`<p class="sub">What it's watching out for</p><ul>${dr.risks.map(r=>`<li class="risk"><span>${esc(r)}</span></li>`).join('')}</ul>`:''}
       ${prof.length?`<p class="sub">What it assumed about you · correct anything that's wrong</p><div>${prof.map(assume).join('')}</div>`:''}
@@ -772,15 +778,19 @@ function renderSessionDecision(d){
 function madrDraft(d,dr,opt,mode){
   const ss=SS(),rk=rankDraft(dr,d.id),fl=flipsDraft(dr,d.id),cf=confDraft(dr,rk,mode),prof=ss.plan.profile||[];
   const because=mode==='delegated'?`you didn't mind, so Hoist used the safe default: ${cleanReason(dr.default_reason||'it fits most projects like this')}`:
+    (dr.agent_pick&&opt.id===dr.agent_pick&&(dr.lean||{}).why)?cleanReason(dr.lean.why):
     opt.id===rk.order[0].id?(becauseText(rk.why[opt.id])||cleanReason(dr.default_reason||'it fits your answers best')):
     `you preferred it over ${rk.order[0].name}, which fit your answers better`;
   const tag=q=>({confirmed:'you confirmed it',changed:'you changed it'})[assumeState(q.id)]||'assumed by your agent, not checked';
   const used=(dr.profile_effects||[]).map(pe=>{const q=prof.find(x=>x.id===pe.profile_id);return q&&ss.profile_answers[q.id]?`- ${q.text.replace(/\?$/,'')}: ${ss.profile_answers[q.id]} (${tag(q)})`:null;}).filter(Boolean);
   const note=((G.notes||{})[d.id]||'').trim();
   const own=(dr.questions||[]).map(q=>{const a=((ss.answers||{})[d.id]||{})[q.id];return a?`- ${q.text.replace(/\?$/,'')}: ${a} (your answer)`:null;}).filter(Boolean);
+  const lst=((ss.answers||{})[d.id]||{}).lean||{};
+  const lassump=((dr.lean||{}).assumptions||[]).map((a,i)=>`- Assumed: ${a.replace(/\.$/,'')} (${lst[i]==='confirmed'?'you confirmed it':lst[i]==='challenged'?'you challenged it, so treat the lean as uncertain':'assumed, not checked'})`);
   const ev=(dr.evidence||[]).filter(e=>e.source!=='profile').map(e=>`- ${e.detail} (${e.source==='inferred'?'inferred by Muse Spark':e.source==='profile'?'your answers':e.source==='task'?'the task':'seen in '+e.source})`);
   const order=[opt,...rk.order.filter(o=>o!==opt)],ruled=dr.options.filter(o=>o.ruled_out);
   const later=(opt.bad||[]).find(b=>b.when==='later')||(opt.bad||[])[0];
+  const revA=((dr.lean||{}).flips||[]).map(f=>`- Revisit if ${lc(f).replace(/\.$/,'')}.`);
   return `---
 status: accepted
 date: ${today()}
@@ -798,7 +808,7 @@ confidence: ${cf.lv}
 ${dr.question} ${dr.why_now} ${dr.undo}${dr.assumes?`\n${/^assum/i.test(dr.assumes)?'':'Assumes: '}${dr.assumes}`:''}
 
 ## Decision Drivers
-${[...used,...own,...ev].join('\n')||'- No drivers recorded'}
+${[...used,...own,...lassump,...ev].join('\n')||'- No drivers recorded'}
 
 ## Considered Options
 ${order.map((o,i)=>`${i+1}. ${o.name}${o.id===dr.agent_pick?' (the agent\'s pick)':''}`).join('\n')}${ruled.length?'\n'+ruled.map(o=>`- Ruled out: ${o.name}, because ${lc(o.ruled_out)}`).join('\n'):''}
@@ -818,7 +828,7 @@ ${order.slice(1).map(o=>`### ${o.name}\n${(o.good||[]).map(g=>`- Good, because $
 
 ## More Information
 - Confidence: ${cf.lv}; ${cf.txt}.
-${fl.map(f=>`- Revisit if ${revisitText(f)}: ${f.win.name} would fit better.`).join('\n')||'- No single answer change would flip it.'}${(opt.learn||{}).docs_url?`\n- Documentation: ${opt.learn.docs_url}`:''}
+${[...revA,...fl.map(f=>`- Revisit if ${revisitText(f)}: ${f.win.name} would fit better.`)].join('\n')||'- No single answer change would flip it.'}${(opt.learn||{}).docs_url?`\n- Documentation: ${opt.learn.docs_url}`:''}
 `;
 }
 function madrDefault(d){
@@ -913,6 +923,7 @@ app.addEventListener('click',async e=>{
   if(b.dataset.oa!=null){const d=asks()[G.di],dr=draftOf(d.id),q=dr.questions.find(x=>x.id===b.dataset.q);await saveAnswers({answers:{[d.id]:{[q.id]:q.answers[+b.dataset.oa].label}}});return renderSession();}
   if(b.dataset.learn){e.stopPropagation();G.learnOpen=G.learnOpen===b.dataset.learn?null:b.dataset.learn;return renderSession();}
   if(b.dataset.ok){await saveAnswers({profile_answers:{[b.dataset.ok]:SS().profile_answers[b.dataset.ok]},confirmed:{[b.dataset.ok]:'confirmed'}});return renderSession();}
+  if(b.dataset.lok!=null||b.dataset.lch!=null){const dd=asks()[G.di],li=b.dataset.lok!=null?b.dataset.lok:b.dataset.lch,lv=b.dataset.lok!=null?'confirmed':'challenged';const cur=Object.assign({},((SS().answers||{})[dd.id]||{}).lean);if(cur[li]===lv)delete cur[li];else cur[li]=lv;await saveAnswers({answers:{[dd.id]:{lean:cur}}});return renderSession();}
   if(b.dataset.chg){G.changing=G.changing===b.dataset.chg?null:b.dataset.chg;return renderSession();}
   if(b.dataset.setans){const q=SS().plan.profile.find(x=>x.id===b.dataset.setans),v=q.answers[+b.dataset.i];G.changing=null;
     await saveAnswers({profile_answers:{[q.id]:v},confirmed:{[q.id]:v===q.assumed&&assumeState(q.id)!=='changed'?'confirmed':'changed'}});return renderSession();}
