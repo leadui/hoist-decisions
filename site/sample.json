@@ -386,8 +386,7 @@
       "trajectory": [
        4,
        2
-      ],
-      "voice": "Loose files. Every note and project becomes a file on disk. Zero setup, reads as fast as your disk, and backups are just copy paste. The catch is physics: two writes at once can trash each other, and finding anything means scanning files yourself. Fine for a weekend. Terrifying for a product."
+      ]
      },
      {
       "id": "sqlite-embedded",
@@ -456,8 +455,7 @@
       "trajectory": [
        3,
        6
-      ],
-      "voice": "One database file next to your app. Real tables, real relations, shockingly fast reads, zero bill. The catch is the same physics: one writer at a time, on one machine. Perfect until the day you outgrow a single box, and that day might never come."
+      ]
      },
      {
       "id": "managed-postgres",
@@ -530,8 +528,7 @@
       "trajectory": [
        3,
        9
-      ],
-      "voice": "Managed Postgres. Real tables, real relations, full-text search, someone else handling backups and 3 AM pages. You pay for what you use. The catch is rent: leaving means a real migration, and the bill grows with you."
+      ]
      }
     ],
     "default_option": "sqlite-embedded",
@@ -574,8 +571,7 @@
      "title": "Headroom: today vs at 10x scale",
      "now": "today",
      "later": "at 10x"
-    },
-    "voice_open": "Picking where your data lives. Here is the one idea that matters. Data has gravity: your queries, your relations, your saved projects all orbit the store you choose now. There are three orbits. Loose files: quick now, chaos later. A single database file: portable and boring. Or managed Postgres: someone else minds the cabinet. Pick one to hear its story."
+    }
    },
    "authentication-mechanism": {
     "id": "authentication-mechanism",

@@ -25,7 +25,7 @@ def opt(id, **kw):
          "analogy": "like shelves in a shop", "story": {"now": "fine this week", "later": "costly in six months"},
          "journey": ["you save a note", "the app writes it", "the store keeps it", "reads come back fast"],
          "numbers": [["Reads", "thousands a second"], ["Writers", "one at a time"]],
-         "micro": 2, "trajectory": [3, 8], "voice": "You save a note and it lands safely. The catch is one writer at a time.",
+         "micro": 2, "trajectory": [3, 8],
          "summary": "a store", "good": [{"when": "now", "text": "easy to start"}],
          "bad": [{"when": "later", "text": "hard to move"}],
          "learn": {"what": "it keeps things", "living_with": "you tend it", "terms": [], "docs_url": ""}}
@@ -36,7 +36,6 @@ def opt(id, **kw):
 def draft(**kw):
     d = {"question": "Where should the notes live?", "analogy": "like shelves in a shop",
          "micro_label": "upkeep burden", "growth": {"title": "Headroom", "now": "today", "later": "at 10x"},
-         "voice_open": "You need a home for notes. Here is the one idea. Listen to each option.",
          "options": [opt("a"), opt("b")], "default_option": "a", "agent_pick": "", "questions": []}
     d.update(kw)
     return d
@@ -115,11 +114,6 @@ def test_micro_out_of_range_fails():
     check("micro 11 fails", any("micro" in p for p in ps), str(ps))
 
 
-def test_missing_voice_fails():
-    ps = problems(draft(options=[opt("a", voice=""), opt("b")]))
-    check("empty voice fails", any("voice" in p for p in ps), str(ps))
-
-
 def test_missing_micro_label_fails():
     ps = problems(draft(micro_label=""))
     check("empty micro_label fails", any("micro_label" in p for p in ps), str(ps))
@@ -148,7 +142,6 @@ if __name__ == "__main__":
     test_empty_assumption_fails()
     test_missing_journey_fails()
     test_micro_out_of_range_fails()
-    test_missing_voice_fails()
     test_missing_micro_label_fails()
     test_bad_trajectory_fails()
     test_malformed_numbers_fail()

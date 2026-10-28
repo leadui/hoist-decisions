@@ -501,7 +501,6 @@ Contract (reply with JSON only):
  "door": 1|2|3,
  "micro_label": "2 to 4 words naming what the comparison bars measure, e.g. ops burden",
  "growth": {"title": "chart title in plain words", "now": "label for today, e.g. today", "later": "label for the future, e.g. at 10x"},
- "voice_open": "spoken intro script, 4 to 6 sentences, second person, conversational: the one idea plus a one-line taste of each option. Written to be spoken, never reciting page text",
  "analogy": "one everyday sentence that captures the shape of this decision: what is cheap now and expensive to change later",
  "risks": ["what the agent is watching out for in this decision, one short sentence each, at most 3"],
  "profile_effects": [{"profile_id": "id from the profile", "answers": [{"label": "exact answer text from the profile",
@@ -516,7 +515,6 @@ Contract (reply with JSON only):
    "numbers": [["label", "value"], "2 to 4 rows of concrete scale or cost facts; write estimate when estimated, never invent precision"],
    "micro": "0 to 10: where this option sits on micro_label. A shape for bars, not a number shown to the person",
    "trajectory": ["0 to 10 now", "0 to 10 later: where this option heads on the growth chart. Shapes, not forecasts"],
-   "voice": "spoken story for this option, 4 to 6 sentences, second person: how it works, the catch, who it suits. Written to be spoken",
    "summary": "one line",
    "good": [{"when": "now"|"later", "text": "..."}], "bad": [{"when": "now"|"later", "text": "..."}],
    "learn": {"what": "two plain sentences describing what it is and how it works", "living_with": "two sentences on what day-to-day life with it is like",
@@ -549,14 +547,12 @@ Rules for the lean:
 - Each assumption is about the person's situation (budget, team, patience, scale), never about a product.
   The person confirms or challenges each one; challenged assumptions mark the lean as uncertain.
 - Each flip is a concrete condition under which another option would fit better.
-Rules for the walk-through (journeys, numbers, bars, voice):
+Rules for the walk-through (journeys, numbers, bars):
 - journey is the mechanism as 4 physical steps (what moves where, in order). It teaches how the option works, not features.
 - numbers are concrete facts a newcomer can picture (reads per second, who does the work, what the bill follows).
   Mark guesses as estimates. Never show scores, ratings, or percentages.
 - micro and trajectory are 0 to 10 shapes for bars and the growth chart, judged against each other, never precise.
   micro_label names the dimension honestly (burden, cost shape, lock-in). Bars carry no numbers on screen.
-- voice_open and voice are scripts for speech: second person ("you drop in a photo"), short sentences, one analogy,
-  the catch stated plainly. They retell the idea for the ear; they never recite sentences from the page.
 Rules for analogies and stories:
 - An analogy maps how the trade-off works (what is shared, what is expensive to move, who maintains it), using
   everyday objects (filing cabinets, notebooks, keys, shops). Never use a technical word in an analogy or a plain_name.
@@ -644,8 +640,6 @@ def check_draft(d, profile=None):
         traj = o.get("trajectory") or []
         if len(traj) != 2 or any(not isinstance(v, (int, float)) or isinstance(v, bool) or not 0 <= v <= 10 for v in traj):
             problems.append(f"option '{o.get('id')}' needs trajectory [now, later] 0 to 10")
-        if not str(o.get("voice") or "").strip():
-            problems.append(f"option '{o.get('id')}' needs a spoken voice script")
     qs = d.get("questions") or []
     if len(qs) > 3:
         problems.append(f"asks {len(qs)} questions; at most 3")
@@ -666,8 +660,6 @@ def check_draft(d, profile=None):
     growth = d.get("growth") or {}
     if not (growth.get("title") and growth.get("now") and growth.get("later")):
         problems.append("the decision needs growth title/now/later labels")
-    if not str(d.get("voice_open") or "").strip():
-        problems.append("the decision needs a spoken intro script")
     if d.get("default_option") not in {o.get("id") for o in viable}:
         problems.append("default_option is not a workable option")
     if d.get("agent_pick") and d["agent_pick"] not in {o.get("id") for o in viable}:
@@ -804,7 +796,7 @@ def draft(which, task, project):
         lrn = o.get("learn") or {}
         print(f"     learn: {lrn.get('what', '')}" + (f"\n     check it's current: {o['check_current']}" if o.get("check_current") else "")
               + (f"\n     docs: {lrn['docs_url']}" if lrn.get("docs_url") else ""))
-        print(f"     journey: {' → '.join(o.get('journey') or [])} · micro {o.get('micro')} · voice {'yes' if o.get('voice') else 'MISSING'}")
+        print(f"     journey: {' → '.join(o.get('journey') or [])} · micro {o.get('micro')}")
     if d.get("agent_pick"):
         print(f"\n  lean: {d['agent_pick']}" + (f" — {(d.get('lean') or {}).get('why', '')}" if (d.get("lean") or {}).get("why") else ""))
         for a in (d.get("lean") or {}).get("assumptions", []):

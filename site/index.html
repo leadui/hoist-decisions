@@ -269,8 +269,6 @@ table.raw td:first-child,table.raw th:first-child{text-align:left}
 @media (prefers-color-scheme:dark){.moment{--m-bg:#0e1113;--m-surface:#171c1f;--m-ink:#f0f3f5;--m-ink2:#b9c2cb;--m-line:#2c343b;--m-accent:#5b93ff;--m-accink:#0b1220;--m-accsoft:#16233d}}
 .moment .edu-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 4px}
 .moment .edu-head h2{margin:0;font-size:17px;color:var(--ink)}
-.moment .listen-btn{background:var(--bg);border:1px solid var(--line);border-radius:8px;color:var(--ink);cursor:pointer;font-size:12.5px;padding:4px 10px;font-family:inherit;flex:none}
-.moment .listen-btn:hover{border-color:var(--accent)}
 .moment .model{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:0 0 12px;font-size:14px;color:var(--ink)}
 .moment .model b{display:block;font-size:12.5px;color:var(--muted);margin-bottom:2px}
 .moment .tiers{display:flex;gap:8px;margin:12px 0}
@@ -813,7 +811,7 @@ function engineHtml(d){
   const own=(dr.questions||[])[0],ownAns=((ss.answers||{})[d.id]||{})[own&&own.id];
   const ruled=dr.options.filter(o=>o.ruled_out);
   const signals=(dr.evidence||[]).filter(e=>e.source!=='profile');
-  const tiers=[[1,'Glance','names only'],[2,'Compare','stories + trade-offs'],[3,'Deep dive','numbers + voice']].map(([i,n,s])=>`<button class="tier${tier===i?' on':''}" data-etier="${i}" aria-pressed="${tier===i}"><b>${n}</b><small>${s}</small></button>`).join('');
+  const tiers=[[1,'Glance','names only'],[2,'Compare','stories + trade-offs'],[3,'Deep dive','numbers + charts']].map(([i,n,s])=>`<button class="tier${tier===i?' on':''}" data-etier="${i}" aria-pressed="${tier===i}"><b>${n}</b><small>${s}</small></button>`).join('');
   const assume=q=>{const st=assumeState(q.id),curA=ss.profile_answers[q.id];return `<div class="m-qa">
       <p>${esc(q.text)} — <b>${esc(curA||'not sure yet')}</b></p>
       ${st==='assumed'&&q.basis?`<p class="m-note">Assumed because ${esc(lc(q.basis).replace(/\.$/,''))}.</p>`:''}
@@ -840,7 +838,7 @@ function engineHtml(d){
     <h1>${esc(dr.question)}</h1>
     ${dr.analogy?`<div class="model"><b>The one idea</b>${esc(dr.analogy)}</div>`:''}
     <p class="small">${esc(dr.undo)}${dr.assumes?` ${esc(dr.assumes)}`:''}</p>
-    <div class="edu-head"><h2>Walk through it</h2>${dr.voice_open?`<button class="listen-btn" data-elisten>${G.speaking?'Stop':'Listen'}</button>`:''}</div>
+    <div class="edu-head"><h2>Walk through it</h2></div>
     <div class="tiers" role="group" aria-label="Explanation depth">${tiers}</div>
     ${own?`<div class="m-qa"><p>${esc(own.text)}</p>${NEWBIE&&own.beginner_note?`<p class="m-note">${esc(own.beginner_note)}</p>`:''}<div class="m-picks">${own.answers.map((x,i)=>`<button class="m-pick" data-oa="${i}" data-q="${esc(own.id)}" aria-pressed="${x.label===ownAns}">${esc(x.label)}</button>`).join('')}</div></div>`:''}
     ${rows}
@@ -875,10 +873,6 @@ function reviewHtml(){
   const allDone=!a.length||a.every(d=>out[d.id]);
   return `<h1>Review before you finish</h1><p class="lead">Check every decision landed where you meant it, then finish so your agent continues.</p>${rows}<div class="row"><button class="btn primary" data-s="finish"${allDone?'':' disabled'}>Finish</button></div>${allDone?'':'<p class="small">Decide, delegate, park, or send back each decision to finish.</p>'}`;
 }
-function canSpeak(){return 'speechSynthesis' in window;}
-function stopSpeak(){if(!canSpeak())return;speechSynthesis.cancel();if(G.speaking){G.speaking=false;const l=document.querySelector('[data-elisten]');if(l)l.textContent='Listen';}}
-function pickVoice(){const vs=speechSynthesis.getVoices();return vs.find(v=>v.lang&&v.lang.startsWith('en')&&/google|samantha|zira|natural|neural/i.test(v.name))||vs.find(v=>v.lang&&v.lang.startsWith('en'))||vs[0];}
-function speakText(t){if(!canSpeak()||!t)return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);const v=pickVoice();if(v)u.voice=v;u.rate=1.02;u.onend=()=>{G.speaking=false;const l=document.querySelector('[data-elisten]');if(l)l.textContent='Listen';};G.speaking=true;speechSynthesis.speak(u);}
 function growthHtml(dr,opts,pick){
   const g=dr.growth,mx=10,bw=34,gap=26,labelH=46,H=140,W=opts.length*(bw*2+gap)+gap;
   const y=v=>H-8-(v/mx)*(H-20);
@@ -887,10 +881,9 @@ function growthHtml(dr,opts,pick){
   const pk=opts.find(o=>o.id===pick);
   return `<div class="chart"><p class="chart-title">${esc(g.title)}</p><svg class="growth" viewBox="0 0 ${W} ${H+labelH}" role="img" aria-label="${esc(g.title)}">${bars}</svg><p class="chart-note">${pk?`${esc(pk.plain_name||pk.name)} grows from ${esc(g.now)} to ${esc(g.later)}. Shapes, not forecasts.`:'Shapes, not forecasts.'}</p></div>`;
 }
-function closeEmodal(){stopSpeak();const m=$('emodal');if(m)m.innerHTML='';}
+function closeEmodal(){const m=$('emodal');if(m)m.innerHTML='';}
 function openHyper(did,oid){
   const dr=draftOf(did),o=(dr.options||[]).find(x=>x.id===oid);if(!o)return;
-  G.ehyper=oid;
   const docs=[...new Set((dr.options||[]).map(x=>((x.learn||{}).docs_url||'').trim()).filter(Boolean))].slice(0,2);
   $('emodal').innerHTML=`<div class="m-veil moment"><div class="m-sheet" role="dialog" aria-modal="true" aria-label="${esc(o.name)}">
     <div class="m-sheet-top"><div><h2>${esc(cap(o.plain_name||o.name))}</h2><p>${esc(o.name)}${dr.agent_pick===o.id?' · your agent leans here':''}</p></div><button class="x-btn" data-eveil aria-label="Close">✕</button></div>
@@ -901,7 +894,7 @@ function openHyper(did,oid){
     <div class="mchip-row"><span class="mchip-label">Watch out</span>${(o.bad||[]).map(x=>`<span class="mchip bad">${esc(x.text)}</span>`).join('')}</div>
     ${o.learn?`<p class="m-sheet-sec">Living with it</p><p class="m-sheet-story" style="font-size:13.5px">${esc(o.learn.what||'')}${o.learn.living_with?' '+esc(o.learn.living_with):''}</p>`:''}
     <p class="m-sheet-sec">Keep learning</p><ul class="m-learn-list">${docs.map(u=>`<li><a href="${esc(u)}" target="_blank" rel="noopener">${esc(u.replace(/^https?:\/\//,'').split('/')[0])}</a></li>`).join('')}<li><a href="https://duckduckgo.com/?q=${encodeURIComponent(o.name+' vs alternatives')}" target="_blank" rel="noopener">Search the web for comparisons</a></li></ul>
-    <div class="m-sheet-actions">${o.voice?`<button class="listen-btn" data-ehyperspeak>Listen to this story</button>`:''}<button class="btn primary" id="hyperChoose">Choose ${esc(o.name)}</button></div>
+    <div class="m-sheet-actions"><button class="btn primary" id="hyperChoose">Choose ${esc(o.name)}</button></div>
   </div></div>`;
   $('hyperChoose').onclick=()=>{closeEmodal();chooseSession('chosen',oid);};
 }
@@ -1050,9 +1043,7 @@ app.addEventListener('click',async e=>{
   if(!/^#\/session/.test(location.hash))return;
   const b=e.target.closest('button');if(!b)return;
   if(b.dataset.ex){$('taskIn').value=b.dataset.ex;return;}
-  if(b.dataset.etab!=null||b.dataset.etier!=null||b.dataset.epick!=null||b.dataset.hyper!=null)stopSpeak();
   const s=b.dataset.s;
-  if(s==='choose'||s==='delegate'||s==='park'||s==='abandon'||s==='finish')stopSpeak();
   if(s==='start')return startSession($('taskIn').value.trim());
   if(s==='retry')return startSession(SS().task,true);
   if(s==='begin'){G.view='tabs';return renderSession();}
@@ -1066,8 +1057,6 @@ app.addEventListener('click',async e=>{
   if(b.dataset.etier){G.etier[cur().id]=+b.dataset.etier;return renderSession();}
   if(b.dataset.epick){const dd=cur();G.epick=G.epick||{};G.epick[dd.id]=G.epick[dd.id]===b.dataset.epick?null:b.dataset.epick;return renderSession();}
   if(b.dataset.hyper){const dd=cur();return openHyper(dd.id,b.dataset.hyper);}
-  if(b.dataset.elisten){const dd=cur(),dr=draftOf(dd.id);if(G.speaking){stopSpeak();return;}const pk=((G.epick||{})[dd.id]);const o=pk&&(dr.options||[]).find(x=>x.id===pk);speakText(o&&o.voice?o.voice+' Still like this one? Hit confirm.':dr.voice_open||'');b.textContent='Stop';return;}
-  if(b.dataset.ehyperspeak){const dr=draftOf(cur().id);const o=(dr.options||[]).find(x=>x.id===G.ehyper);if(o&&o.voice){if(G.speaking)stopSpeak();else speakText(o.voice);}return;}
   if(b.dataset.chg){G.changing=G.changing===b.dataset.chg?null:b.dataset.chg;return renderSession();}
   if(b.dataset.setans){const q=SS().plan.profile.find(x=>x.id===b.dataset.setans),v=q.answers[+b.dataset.i];G.changing=null;
     await saveAnswers({profile_answers:{[q.id]:v},confirmed:{[q.id]:v===q.assumed&&assumeState(q.id)!=='changed'?'confirmed':'changed'}});return renderSession();}
