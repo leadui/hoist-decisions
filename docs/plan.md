@@ -40,12 +40,12 @@ gantt
 Updated with every landed slice. Phases are shippable slices, smallest first.
 
 - [x] Research: questionnaire mechanics + decision science + application model
-- [ ] **P0 — Stabilize routing path** (Oct 28–29): solo routing → PostToolBatch →
+- [x] **P0 — Stabilize routing path** (Oct 28–29): solo routing → PostToolBatch →
   session + wait, deterministic on a crafted prompt; logged hook payloads as
   regression fixtures. Scope around 3-option-full / multi-select gap.
   - [x] Offline replay: `test/test_routing.py` (22 checks) + PostToolBatch fixture
   - [x] Robustness fix: Recommended-suffix picks match, all answer shapes accepted
-  - [ ] Live owner re-run on a crafted prompt in Muse Code
+  - [x] Live owner re-run 10:21–10:23: solo routing, Hoist pick, wait, solo resume, 5 records
 - [ ] **P1 — One educated decision** (Oct 29–30): one Compare page (mechanism,
   2 options with Bad-because, 1 tagged evidence link, 1 about-you question,
   lean strip with 1 flip + ≤3 chips). Demo beat: flip the decision by changing
