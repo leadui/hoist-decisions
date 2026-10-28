@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- Hoist, rebuilt on the decision-moments engine (Muse POC).
      Flow, components, and tokens follow examples/decision-moment.html:
-     decision moment -> expanding options -> hyper dive -> sealed record.
+     decision moment -> expanding options -> hyper dive -> saved record.
      Voice stripped per owner; packs come from live Muse Spark drafts. -->
 <html lang="en" data-theme="light">
 <head>
@@ -98,6 +98,7 @@
   }
   .interrupt h2 { font-size: 16px; margin: 0 0 4px; }
   .interrupt p { font-size: 14px; color: var(--ink-2); margin: 0 0 12px; }
+  .interrupt .moment-q { font-size: 16.5px; font-weight: 650; color: var(--ink); margin: 0 0 8px; }
   .path-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   @media (max-width: 520px) { .path-row { grid-template-columns: 1fr; } }
   .path-btn {
@@ -484,12 +485,13 @@
         (state.qid === id ? "true" : "false") + '">' + esc(mark + PACKS[i].tab) + "</button>";
     }
     html += '<span class="qcount">' + done + " of " + PACKS.length + "</span>";
-    html += '<button type="button" class="qtab" data-action="review">Review &amp; seal</button>';
+    html += '<button type="button" class="qtab" data-action="review">Review &amp; commit</button>';
     return html;
   }
 
   function interruptHtml() {
-    return '<div class="interrupt"><h2>Decision moment ' + esc(momentNum()) + '</h2><p>One hard choice, two ways through it. Let us make this decision together.</p>' +
+    var q = Q();
+    return '<div class="interrupt"><h2>Decision moment ' + esc(momentNum()) + '</h2><p class="moment-q">' + esc(q.title) + '</p><p>One hard choice, two ways through it. Let us make this decision together.</p>' +
       '<div class="path-row">' +
       '<button type="button" class="path-btn" data-action="path" data-v="quick"><strong>Answer here</strong><span>Quick: pick now, thin record.</span></button>' +
       '<button type="button" class="path-btn primary" data-action="path" data-v="hoist"><strong>Walk through it</strong><span>Open each option, then pick. Full record.</span></button>' +
@@ -590,7 +592,7 @@
   function quickHtml() {
     var q = Q();
     var html = msgHtml("agent", "Quick version, no walk-through — <strong>pick one:</strong>") +
-      '<div class="edu"><div class="quick-pick">';
+      '<div class="edu"><h2>' + esc(q.title) + '</h2><div class="quick-pick">';
     for (var i = 0; i < q.options.length; i++) {
       html += '<button type="button" class="opt" data-action="quickpick" data-v="' + esc(q.options[i].value) + '" aria-pressed="false">' +
         "<b>" + '<span class="onum">' + (i + 1) + "</span>" + esc(q.options[i].name) + "</b><small>" + esc(q.options[i].desc) + "</small></button>";
@@ -627,7 +629,7 @@
 
   function reviewHtml() {
     var rows = reviewRows();
-    var html = msgHtml("agent", "Every moment is decided — <strong>review the set before it is sealed:</strong>") +
+    var html = msgHtml("agent", "Every moment is decided — <strong>review the set, then commit it:</strong>") +
       '<div class="edu">';
     var allDone = true;
     for (var i = 0; i < rows.length; i++) {
@@ -641,8 +643,8 @@
     html += "</div>";
     if (state.err) html += '<p class="err">' + esc(state.err) + "</p>";
     html += '<div class="actions"><button type="button" class="btn" data-action="file"' +
-      (allDone ? "" : " disabled") + ">Seal the moments</button></div>";
-    if (!allDone) html += '<p class="q-hint">Answer or skip every moment to seal the set. Nothing is written yet.</p>';
+      (allDone ? "" : " disabled") + ">Commit &amp; send back to chat</button></div>";
+    if (!allDone) html += '<p class="q-hint">Answer or skip every moment to commit the set. Nothing is written yet.</p>';
     return html;
   }
 
@@ -652,7 +654,7 @@
       if (state.answers[PACKS[i].id]) filed++;
       else if (state.skipped[PACKS[i].id]) deferred++;
     }
-    var html = msgHtml("agent", "Sealed <strong>" + filed + " moment" + (filed === 1 ? "" : "s") + "</strong>" +
+    var html = msgHtml("agent", "Committed <strong>" + filed + " moment" + (filed === 1 ? "" : "s") + "</strong>" +
       (deferred ? " — <strong>" + deferred + " deferred</strong>" : "") + ". Here's the set:") +
       '<div class="record-wrap">';
     for (var j = 0; j < PACKS.length; j++) {
@@ -664,14 +666,14 @@
           '<pre class="record">' + esc(rec.markdown) + "</pre></div>";
       } else if (a) {
         html += '<div class="deferred-note"><strong>' + esc(q.title) + " — " + esc(a.name) + ".</strong> " +
-          (rec && rec.record ? "Sealed as " + esc(rec.record) + "." : "") + "</div>";
+          (rec && rec.record ? "Saved as " + esc(rec.record) + "." : "") + "</div>";
       } else if (state.abandoned[q.id]) {
         html += '<div class="deferred-note"><strong>' + esc(q.title) + " — sent back to chat.</strong> " +
           "No choice made; your agent will ask there instead.</div>";
       } else if (state.skipped[q.id]) {
         html += '<div class="deferred-note"><strong>' + esc(q.title) + " — deferred.</strong> " +
           "No choice made; this moment stays open for later." +
-          (rec && rec.record ? " Placeholder sealed as " + esc(rec.record) + "." : "") + "</div>";
+          (rec && rec.record ? " Placeholder saved as " + esc(rec.record) + "." : "") + "</div>";
       }
     }
     var defs = defaultRows();
@@ -1498,7 +1500,7 @@
 
   function recordsHtml() {
     var recs = (S.records || []).slice().reverse();
-    var html = '<p class="lede">Every sealed decision, newest first.</p><div class="edu"><h2>Decision records</h2>';
+    var html = '<p class="lede">Every saved decision, newest first.</p><div class="edu"><h2>Decision records</h2>';
     if (!recs.length) html += '<p class="q-hint">No records yet. Finish a walk-through and they land here.</p>';
     for (var i = 0; i < recs.length; i++) {
       var title = "Record";
@@ -1515,7 +1517,7 @@
       if (r.file === param || (r.file || "").indexOf(param) === 0) rec = r;
     });
     if (!rec) return msgHtml("agent", "No record by that name.") + '<div class="edu"><a class="opt" href="#/records"><b>All records</b></a></div>';
-    return msgHtml("agent", "Sealed as <strong>" + esc(rec.file) + ".</strong>") +
+    return msgHtml("agent", "Saved as <strong>" + esc(rec.file) + ".</strong>") +
       '<div class="record-wrap"><pre class="record">' + esc(rec.markdown || "") + "</pre>" +
       '<a class="opt" href="#/records"><b>All records</b></a></div>';
   }
@@ -1535,7 +1537,7 @@
         var rec = null;
         (S.records || []).forEach(function (r) { if (dec.record && (dec.record || "").indexOf(r.file) !== -1) rec = r; });
         app.innerHTML = msgHtml("agent", "This one is <strong>decided.</strong>") + '<div class="record-wrap">' +
-          (rec ? '<pre class="record">' + esc(rec.markdown || "") + "</pre>" : '<p class="q-hint">Sealed as ' + esc(dec.record || "") + ".</p>") +
+          (rec ? '<pre class="record">' + esc(rec.markdown || "") + "</pre>" : '<p class="q-hint">Saved as ' + esc(dec.record || "") + ".</p>") +
           '<a class="opt" href="#/"><b>Open now</b></a></div>';
         paintModal();
         return;

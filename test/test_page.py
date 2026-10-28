@@ -29,6 +29,7 @@ def check(name, cond, detail=""):
 PRESENT = [
     # decision-moment flow
     ("moment box", "Decision moment"),
+    ("moment names its question", "moment-q"),
     ("two paths", "Walk through it"),
     ("tabs switch questions", 'data-action="q"'),
     ("rows expand options", 'data-action="pick"'),
@@ -58,8 +59,8 @@ PRESENT = [
     ("skip escape", 'data-v="skip"'),
     ("delegate escape", "Let the agent decide"),
     ("confirm + review + seal", 'data-action="file"'),
-    ("seal CTA", "Seal the moments"),
-    ("review and seal tab", "Review &amp; seal"),
+    ("commit CTA", "Commit &amp; send back to chat"),
+    ("review and commit tab", "Review &amp; commit"),
     ("theme toggle", "theme-toggle"),
     # Hoist wiring underneath
     ("loads live state", "/api/state"),
@@ -105,6 +106,8 @@ ABSENT = [
     # retired: old language
     ("no interruption box", "The interruption"),
     ("no file CTA", "File records"),
+    ("no seal CTA", "Seal the moments"),
+    ("no seal wording", "seal"),
 ]
 
 
