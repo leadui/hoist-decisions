@@ -34,6 +34,7 @@ PRESENT = [
     ("hero headline words", "['Decide', 'With', 'AI']"),
     ("hero sr headline", "Decide With AI</h1>"),
     ("section numerals", 'sec-num" aria-hidden="true">05<'),
+    ("ui examples", "DECISION MOMENT 1 OF 3"),
     ("cube arrows", 'id="prev"'),
     ("moment numeral", ">01<"),
     ("three.js pinned", "three@0.169.0"),
