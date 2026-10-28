@@ -309,6 +309,18 @@ table.raw td:first-child,table.raw th:first-child{text-align:left}
 .moment .ghost{margin:10px 0;font-size:13px;color:var(--muted)}
 .moment .ghost summary{cursor:pointer;font-weight:600}
 .moment .ghost li{margin:3px 0}
+.moment .m-qa{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin:10px 0}
+.moment .m-qa p{margin:0 0 8px;font-size:13.5px;color:var(--ink)}
+.moment .m-qa .m-note{font-size:12.5px;color:var(--muted);margin:0 0 8px}
+.moment .m-picks{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.moment .m-qa .m-picks+.m-picks{margin-top:8px}
+.moment .m-pick{font:inherit;font-size:13px;cursor:pointer;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:5px 14px}
+.moment .m-pick[aria-pressed="true"]{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.moment .m-state{font-size:12.5px;color:var(--muted);margin-left:4px}
+.moment .lean-box{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:12px 0;color:var(--ink)}
+.moment .lean-box b.t{display:block;font-size:12.5px;color:var(--muted);margin-bottom:4px}
+.moment .lean-box p{margin:0 0 6px;font-size:14px}
+.moment .lean-box .flip{font-size:13px;color:var(--muted);margin:0 0 2px}
 .moment .escape-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px;padding-top:14px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
 .moment .escape-btn{background:none;border:0;color:var(--accent);cursor:pointer;font-size:13px;padding:0;font-family:inherit;text-decoration:underline}
 .moment .rev-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);color:var(--ink)}
@@ -713,20 +725,18 @@ function renderSession(){
   if(!ss.plan)return renderLoading(ss);
   initAssumptions();
   app.classList.remove('wide');
-  if(!G.view)G.view=Object.keys(ss.outcomes||{}).length?'tabs':'overview';
-  if(G.view==='overview')return renderOverview();
+  if(!G.view)G.view='tabs';
   if(G.view==='done')return renderSessionDone();
   return renderTabs();
 }
 function renderStart(){
   const ex=['Add user accounts with saved projects','Set up color tokens and theming for our design system','Add analytics to see where customers drop off during checkout'];
-  app.innerHTML=`<div class="step">
-    <span class="status"><span class="dot ok"></span>Hoist is ready</span>
-    <h1>What is your agent about to do?</h1>
-    <p class="lead">Describe the task. Muse Spark reads your project, finds the decisions that would be hard to undo, and prepares each one so you can decide in plain language.</p>
+  app.innerHTML=`<div class="step moment">
+    <h1>Decide the hard parts well.</h1>
+    <p class="lead">Describe the task. Your agent reads the project, finds the decisions that would be hard to undo, and walks you through each one — glance, compare, or deep dive, your call.</p>
     <textarea class="task" id="taskIn" placeholder="Add user accounts with saved projects">${LIVE?'':esc(ex[0])}</textarea>
     <div class="examples">${ex.map(e=>`<button data-ex="${esc(e)}">${esc(e)}</button>`).join('')}</div>
-    <div class="row"><button class="btn primary" data-s="start">Prepare the decisions</button></div>
+    <div class="row"><button class="btn primary" data-s="start">Walk through the decisions</button></div>
     <p class="err" id="startErr" hidden></p>
   </div>`;
 }
@@ -736,7 +746,7 @@ function renderLoading(ss){
   const st=(on,ok)=>ok?'ok':on?'on':'';
   const planning=ss.status==='planning';
   const again=app.dataset.view==='loading';app.dataset.view='loading';
-  app.innerHTML=`<div class="step${again?' still':''}">
+  app.innerHTML=`<div class="step moment${again?' still':''}">
     <span class="status"><span class="dot"></span>Muse Spark is working · ${secs}s</span>
     <h1>Preparing your decisions</h1>
     <p class="lead">“${esc(ss.task)}”. Muse Spark writes the questions and options; Hoist checks every draft against its rules before you see it.</p>
@@ -754,21 +764,6 @@ function renderSessionError(ss){
   app.innerHTML=`<div class="step"><h1>Muse Spark couldn't finish</h1><p class="lead">Preparing the decisions stopped partway. Try again picks up where it stopped and keeps what's already written. Your agent is still waiting.</p><p class="small">Details: ${esc(ss.error||'unknown')}</p>
     <div class="row"><button class="btn primary" data-s="retry">Try again</button></div></div>`;
 }
-function renderOverview(){
-  const ss=SS(),pl=ss.plan,a=asks(),def=pl.decisions.filter(d=>d.mode==='default'),log=pl.decisions.filter(d=>d.mode==='log');
-  const moved=def.filter(d=>d.budget_note).length,prof=pl.profile||[];
-  app.innerHTML=`<div class="step">
-    <span class="status"><span class="dot"></span>${LIVE?'Your agent is waiting for these decisions':'Ready for you'}</span>
-    <h1>This task needs ${a.length} decision${a.length===1?'':'s'} from you</h1>
-    <p class="lead">${esc(pl.task_summary||ss.task)}</p>
-    <p class="note">For each decision you learn the options at your own depth — glance, compare, or deep dive — then confirm. Your agent's lean appears once you've picked an option. About ${Math.max(2,a.length+1)} minutes in all.</p>
-    <div class="group"><h2>You decide</h2>${a.map(d=>`<div class="row2"><span class="t">${esc(d.title)}</span><span class="s">${esc(d.why)}</span><span class="m">${pillDoor({3:'one-way',2:'heavy',1:'two-way'}[d.door])}</span></div>`).join('')}</div>
-    ${def.length?`<div class="group"><h2>Safe defaults, recorded so you can review them later</h2>${def.map(d=>`<div class="row2 quiet"><span class="t">${esc(d.title)}</span><span class="s">${esc(d.default)}</span></div>`).join('')}
-      ${moved?`<p class="small">To keep this short, Hoist moved ${moved} decision${moved>1?'s':''} here instead of asking.</p>`:''}</div>`:''}
-    ${log.length?`<div class="group"><h2>Your agent decides these and notes them in the log</h2>${log.map(d=>`<div class="row2 quiet"><span class="t">${esc(d.title)}</span><span class="s">${esc(d.default)}</span></div>`).join('')}</div>`:''}
-    <div class="row"><button class="btn primary" data-s="begin">Start</button>${newbieToggle()}</div>
-  </div>`;
-}
 function renderProfileQ(){
   const prof=SS().plan.profile||[];
   if(G.pi>=prof.length){G.view='tabs';return renderSession();}
@@ -779,7 +774,7 @@ function renderProfileQ(){
     <p class="qtext">${esc(q.text)}</p><p class="qwhy">${esc(q.why)}</p>
     ${NEWBIE&&q.beginner_note?`<p class="newnote">${esc(q.beginner_note)}</p>`:''}
     <div class="answers">${q.answers.map((a,i)=>`<button class="ans ${cur===a?'sel':''}" data-pa="${i}"><span class="key">${i+1}</span>${esc(a)}</button>`).join('')}</div>
-    <div class="row">${G.pi>0?'<button class="link" data-s="pback">Back</button>':'<button class="link" data-s="overview">Back to the overview</button>'}${newbieToggle()}</div>
+    <div class="row">${G.pi>0?'<button class="link" data-s="pback">Back</button>':'<button class="link" data-s="begin">Back to decisions</button>'}${newbieToggle()}</div>
   </div>`;
 }
 function learnHtml(o){
@@ -819,12 +814,12 @@ function engineHtml(d){
   const ruled=dr.options.filter(o=>o.ruled_out);
   const signals=(dr.evidence||[]).filter(e=>e.source!=='profile');
   const tiers=[[1,'Glance','names only'],[2,'Compare','stories + trade-offs'],[3,'Deep dive','numbers + voice']].map(([i,n,s])=>`<button class="tier${tier===i?' on':''}" data-etier="${i}" aria-pressed="${tier===i}"><b>${n}</b><small>${s}</small></button>`).join('');
-  const assume=q=>{const st=assumeState(q.id),curA=ss.profile_answers[q.id];return `<div class="assume">
-      <span class="q">${esc(q.text)}</span><span class="a">${esc(curA||'Not sure yet')}</span>
-      ${st==='assumed'&&q.basis?`<span class="basis">Assumed because ${esc(lc(q.basis).replace(/\.$/,''))}.</span>`:''}
-      <span class="ctl">${st==='assumed'?`<button class="small-btn" data-ok="${esc(q.id)}">Right</button><button class="small-btn" data-chg="${esc(q.id)}">Change</button>`:`<span class="state ok">${st==='changed'?'You changed this':'You confirmed'}</span><button class="link" data-chg="${esc(q.id)}">Change</button>`}</span>
-      ${G.changing===q.id?`<div class="chips">${q.answers.map((x,i)=>`<button data-setans="${esc(q.id)}" data-i="${i}" aria-pressed="${x===curA}">${esc(x)}</button>`).join('')}</div>`:''}
-      ${NEWBIE&&q.beginner_note?`<span class="basis">${esc(q.beginner_note)}</span>`:''}
+  const assume=q=>{const st=assumeState(q.id),curA=ss.profile_answers[q.id];return `<div class="m-qa">
+      <p>${esc(q.text)} — <b>${esc(curA||'not sure yet')}</b></p>
+      ${st==='assumed'&&q.basis?`<p class="m-note">Assumed because ${esc(lc(q.basis).replace(/\.$/,''))}.</p>`:''}
+      <div class="m-picks">${st==='assumed'?`<button class="m-pick" data-ok="${esc(q.id)}">Right</button><button class="m-pick" data-chg="${esc(q.id)}">Change</button>`:`<span class="m-state">${st==='changed'?'You changed this':'You confirmed'}</span><button class="m-pick" data-chg="${esc(q.id)}">Change</button>`}</div>
+      ${G.changing===q.id?`<div class="m-picks">${q.answers.map((x,i)=>`<button class="m-pick" data-setans="${esc(q.id)}" data-i="${i}" aria-pressed="${x===curA}">${esc(x)}</button>`).join('')}</div>`:''}
+      ${NEWBIE&&q.beginner_note?`<p class="m-note">${esc(q.beginner_note)}</p>`:''}
     </div>`;};
   const rows=viable.map(o=>{
     const on=o.id===pick,hasMicro=typeof o.micro==='number';
@@ -838,16 +833,16 @@ function engineHtml(d){
   }).join('');
   const trajs=viable.filter(o=>Array.isArray(o.trajectory)&&o.trajectory.length===2);
   const chart=(tier>=3&&dr.growth&&trajs.length===viable.length&&viable.length)?growthHtml(dr,viable,pick):'';
-  const leanStrip=(dr.lean&&dr.lean.why&&leanOpt)?`<p class="sub">The agent's lean</p><p>It leans toward <b>${esc(lc(leanOpt.plain_name||leanOpt.name))}</b> — ${esc(dr.lean.why)}</p>`+
-    (dr.lean.flips||[]).map(f=>`<p class="basis">Would flip if ${esc(lc(f).replace(/\.$/,''))}.</p>`).join('')+
-    (dr.lean.assumptions||[]).map((a,i)=>{const st=leanSt(i);return `<div class="assume"><span class="q">${esc(a)}</span><span class="ctl"><button class="small-btn" data-lok="${i}" aria-pressed="${st==='confirmed'}">Right</button><button class="small-btn" data-lch="${i}" aria-pressed="${st==='challenged'}">Change</button>${st==='unchecked'?'':`<span class="state ok">${st==='challenged'?'Challenged':'Confirmed'}</span>`}</span></div>`;}).join(''):'';
+  const leanStrip=(dr.lean&&dr.lean.why&&leanOpt)?`<div class="lean-box"><b class="t">The agent's lean</b><p>It leans toward <b>${esc(lc(leanOpt.plain_name||leanOpt.name))}</b> — ${esc(dr.lean.why)}</p>`+
+    (dr.lean.flips||[]).map(f=>`<p class="flip">Would flip if ${esc(lc(f).replace(/\.$/,''))}.</p>`).join('')+`</div>`+
+    (dr.lean.assumptions||[]).map((a,i)=>{const st=leanSt(i);return `<div class="m-qa"><p>${esc(a)}</p><div class="m-picks"><button class="m-pick" data-lok="${i}" aria-pressed="${st==='confirmed'}">Right</button><button class="m-pick" data-lch="${i}" aria-pressed="${st==='challenged'}">Change</button>${st==='unchecked'?'':`<span class="m-state">${st==='challenged'?'Challenged':'Confirmed'}</span>`}</div></div>`;}).join(''):'';
   return `<div class="qhead"><span class="qnum">${esc(d.title)} · ${doorWord(dr.door||d.door)}</span></div>
     <h1>${esc(dr.question)}</h1>
     ${dr.analogy?`<div class="model"><b>The one idea</b>${esc(dr.analogy)}</div>`:''}
     <p class="small">${esc(dr.undo)}${dr.assumes?` ${esc(dr.assumes)}`:''}</p>
     <div class="edu-head"><h2>Walk through it</h2>${dr.voice_open?`<button class="listen-btn" data-elisten>${G.speaking?'Stop':'Listen'}</button>`:''}</div>
     <div class="tiers" role="group" aria-label="Explanation depth">${tiers}</div>
-    ${own?`<div class="assume"><span class="a">${esc(own.text)}</span>${NEWBIE&&own.beginner_note?`<span class="basis">${esc(own.beginner_note)}</span>`:''}<div class="chips">${own.answers.map((x,i)=>`<button data-oa="${i}" data-q="${esc(own.id)}" aria-pressed="${x.label===ownAns}">${esc(x.label)}</button>`).join('')}</div></div>`:''}
+    ${own?`<div class="m-qa"><p>${esc(own.text)}</p>${NEWBIE&&own.beginner_note?`<p class="m-note">${esc(own.beginner_note)}</p>`:''}<div class="m-picks">${own.answers.map((x,i)=>`<button class="m-pick" data-oa="${i}" data-q="${esc(own.id)}" aria-pressed="${x.label===ownAns}">${esc(x.label)}</button>`).join('')}</div></div>`:''}
     ${rows}
     ${chart}
     ${ruled.length?`<details class="ghost"><summary>Rejected: ${ruled.length}</summary><ul>${ruled.map(o=>`<li><b>${esc(o.plain_name||o.name)}</b> — ${esc(o.ruled_out)}</li>`).join('')}</ul></details>`:''}
@@ -1029,7 +1024,7 @@ async function renderSessionDone(){
   const rows=pl.decisions.filter(d=>d.mode!=='log').map(d=>{const o=(SS().outcomes||{})[d.id];const id=o&&o.record?o.record.split('/').pop().slice(0,4):null;
     const dr=draftOf(d.id),name=o&&o.choice&&dr?((dr.options.find(x=>x.id===o.choice)||{}).name||o.choice):(o&&o.choice)||'';
     return `<a class="item" href="${id?'#/records/'+id:'#/records'}"><span class="t">${esc(d.title)}</span><span class="s">${o?(o.mode==='parked'?'Parked for later':o.mode==='default'?'Default: '+esc(name):o.mode==='delegated'?esc(name)+' (you didn\'t mind)':esc(name)):'Not recorded'}</span><span class="m">${o&&o.mode==='default'?'<span class="pill proposed">Review later</span>':'<span class="pill accepted">Recorded</span>'}</span></a>`;}).join('');
-  app.innerHTML=`<div class="step">
+  app.innerHTML=`<div class="step moment">
     <span class="status"><span class="dot ok"></span>${LIVE?'Your agent can continue':'All decided'}</span>
     <h1>All set</h1>
     <p class="lead">Every decision for “${esc(ss.task)}” is recorded in <code>docs/decisions/</code>, with your reasons. ${LIVE?'Your agent continues with these choices.':'In a real project, your agent now continues with these choices.'}</p>
@@ -1055,14 +1050,12 @@ app.addEventListener('click',async e=>{
   if(!/^#\/session/.test(location.hash))return;
   const b=e.target.closest('button');if(!b)return;
   if(b.dataset.ex){$('taskIn').value=b.dataset.ex;return;}
-  if(e.target.classList&&e.target.classList.contains('m-veil'))return closeEmodal();
   if(b.dataset.etab!=null||b.dataset.etier!=null||b.dataset.epick!=null||b.dataset.hyper!=null)stopSpeak();
   const s=b.dataset.s;
   if(s==='choose'||s==='delegate'||s==='park'||s==='abandon'||s==='finish')stopSpeak();
   if(s==='start')return startSession($('taskIn').value.trim());
   if(s==='retry')return startSession(SS().task,true);
   if(s==='begin'){G.view='tabs';return renderSession();}
-  if(s==='overview'){G.view='overview';return renderSession();}
   if(s==='pback'){G.pi--;return renderSession();}
   if(s==='reset'){S.session=null;G={view:null,pi:0,sim:null,etab:null,etier:{},epick:{}};return renderSession();}
   if(b.dataset.pa!=null){const q=SS().plan.profile[G.pi];await saveAnswers({profile_answers:{[q.id]:q.answers[+b.dataset.pa]}});G.pi++;return renderSession();}
@@ -1073,7 +1066,6 @@ app.addEventListener('click',async e=>{
   if(b.dataset.etier){G.etier[cur().id]=+b.dataset.etier;return renderSession();}
   if(b.dataset.epick){const dd=cur();G.epick=G.epick||{};G.epick[dd.id]=G.epick[dd.id]===b.dataset.epick?null:b.dataset.epick;return renderSession();}
   if(b.dataset.hyper){const dd=cur();return openHyper(dd.id,b.dataset.hyper);}
-  if(b.dataset.eveil!=null)return closeEmodal();
   if(b.dataset.elisten){const dd=cur(),dr=draftOf(dd.id);if(G.speaking){stopSpeak();return;}const pk=((G.epick||{})[dd.id]);const o=pk&&(dr.options||[]).find(x=>x.id===pk);speakText(o&&o.voice?o.voice+' Still like this one? Hit confirm.':dr.voice_open||'');b.textContent='Stop';return;}
   if(b.dataset.ehyperspeak){const dr=draftOf(cur().id);const o=(dr.options||[]).find(x=>x.id===G.ehyper);if(o&&o.voice){if(G.speaking)stopSpeak();else speakText(o.voice);}return;}
   if(b.dataset.chg){G.changing=G.changing===b.dataset.chg?null:b.dataset.chg;return renderSession();}
@@ -1147,6 +1139,12 @@ app.addEventListener('click',e=>{
   if(go==='record')finish(dec,F.pick||best(),F.pick?'chosen':'chosen');
 });
 $('whyClose').onclick=closeWhy;$('scrim').onclick=closeWhy;
+document.addEventListener('click',e=>{
+  const t=e.target;
+  if(t&&t.classList&&t.classList.contains('m-veil'))return closeEmodal();
+  const x=t&&t.closest?t.closest('[data-eveil]'):null;
+  if(x)return closeEmodal();
+});
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){closeEmodal();return closeWhy();}
   if(!F||F.done||F.step!=='ask'||!/^#\/decide\//.test(location.hash)||$('whySheet').classList.contains('on'))return;
