@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <!-- Hoist, rebuilt on the decision-moments engine (Muse POC).
      Flow, components, and tokens follow examples/decision-moment.html:
-     chat interruption -> tiered education -> selection -> written record.
+     decision moment -> expanding options -> hyper dive -> sealed record.
      Voice stripped per owner; packs come from live Muse Spark drafts. -->
 <html lang="en" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hoist — decide the hard parts well</title>
+<title>Hoist — decision moments</title>
 <style>
   :root, [data-theme="light"] {
     --bg: #ffffff;
@@ -115,16 +115,6 @@
   .edu-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
   .edu h2 { font-size: 17px; margin: 0; }
   .q-hint { font-size: 13.5px; color: var(--ink-2); margin: 2px 0 12px; }
-
-  .tiers { display: flex; gap: 8px; margin-bottom: 12px; }
-  .tier {
-    flex: 1; font: inherit; cursor: pointer; text-align: center;
-    border: 1px solid var(--line); border-radius: 8px; padding: 7px 4px;
-    background: var(--bg); color: var(--ink-2);
-  }
-  .tier b { display: block; font-size: 13.5px; }
-  .tier small { font-size: 11.5px; }
-  .tier[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
 
   .model {
     background: var(--surface); border: 1px solid var(--line);
@@ -291,7 +281,6 @@
   }
   .x-btn:hover { border-color: var(--accent); color: var(--accent); }
   .sheet-sec { font-size: 12.5px; font-weight: 700; margin: 16px 0 6px; color: var(--ink-2); }
-  .sheet-tiers { margin: 12px 0 0; }
   .typing { display: inline-flex; gap: 4px; margin-left: 6px; vertical-align: 2px; }
   .typing i { width: 6px; height: 6px; border-radius: 50%; background: var(--ink-2); animation: tblink 1.2s ease-in-out infinite; }
   .typing i:nth-child(2) { animation-delay: 0.2s; }
@@ -371,20 +360,14 @@
 
   var S = null, LIVE = false, CAT = null, PACKS = [], CTX = { kind: "session" }, SIM = null;
 
-  var TIERS = [
-    { id: 1, name: "Glance", sub: "names only" },
-    { id: 2, name: "Compare", sub: "stories + trade-offs" },
-    { id: 3, name: "Deep dive", sub: "numbers + chart" }
-  ];
-
-  var state = { qid: null, phase: "moment", path: null, picked: null, depth: 2,
+  var state = { qid: null, phase: "moment", path: null, picked: null,
     answers: {}, skipped: {}, abandoned: {}, added: {}, showCustom: false,
     hyper: null, records: {}, err: null, theme: "light",
     deepLoading: {}, deepErr: {}, deepTried: {} };
 
   function resetState() {
     state.qid = null; state.phase = "moment"; state.path = null; state.picked = null;
-    state.depth = 2; state.answers = {}; state.skipped = {}; state.abandoned = {};
+    state.answers = {}; state.skipped = {}; state.abandoned = {};
     state.added = {}; state.showCustom = false; state.hyper = null; state.records = {}; state.err = null;
     state.deepLoading = {}; state.deepErr = {}; state.deepTried = {};
   }
@@ -392,6 +375,10 @@
   function Q() {
     for (var i = 0; i < PACKS.length; i++) if (PACKS[i].id === state.qid) return PACKS[i];
     return PACKS[0] || null;
+  }
+  function momentNum() {
+    for (var i = 0; i < PACKS.length; i++) if (PACKS[i].id === state.qid) return (i + 1) + " of " + PACKS.length;
+    return "";
   }
   function allOptions() {
     var q = Q();
@@ -479,8 +466,8 @@
     return html + '</svg><div class="chart-note">' + esc(caption) + " Shapes, not forecasts.</div></div>";
   }
 
-  function microHtml(q, o, d) {
-    if (d < 2 || o.micro == null || !q.microLabel) return "";
+  function microHtml(q, o) {
+    if (o.micro == null || !q.microLabel) return "";
     var pct = Math.max(3, Math.round((o.micro / 10) * 100));
     return '<span class="micro"><small>' + esc(q.microLabel) + "</small>" +
       '<span class="micro-track"><span class="micro-fill" style="display:block;width:' + pct + '%"></span></span></span>';
@@ -497,15 +484,15 @@
         (state.qid === id ? "true" : "false") + '">' + esc(mark + PACKS[i].tab) + "</button>";
     }
     html += '<span class="qcount">' + done + " of " + PACKS.length + "</span>";
-    html += '<button type="button" class="qtab" data-action="review">Review &amp; file</button>';
+    html += '<button type="button" class="qtab" data-action="review">Review &amp; seal</button>';
     return html;
   }
 
   function interruptHtml() {
-    return '<div class="interrupt"><h2>The interruption</h2><p>One question, two paths. Then learn as much as you want.</p>' +
+    return '<div class="interrupt"><h2>Decision moment ' + esc(momentNum()) + '</h2><p>One hard choice, two ways through it. Let us make this decision together.</p>' +
       '<div class="path-row">' +
       '<button type="button" class="path-btn" data-action="path" data-v="quick"><strong>Answer here</strong><span>Quick: pick now, thin record.</span></button>' +
-      '<button type="button" class="path-btn primary" data-action="path" data-v="hoist"><strong>Decide with Hoist instead</strong><span>Learn the options, then pick. Grounded record.</span></button>' +
+      '<button type="button" class="path-btn primary" data-action="path" data-v="hoist"><strong>Walk through it</strong><span>Open each option, then pick. Full record.</span></button>' +
       "</div></div>";
   }
 
@@ -557,20 +544,13 @@
 
   function hoistHtml() {
     var q = Q();
-    var d = state.depth;
     if (q.preparing) {
       return msgHtml("agent", "One moment — <strong>" + esc(q.title) + "</strong> is still being written.") +
-        '<div class="edu"><div class="researching">Muse Spark is writing this decision — it will appear here on its own." + TYPING + "</div></div>';
+        '<div class="edu"><div class="researching">Muse Spark is writing this moment — it will appear here on its own." + TYPING + "</div></div>';
     }
-    var html = msgHtml("agent", "Hoist walk-through: <strong>" + esc(q.shortTitle) + "?</strong> Pick a depth, then an option.") +
-      '<div class="edu"><div class="edu-head"><h2>' + esc(q.title) + "</h2></div>" +
-      '<div class="tiers" role="group" aria-label="Explanation depth">';
-    for (var t = 0; t < TIERS.length; t++) {
-      html += '<button type="button" class="tier" data-action="depth" data-v="' + TIERS[t].id + '" aria-pressed="' +
-        (d === TIERS[t].id ? "true" : "false") + '"><b>' + esc(TIERS[t].name) + "</b><small>" + esc(TIERS[t].sub) + "</small></button>";
-    }
-    html += "</div>";
-    if (d >= 2 && q.model) {
+    var html = msgHtml("agent", "Decision moment " + esc(momentNum()) + ": <strong>" + esc(q.shortTitle) + "?</strong> Expand the options, then pick one.") +
+      '<div class="edu"><div class="edu-head"><h2>' + esc(q.title) + "</h2></div>";
+    if (q.model) {
       html += '<div class="model"><strong>The one idea that decides this</strong>' + esc(q.model) + "</div>";
     }
     var opts = allOptions();
@@ -578,16 +558,14 @@
     for (var i = 0; i < opts.length; i++) {
       var o = opts[i];
       var on = state.picked === o.value;
-      var open = on || d >= 3;
       html += '<div class="optrow"><button type="button" class="opt" data-action="pick" data-v="' + esc(o.value) + '" aria-pressed="' + (on ? "true" : "false") + '">' +
-        "<b>" + '<span class="onum">' + (i + 1) + "</span>" + ICONS.chev + esc(o.name) + (o.added ? '<span class="yours">Added by you</span>' : "") + "</b>" +
-        (d >= 2 ? "<small>" + esc(o.desc) + "</small>" : "") +
-        microHtml(q, o, d) +
-        (open && d >= 2 ? '<span class="why">' + esc(o.why) + "</span>" + journeyHtml(o) : "") +
-        (open && d >= 3 ? deepHtml(o) : "") + "</button>" +
+        "<b>" + '<span class="onum">' + (i + 1) + "</span>" + ICONS.chev + esc(o.name) + (o.added ? '<span class="yours">Added by you</span>' : "") + "</b><small>" + esc(o.desc) + "</small>" +
+        microHtml(q, o) +
+        (on ? '<span class="why">' + esc(o.why) + "</span>" + journeyHtml(o) : "") +
+        (on ? deepHtml(o) : "") + "</button>" +
         '<button type="button" class="hyper-btn" data-action="hyper" data-v="' + esc(o.value) + '" aria-label="Hyper dive into ' + esc(o.name) + '">' + ICONS.expand + "</button></div>";
     }
-    if (d >= 3) {
+    if (state.picked) {
       if (deepReady(q)) html += growthHtml();
       else { html += deepPullHtml(q); triggerDeep(q); }
     }
@@ -626,15 +604,10 @@
     return html + "</div>";
   }
 
-  function depthLabel(d) {
-    if (typeof d !== "number") d = state.depth;
-    return d === 1 ? "glance" : d === 2 ? "comparison" : "deep dive";
-  }
-
   function answerLabel(ans) {
-    if (!ans) return "Unanswered";
+    if (!ans) return "Still open";
     if (ans.custom) return ans.name + " (your proposal)";
-    return ans.name + " · " + (ans.path === "hoist" ? depthLabel(ans.depth) : "quick") + (ans.mode === "delegated" ? " · agent" : "");
+    return ans.name + " · " + (ans.path === "hoist" ? "compared" : "quick") + (ans.mode === "delegated" ? " · agent" : "");
   }
 
   function reviewRows() {
@@ -645,7 +618,7 @@
       if (a) rows.push({ id: q.id, title: q.title, label: answerLabel(a), done: true, changeable: true });
       else if (state.abandoned[q.id]) rows.push({ id: q.id, title: q.title, label: "Sent back to chat — your agent will ask there", done: true, changeable: true });
       else if (state.skipped[q.id]) rows.push({ id: q.id, title: q.title, label: "Skipped — deferred", done: true, changeable: true });
-      else rows.push({ id: q.id, title: q.title, label: "Unanswered", done: false, changeable: !q.preparing });
+      else rows.push({ id: q.id, title: q.title, label: "Still open", done: false, changeable: !q.preparing });
     }
     var defs = defaultRows();
     for (var j = 0; j < defs.length; j++) rows.push(defs[j]);
@@ -654,7 +627,7 @@
 
   function reviewHtml() {
     var rows = reviewRows();
-    var html = msgHtml("agent", "Here's the whole questionnaire — <strong>review before anything is filed:</strong>") +
+    var html = msgHtml("agent", "Every moment is decided — <strong>review the set before it is sealed:</strong>") +
       '<div class="edu">';
     var allDone = true;
     for (var i = 0; i < rows.length; i++) {
@@ -668,8 +641,8 @@
     html += "</div>";
     if (state.err) html += '<p class="err">' + esc(state.err) + "</p>";
     html += '<div class="actions"><button type="button" class="btn" data-action="file"' +
-      (allDone ? "" : " disabled") + ">File records</button></div>";
-    if (!allDone) html += '<p class="q-hint">Answer or skip every question to file. Nothing is written yet.</p>';
+      (allDone ? "" : " disabled") + ">Seal the moments</button></div>";
+    if (!allDone) html += '<p class="q-hint">Answer or skip every moment to seal the set. Nothing is written yet.</p>';
     return html;
   }
 
@@ -679,7 +652,7 @@
       if (state.answers[PACKS[i].id]) filed++;
       else if (state.skipped[PACKS[i].id]) deferred++;
     }
-    var html = msgHtml("agent", "Filed <strong>" + filed + " record" + (filed === 1 ? "" : "s") + "</strong>" +
+    var html = msgHtml("agent", "Sealed <strong>" + filed + " moment" + (filed === 1 ? "" : "s") + "</strong>" +
       (deferred ? " — <strong>" + deferred + " deferred</strong>" : "") + ". Here's the set:") +
       '<div class="record-wrap">';
     for (var j = 0; j < PACKS.length; j++) {
@@ -691,14 +664,14 @@
           '<pre class="record">' + esc(rec.markdown) + "</pre></div>";
       } else if (a) {
         html += '<div class="deferred-note"><strong>' + esc(q.title) + " — " + esc(a.name) + ".</strong> " +
-          (rec && rec.record ? "Filed as " + esc(rec.record) + "." : "") + "</div>";
+          (rec && rec.record ? "Sealed as " + esc(rec.record) + "." : "") + "</div>";
       } else if (state.abandoned[q.id]) {
         html += '<div class="deferred-note"><strong>' + esc(q.title) + " — sent back to chat.</strong> " +
           "No choice made; your agent will ask there instead.</div>";
       } else if (state.skipped[q.id]) {
         html += '<div class="deferred-note"><strong>' + esc(q.title) + " — deferred.</strong> " +
-          "No choice made; this question stays open for later." +
-          (rec && rec.record ? " Placeholder filed as " + esc(rec.record) + "." : "") + "</div>";
+          "No choice made; this moment stays open for later." +
+          (rec && rec.record ? " Placeholder sealed as " + esc(rec.record) + "." : "") + "</div>";
       }
     }
     var defs = defaultRows();
@@ -718,25 +691,17 @@
     var html = '<div class="veil" data-action="hyperclose"><div class="sheet" role="dialog" aria-modal="true" aria-label="' + esc(o.name) + ' hyper dive">';
     html += '<div class="sheet-top"><div><h2><span class="onum">' + idx + "</span>" + esc(o.name) + '</h2><p class="sub">' + esc(o.desc) + "</p></div>" +
       '<button type="button" class="x-btn" data-action="hyperx">Close</button></div>';
-    html += '<div class="tiers sheet-tiers" role="group" aria-label="Explanation depth">';
-    for (var t = 0; t < TIERS.length; t++) {
-      html += '<button type="button" class="tier" data-action="depth" data-v="' + TIERS[t].id + '" aria-pressed="' +
-        (state.depth === TIERS[t].id ? "true" : "false") + '"><b>' + esc(TIERS[t].name) + "</b></button>";
-    }
-    html += "</div>";
     html += '<div class="sheet-sec">The story</div><p class="sheet-story">' + esc(o.why) + "</p>";
-    if (state.depth >= 2 && o.journey && o.journey.length) html += '<div class="sheet-sec">How it works</div>' + journeyHtml(o);
-    var deep = state.depth >= 3 ? deepHtml(o) : "";
+    if (o.journey && o.journey.length) html += '<div class="sheet-sec">How it works</div>' + journeyHtml(o);
+    var deep = deepHtml(o);
     if (deep) html += '<div class="sheet-sec">Numbers and trade-offs</div>' + deep;
-    if (CTX.kind === "session" && q.draft && state.depth >= 3 && !deepReady(q)) { html += deepPullHtml(q); triggerDeep(q); }
-    if (state.depth >= 2 && o.living) html += '<div class="sheet-sec">Living with it</div><p class="sheet-story">' + esc(o.living) + "</p>";
-    if (state.depth >= 2) {
-      html += '<div class="sheet-sec">Keep learning</div><ul class="learn-list">';
+    if (CTX.kind === "session" && q.draft && !deepReady(q)) { html += deepPullHtml(q); triggerDeep(q); }
+    if (o.living) html += '<div class="sheet-sec">Living with it</div><p class="sheet-story">' + esc(o.living) + "</p>";
+    html += '<div class="sheet-sec">Keep learning</div><ul class="learn-list">';
       for (var i = 0; i < q.links.length; i++) {
         html += '<li><a href="' + esc(q.links[i].u) + '" target="_blank" rel="noopener">' + esc(q.links[i].t) + "</a></li>";
       }
       html += '<li><a href="' + esc(ddg) + '" target="_blank" rel="noopener">Search the web for ' + esc(o.name) + "</a></li></ul>";
-    }
     html += '<div class="sheet-actions">' +
       '<button type="button" class="btn" data-action="hyperpick" data-v="' + esc(o.value) + '">Choose ' + esc(o.name) + "</button></div>";
     return html + "</div></div>";
@@ -762,7 +727,6 @@
     state.picked = null;
     state.showCustom = false;
     state.hyper = null;
-    state.depth = 2;
     state.err = null;
     render();
   }
@@ -784,16 +748,10 @@
     state.picked = (state.picked === v) ? null : v;
     render();
   }
-  function setDepth(d) {
-    d = parseInt(d, 10);
-    if (d !== 1 && d !== 2 && d !== 3) return;
-    state.depth = d;
-    render();
-  }
   function currentAnswer() {
     var o = optBy(state.picked);
     if (!o) return null;
-    return { name: o.name, value: o.value, custom: !!o.added, path: state.path, depth: state.depth };
+    return { name: o.name, value: o.value, custom: !!o.added, path: state.path };
   }
   function nextUnanswered() {
     for (var i = 0; i < PACKS.length; i++) {
@@ -804,7 +762,7 @@
   }
   function advance() {
     var next = nextUnanswered();
-    state.picked = null; state.showCustom = false; state.hyper = null; state.depth = 2; state.err = null;
+    state.picked = null; state.showCustom = false; state.hyper = null; state.err = null;
     if (next) { state.qid = next; state.phase = "moment"; state.path = null; }
     else state.phase = "review";
     render();
@@ -817,8 +775,8 @@
     mode = mode || "chosen";
     state.err = null;
     render();
-    saveChoice(q, opt, mode, state.path, state.depth).then(function (rec) {
-      state.answers[q.id] = { name: opt.name, value: opt.value, custom: !!opt.added, path: state.path, depth: state.depth, mode: mode };
+    saveChoice(q, opt, mode, state.path).then(function (rec) {
+      state.answers[q.id] = { name: opt.name, value: opt.value, custom: !!opt.added, path: state.path, mode: mode };
       state.records[q.id] = rec;
       delete state.skipped[q.id];
       delete state.abandoned[q.id];
@@ -907,7 +865,7 @@
     for (var i = 0; i < PACKS.length; i++) if (PACKS[i].id === id) ok = true;
     if (!ok) return;
     var a = state.answers[id];
-    state.qid = id; state.phase = "hoist"; state.path = "hoist"; state.depth = 2; state.hyper = null;
+    state.qid = id; state.phase = "hoist"; state.path = "hoist"; state.hyper = null;
     state.picked = a ? a.value : null;
     state.showCustom = false;
     state.err = null;
@@ -1110,7 +1068,7 @@
       if (o.choice) {
         var opt = null;
         for (var j = 0; j < q.options.length; j++) if (q.options[j].value === o.choice) opt = q.options[j];
-        state.answers[q.id] = { name: opt ? opt.name : o.choice, value: o.choice, custom: !opt, path: "hoist", depth: 2, mode: o.mode };
+        state.answers[q.id] = { name: opt ? opt.name : o.choice, value: o.choice, custom: !opt, path: "hoist", mode: o.mode };
         state.records[q.id] = { record: o.record, markdown: "" };
       }
     }
@@ -1124,15 +1082,15 @@
     return null;
   }
 
-  function confLine(path, depth, mode) {
+  function confLine(path, mode) {
     if (mode === "delegated") return { lv: "low", txt: "you didn't compare; the agent's pick stands" };
     if (path !== "hoist") return { lv: "low", txt: "quick-picked without comparison. Revisit recommended" };
-    return { lv: "medium", txt: "chosen after a " + depthLabel(depth) + " of all options" };
+    return { lv: "medium", txt: "chosen after comparing all options" };
   }
 
-  function madrSession(q, opt, mode, path, depth) {
+  function madrSession(q, opt, mode, path) {
     var d = q.plan, dr = q.draft, raw = rawOf(q, opt);
-    var cf = confLine(path, depth, mode);
+    var cf = confLine(path, mode);
     var custom = !!(opt && opt.added);
     var because = custom ? "suggested during the walk-through instead of the listed options"
       : mode === "delegated" ? "you didn't mind, so Hoist used " + opt.name + ": " + lc(dr.default_reason || opt.desc || "it fits most projects like this")
@@ -1239,10 +1197,10 @@
     ].join("\n");
   }
 
-  function madrDecide(q, opt, mode, path, depth) {
+  function madrDecide(q, opt, mode, path) {
     var K = q.catalog, dec = q.dec;
     var custom = !!(opt && opt.added);
-    var cf = confLine(path, depth, mode);
+    var cf = confLine(path, mode);
     var o = custom ? null : K.options[opt.value];
     var disp = custom ? opt.name : o.tn;
     var because = custom ? "suggested during the walk-through instead of the listed options"
@@ -1295,10 +1253,10 @@
     return n + "-" + slug + ".md";
   }
 
-  function saveChoice(q, opt, mode, path, depth) {
+  function saveChoice(q, opt, mode, path) {
     var custom = !!(opt && opt.added);
     if (CTX.kind === "decide") {
-      var md = madrDecide(q, opt, mode, path, depth);
+      var md = madrDecide(q, opt, mode, path);
       var slug = slugify(q.catalog.record_title.replace("{tn}", custom ? opt.name : q.catalog.options[opt.value].tn));
       var body = { choice: custom ? opt.name : opt.value, mode: mode, answers: {}, slug: slug, markdown: md };
       if (LIVE) {
@@ -1317,7 +1275,7 @@
       S.records.push({ file: dec.id + "-" + slug + ".md", markdown: md });
       return Promise.resolve({ markdown: md, record: dec.record, mode: mode });
     }
-    var md2 = madrSession(q, opt, mode, path, depth);
+    var md2 = madrSession(q, opt, mode, path);
     var slug2 = slugify(q.plan.title + " " + opt.name);
     var payload = { choice: custom ? opt.name : opt.value, mode: mode, slug: slug2, markdown: md2 };
     if (LIVE) {
@@ -1404,29 +1362,29 @@
     "Add analytics to see where customers drop off during checkout"];
 
   function startHtml() {
-    var html = msgHtml("agent", "Tell me the task — I'll find the decisions that are <strong>hard to undo</strong>, and walk you through each one.") +
-      '<div class="edu"><h2>Decide the hard parts well.</h2>' +
-      '<p class="q-hint">Your agent reads the project, Muse Spark writes the options, and you pick at your own depth: glance, compare, or deep dive.</p>' +
+    var html = msgHtml("agent", "Tell me the task — I'll find every choice that's hard to undo, and we'll take each <strong>decision moment</strong> together.") +
+      '<div class="edu"><h2>What are we deciding?</h2>' +
+      '<p class="q-hint">Your agent reads the project and Muse Spark prepares each moment. Expand anything, hyper-dive anywhere, then pick.</p>' +
       '<textarea class="task-input" id="taskIn" aria-label="Task">' + (LIVE ? "" : esc(EXAMPLES[0])) + "</textarea>" +
       '<div class="ex-row">' + EXAMPLES.map(function (e) {
         return '<button type="button" class="escape-btn" data-action="ex" data-v="' + esc(e) + '">' + esc(e) + "</button>";
       }).join("") + "</div>" +
-      '<div class="actions"><button type="button" class="btn" data-action="start">Walk through the decisions</button></div>' +
+      '<div class="actions"><button type="button" class="btn" data-action="start">Start deciding together</button></div>' +
       (state.err ? '<p class="err">' + esc(state.err) + "</p>" : "") + "</div>";
     return html;
   }
 
   function progressHtml(ses) {
     var total = ses.total || 0, n = (ses.drafted || []).length;
-    var line = ses.status === "planning" ? "Reading your project and finding the lasting decisions…"
-      : "Writing decision " + Math.min(n + 1, total || 1) + " of " + (total || "?") + " — deciding starts with the first draft.";
+    var line = ses.status === "planning" ? "Reading your project and finding the decision moments…"
+      : "Preparing moment " + Math.min(n + 1, total || 1) + " of " + (total || "?") + " — deciding starts with the first moment.";
     return msgHtml("agent", "Working on <strong>" + esc(ses.task || "") + ".</strong>") +
       '<div class="edu"><div class="researching">' + esc(line) + TYPING + "</div>" +
       '<p class="q-hint">Muse Spark writes the questions and options; Hoist checks every draft against its rules before you see it.</p></div>';
   }
 
   function errorHtml(ses) {
-    return msgHtml("agent", "Muse Spark <strong>couldn't finish</strong> preparing the decisions.") +
+    return msgHtml("agent", "Muse Spark <strong>couldn't finish</strong> preparing the decision moments.") +
       '<div class="edu"><p class="q-hint">Try again picks up where it stopped and keeps what is already written. Your agent is still waiting.' +
       (ses.error ? " Details: " + esc(ses.error) : "") + "</p>" +
       '<div class="actions"><button type="button" class="btn" data-action="retry">Try again</button></div>' +
@@ -1484,8 +1442,8 @@
   }
 
   function engineHtml() {
-    var lede = CTX.kind === "decide" ? "One engine, any hard question. Learn at your depth, commit — one record at the end."
-      : "One engine, any hard question. Pick a question, learn at your depth, commit — one record at the end.";
+    var lede = CTX.kind === "decide" ? "One hard choice. Expand, compare, commit — one record at the end."
+      : "One moment per hard choice. Expand, compare, commit — one record at the end.";
     var html = '<p class="lede">' + esc(lede) + "</p>" +
       '<div class="qtabs" role="group" aria-label="Question">' + tabsHtml() + "</div>";
     if (state.phase === "moment") html += momentHtml();
@@ -1518,7 +1476,7 @@
   function homeHtml() {
     var open = (S.decisions || []).filter(function (d) { return d.status === "open"; });
     var ses = S.session;
-    var html = msgHtml("agent", "Hoist holds the decisions that are <strong>hard to undo.</strong> Pick one up, or walk a whole task.") +
+    var html = msgHtml("agent", "Hoist holds your <strong>decision moments</strong> — the choices that are hard to undo. Pick one up, or walk a whole task.") +
       '<div class="edu"><h2>Open now</h2><p class="q-hint">Single interruptions land here; task sessions walk question by question.</p>';
     if (!open.length && !ses) html += '<p class="q-hint">Nothing is waiting. Start a task session to try the walk-through.</p>';
     for (var i = 0; i < open.length; i++) {
@@ -1540,7 +1498,7 @@
 
   function recordsHtml() {
     var recs = (S.records || []).slice().reverse();
-    var html = '<p class="lede">Every filed decision, newest first.</p><div class="edu"><h2>Decision records</h2>';
+    var html = '<p class="lede">Every sealed decision, newest first.</p><div class="edu"><h2>Decision records</h2>';
     if (!recs.length) html += '<p class="q-hint">No records yet. Finish a walk-through and they land here.</p>';
     for (var i = 0; i < recs.length; i++) {
       var title = "Record";
@@ -1557,7 +1515,7 @@
       if (r.file === param || (r.file || "").indexOf(param) === 0) rec = r;
     });
     if (!rec) return msgHtml("agent", "No record by that name.") + '<div class="edu"><a class="opt" href="#/records"><b>All records</b></a></div>';
-    return msgHtml("agent", "Filed as <strong>" + esc(rec.file) + ".</strong>") +
+    return msgHtml("agent", "Sealed as <strong>" + esc(rec.file) + ".</strong>") +
       '<div class="record-wrap"><pre class="record">' + esc(rec.markdown || "") + "</pre>" +
       '<a class="opt" href="#/records"><b>All records</b></a></div>';
   }
@@ -1577,7 +1535,7 @@
         var rec = null;
         (S.records || []).forEach(function (r) { if (dec.record && (dec.record || "").indexOf(r.file) !== -1) rec = r; });
         app.innerHTML = msgHtml("agent", "This one is <strong>decided.</strong>") + '<div class="record-wrap">' +
-          (rec ? '<pre class="record">' + esc(rec.markdown || "") + "</pre>" : '<p class="q-hint">Filed as ' + esc(dec.record || "") + ".</p>") +
+          (rec ? '<pre class="record">' + esc(rec.markdown || "") + "</pre>" : '<p class="q-hint">Sealed as ' + esc(dec.record || "") + ".</p>") +
           '<a class="opt" href="#/"><b>Open now</b></a></div>';
         paintModal();
         return;
@@ -1627,7 +1585,6 @@
     else if (action === "path") choosePath(v);
     else if (action === "pick") pick(v);
     else if (action === "quickpick") { pick(v); confirm("chosen"); }
-    else if (action === "depth") setDepth(v);
     else if (action === "escape") doEscape(v);
     else if (action === "delegate") delegate();
     else if (action === "propose") propose();
@@ -1713,7 +1670,7 @@
   }
 
   window.__hoist = { state: state, boot: boot, render: render, packs: function () { return PACKS; }, chartName: chartName,
-    switchQ: switchQ, choosePath: choosePath, pick: pick, setDepth: setDepth,
+    switchQ: switchQ, choosePath: choosePath, pick: pick,
     confirm: confirm, propose: propose, startSession: startSession, ctx: function () { return CTX; } };
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);

@@ -27,15 +27,11 @@ def check(name, cond, detail=""):
 
 
 PRESENT = [
-    # interruption + tabs + tiers
-    ("interruption box", "The interruption"),
-    ("two paths", "Decide with Hoist instead"),
+    # decision-moment flow
+    ("moment box", "Decision moment"),
+    ("two paths", "Walk through it"),
     ("tabs switch questions", 'data-action="q"'),
-    ("tiers switch depth", 'data-action="depth"'),
     ("rows expand options", 'data-action="pick"'),
-    ("glance tier labeled", '"Glance"'),
-    ("compare tier labeled", '"Compare"'),
-    ("deep tier labeled", '"Deep dive"'),
     ("model box", "The one idea that decides this"),
     # moments components
     ("journey steps", "jstep"),
@@ -55,14 +51,15 @@ PRESENT = [
     ("modal X action", "hyperx"),
     ("modal backdrop action", "hyperclose"),
     ("modal escape key", '"Escape"'),
-    ("sheet tier pills", "sheet-tiers"),
     ("typing indicator", 'class="typing"'),
     # escape row + review gate
     ("custom option escape", 'data-v="custom"'),
     ("back-to-chat escape", 'data-v="chat"'),
     ("skip escape", 'data-v="skip"'),
     ("delegate escape", "Let the agent decide"),
-    ("confirm + review + file", 'data-action="file"'),
+    ("confirm + review + seal", 'data-action="file"'),
+    ("seal CTA", "Seal the moments"),
+    ("review and seal tab", "Review &amp; seal"),
     ("theme toggle", "theme-toggle"),
     # Hoist wiring underneath
     ("loads live state", "/api/state"),
@@ -99,6 +96,15 @@ ABSENT = [
     # retired: old house shell
     ("no house font", "Geist"),
     ("no old step shell", 'class="step'),
+    # retired: tiers
+    ("no depth wiring", 'data-action="depth"'),
+    ("no glance tier", '"Glance"'),
+    ("no compare tier", '"Compare"'),
+    ("no deep tier", '"Deep dive"'),
+    ("no sheet tiers", "sheet-tiers"),
+    # retired: old language
+    ("no interruption box", "The interruption"),
+    ("no file CTA", "File records"),
 ]
 
 
