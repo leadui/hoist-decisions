@@ -361,7 +361,33 @@
        "docs_url": ""
       },
       "check_current": "",
-      "ruled_out": ""
+      "ruled_out": "",
+      "journey": [
+       "App writes a note file",
+       "Reads fly from disk",
+       "Two writes collide",
+       "Back up by copying files"
+      ],
+      "numbers": [
+       [
+        "Relations",
+        "Hand-rolled in code"
+       ],
+       [
+        "Ops",
+        "None, until it breaks"
+       ],
+       [
+        "Scale",
+        "One server, while lucky"
+       ]
+      ],
+      "micro": 8,
+      "trajectory": [
+       4,
+       2
+      ],
+      "voice": "Loose files. Every note and project becomes a file on disk. Zero setup, reads as fast as your disk, and backups are just copy paste. The catch is physics: two writes at once can trash each other, and finding anything means scanning files yourself. Fine for a weekend. Terrifying for a product."
      },
      {
       "id": "sqlite-embedded",
@@ -405,7 +431,33 @@
        "docs_url": "https://www.sqlite.org/docs.html"
       },
       "check_current": "",
-      "ruled_out": ""
+      "ruled_out": "",
+      "journey": [
+       "App opens one file",
+       "Reads fly with SQL",
+       "One writer at a time",
+       "Back up by copying"
+      ],
+      "numbers": [
+       [
+        "Relations",
+        "Full SQL, one node"
+       ],
+       [
+        "Ops",
+        "None, it is a file"
+       ],
+       [
+        "Scale",
+        "One server, terabytes"
+       ]
+      ],
+      "micro": 2,
+      "trajectory": [
+       3,
+       6
+      ],
+      "voice": "One database file next to your app. Real tables, real relations, shockingly fast reads, zero bill. The catch is the same physics: one writer at a time, on one machine. Perfect until the day you outgrow a single box, and that day might never come."
      },
      {
       "id": "managed-postgres",
@@ -453,7 +505,33 @@
        "docs_url": "https://www.postgresql.org/docs/"
       },
       "check_current": "If you pick a Postgres host, confirm its free tier, storage limit, and connection string format are still current.",
-      "ruled_out": ""
+      "ruled_out": "",
+      "journey": [
+       "App connects over the wire",
+       "Tables plus relations",
+       "Search built in",
+       "Scales with you"
+      ],
+      "numbers": [
+       [
+        "Relations",
+        "Native SQL joins"
+       ],
+       [
+        "Ops",
+        "Near zero"
+       ],
+       [
+        "Scale",
+        "Autoscaling plans"
+       ]
+      ],
+      "micro": 3,
+      "trajectory": [
+       3,
+       9
+      ],
+      "voice": "Managed Postgres. Real tables, real relations, full-text search, someone else handling backups and 3 AM pages. You pay for what you use. The catch is rent: leaving means a real migration, and the bill grows with you."
      }
     ],
     "default_option": "sqlite-embedded",
@@ -490,7 +568,14 @@
       "source": "profile",
       "detail": "Assumed sharing-needs is private to each user only"
      }
-    ]
+    ],
+    "micro_label": "upkeep burden",
+    "growth": {
+     "title": "Headroom: today vs at 10x scale",
+     "now": "today",
+     "later": "at 10x"
+    },
+    "voice_open": "Picking where your data lives. Here is the one idea that matters. Data has gravity: your queries, your relations, your saved projects all orbit the store you choose now. There are three orbits. Loose files: quick now, chaos later. A single database file: portable and boring. Or managed Postgres: someone else minds the cabinet. Pick one to hear its story."
    },
    "authentication-mechanism": {
     "id": "authentication-mechanism",

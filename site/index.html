@@ -255,7 +255,7 @@ table.raw td,table.raw th{padding:4px 10px;border-bottom:1px solid var(--line);t
 table.raw th{font-weight:400;color:var(--faint)}
 table.raw td:first-child,table.raw th:first-child{text-align:left}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
-/* engine tabs view: one decision at a time, tiered depth */
+/* decision-moments session view, ported from the Muse POC (see taskmanager). */
 .etabs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px}
 .etab{font:inherit;font-size:13px;font-weight:600;cursor:pointer;background:transparent;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:6px 14px;display:inline-flex;align-items:center;gap:6px}
 .etab svg{width:12px;height:12px}
@@ -264,31 +264,69 @@ table.raw td:first-child,table.raw th:first-child{text-align:left}
 .etab.prep{opacity:.55}
 .etab:disabled{cursor:wait}
 .ecount{font-size:12.5px;color:var(--muted);font-weight:600;align-self:center}
-.etiers{display:flex;gap:8px;margin:12px 0}
-.etier{flex:1;font:inherit;cursor:pointer;text-align:center;border:1px solid var(--line);border-radius:10px;padding:8px 4px;background:var(--surface);color:var(--muted)}
-.etier b{display:block;font-size:13.5px}
-.etier small{font-size:11.5px}
-.etier.on{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
-.emodel{background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:0 0 4px;font-size:14px}
-.emodel b{display:block;font-size:12.5px;color:var(--muted);margin-bottom:2px}
-.eoptrow{display:flex;gap:8px;align-items:stretch;margin-bottom:8px}
-.eoptrow .eopt{flex:1;min-width:0;margin-bottom:0}
-.eopt{display:block;width:100%;text-align:left;cursor:pointer;font:inherit;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:8px}
-.eopt:hover{border-color:var(--muted)}
-.eopt.on{border-color:var(--accent);background:var(--accent-soft)}
-.eopt h3{margin:0;font-size:15px}
-.eopt .tech{margin:0;font-size:13px;color:var(--muted)}
-.eopt .sum{margin:6px 0 0;font-size:13.5px}
-.eopt .bdg{margin:0 6px 6px 0}
-.ewhen{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;margin:8px 0 0;font-size:13.5px}
-.ewhen b{font-size:12.5px;color:var(--muted)}
-.eacts{display:flex;justify-content:flex-end;margin-top:14px}
-.escape{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:14px;padding-top:14px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
-.erev{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--line)}
-.erev b{display:block;font-size:14.5px}
-.erev span{font-size:13px;color:var(--muted)}
-.ehyper{flex:none;width:48px;cursor:pointer;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--muted);display:flex;align-items:center;justify-content:center}
-.ehyper:hover{border-color:var(--accent);color:var(--accent)}
+.moment{--m-bg:#ffffff;--m-surface:#f4f2ec;--m-ink:#14181d;--m-ink2:#3d4450;--m-line:#d9dce1;--m-accent:#0b5fff;--m-accink:#ffffff;--m-accsoft:#e8effd;
+  --bg:var(--m-bg);--surface:var(--m-surface);--soft:var(--m-surface);--ink:var(--m-ink);--muted:var(--m-ink2);--line:var(--m-line);--accent:var(--m-accent);--accent-ink:var(--m-accink);--accent-soft:var(--m-accsoft);--oneway:#b3362b;--twoway:#8a6d1b}
+@media (prefers-color-scheme:dark){.moment{--m-bg:#0e1113;--m-surface:#171c1f;--m-ink:#f0f3f5;--m-ink2:#b9c2cb;--m-line:#2c343b;--m-accent:#5b93ff;--m-accink:#0b1220;--m-accsoft:#16233d}}
+.moment .edu-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 4px}
+.moment .edu-head h2{margin:0;font-size:17px;color:var(--ink)}
+.moment .listen-btn{background:var(--bg);border:1px solid var(--line);border-radius:8px;color:var(--ink);cursor:pointer;font-size:12.5px;padding:4px 10px;font-family:inherit;flex:none}
+.moment .listen-btn:hover{border-color:var(--accent)}
+.moment .model{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:0 0 12px;font-size:14px;color:var(--ink)}
+.moment .model b{display:block;font-size:12.5px;color:var(--muted);margin-bottom:2px}
+.moment .tiers{display:flex;gap:8px;margin:12px 0}
+.moment .tier{flex:1;font:inherit;cursor:pointer;text-align:center;border:1px solid var(--line);border-radius:10px;padding:8px 4px;background:var(--bg);color:var(--muted)}
+.moment .tier b{display:block;font-size:13.5px}
+.moment .tier small{font-size:11.5px}
+.moment .tier.on{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.moment .optrow{display:flex;gap:8px;align-items:stretch;margin-bottom:8px}
+.moment .opt{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px 14px;cursor:pointer;text-align:left;width:100%;font:inherit;color:var(--ink);display:block;flex:1;min-width:0}
+.moment .opt:hover{border-color:var(--accent)}
+.moment .opt.on{border-color:var(--accent);background:var(--accent-soft)}
+.moment .opt h3{margin:0;font-size:15px}
+.moment .opt .tech{margin:0;color:var(--muted);font-size:13px}
+.moment .opt .sum{margin:6px 0 0;font-size:13.5px}
+.moment .micro{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);margin-top:8px}
+.moment .micro-track{flex:1;height:6px;background:var(--surface);border-radius:3px;overflow:hidden}
+.moment .micro-fill{height:100%;background:var(--accent);border-radius:3px}
+.moment .journey{position:relative;margin:10px 0 2px;padding-left:18px}
+.moment .journey::before{content:"";position:absolute;left:5px;top:6px;bottom:6px;width:2px;background:var(--line)}
+.moment .jstep{position:relative;font-size:13px;padding:3px 0;color:var(--ink)}
+.moment .jstep::before{content:"";position:absolute;left:-17px;top:9px;width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.moment .nums{margin:10px 0 2px;font-size:13px}
+.moment .num-row{display:flex;justify-content:space-between;gap:12px;padding:3px 0;border-top:1px dashed var(--line)}
+.moment .num-row:first-child{border-top:0}
+.moment .num-row span:first-child{color:var(--muted)}
+.moment .mchip-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;align-items:center}
+.moment .mchip-label{font-size:12px;color:var(--muted);font-weight:700}
+.moment .mchip{font-size:12.5px;border:1px solid var(--line);border-radius:999px;padding:3px 10px;background:var(--bg);color:var(--ink)}
+.moment .mchip.bad{border-color:var(--oneway);color:var(--oneway)}
+.moment .chart{margin:14px 0 4px}
+.moment .chart-title{font-size:13px;font-weight:700;margin:0 0 2px;color:var(--ink)}
+.moment .chart-note{font-size:12px;color:var(--muted);margin:2px 0 0}
+.moment .growth{display:block;width:100%;height:auto}
+.moment .hyper-btn{flex:none;width:48px;background:var(--bg);border:1px solid var(--line);border-radius:12px;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.moment .hyper-btn:hover{border-color:var(--accent);color:var(--accent)}
+.moment .ghost{margin:10px 0;font-size:13px;color:var(--muted)}
+.moment .ghost summary{cursor:pointer;font-weight:600}
+.moment .ghost li{margin:3px 0}
+.moment .escape-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px;padding-top:14px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
+.moment .escape-btn{background:none;border:0;color:var(--accent);cursor:pointer;font-size:13px;padding:0;font-family:inherit;text-decoration:underline}
+.moment .rev-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);color:var(--ink)}
+.moment .rev-row b{display:block;font-size:14px}
+.moment .rev-row span{font-size:12.5px;color:var(--muted)}
+.moment .rev-a{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:3px 12px;cursor:pointer;font-size:12.5px;color:var(--ink);font-family:inherit}
+.m-veil{position:fixed;inset:0;background:rgba(10,14,20,.55);display:flex;align-items:center;justify-content:center;z-index:60;padding:16px}
+.m-sheet{background:var(--m-bg);color:var(--m-ink);border-radius:14px;max-width:640px;width:100%;max-height:88vh;overflow:auto;padding:20px 22px}
+.m-sheet-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.m-sheet-top h2{margin:0;font-size:19px}
+.m-sheet-top p{margin:2px 0 0;color:var(--m-ink2);font-size:13px}
+.m-veil .x-btn{background:none;border:1px solid var(--m-line);border-radius:8px;width:30px;height:30px;cursor:pointer;color:var(--m-ink);font-size:14px;flex:none}
+.m-sheet-sec{margin:14px 0 4px;font-size:12.5px;font-weight:700;color:var(--m-ink2)}
+.m-sheet-story{font-size:14.5px;line-height:1.5;margin:0}
+.m-learn-list{list-style:none;margin:8px 0;padding:0;font-size:13.5px}
+.m-learn-list li{margin:4px 0}
+.m-learn-list a{color:var(--m-accent)}
+.m-sheet-actions{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
 </style>
 </head>
 <body>
@@ -312,6 +350,7 @@ table.raw td:first-child,table.raw th:first-child{text-align:left}
   <div class="sbody" id="whyBody"></div>
 </aside>
 <div class="toast" id="toast" role="status"></div>
+<div id="emodal"></div>
 
 <script>
 const CHECK='<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.5"/></svg>';
@@ -760,7 +799,7 @@ function renderTabs(){
   const done=a.filter(d=>out[d.id]).length;
   const tabs=a.map(d=>{const st=etabState(d);return `<button class="etab ${st}${G.etab===d.id?' on':''}" data-etab="${esc(d.id)}"${st==='prep'?' disabled':''} aria-pressed="${G.etab===d.id}">${st==='done'?CHECK:''}${esc(d.title)}${st==='prep'?' · preparing':''}</button>`;}).join('')+
     `<button class="etab${G.etab==='review'?' on':''}" data-etab="review" aria-pressed="${G.etab==='review'}">Review</button><span class="ecount">${done} of ${a.length} decided</span>`;
-  app.innerHTML=`<div class="step"><div class="etabs" role="group" aria-label="Decisions">${tabs}</div><div id="epane"></div></div>`;
+  app.innerHTML=`<div class="step moment"><div class="etabs" role="group" aria-label="Decisions">${tabs}</div><div id="epane"></div></div>`;
   $('epane').innerHTML=G.etab==='review'?reviewHtml():engineHtml(a.find(d=>d.id===G.etab));
 }
 function engineHtml(d){
@@ -779,7 +818,7 @@ function engineHtml(d){
   const own=(dr.questions||[])[0],ownAns=((ss.answers||{})[d.id]||{})[own&&own.id];
   const ruled=dr.options.filter(o=>o.ruled_out);
   const signals=(dr.evidence||[]).filter(e=>e.source!=='profile');
-  const tiers=[[1,'Glance','names only'],[2,'Compare','stories + trade-offs'],[3,'Deep dive','concepts + evidence']].map(([i,n,s])=>`<button class="etier${tier===i?' on':''}" data-etier="${i}" aria-pressed="${tier===i}"><b>${n}</b><small>${s}</small></button>`).join('');
+  const tiers=[[1,'Glance','names only'],[2,'Compare','stories + trade-offs'],[3,'Deep dive','numbers + voice']].map(([i,n,s])=>`<button class="tier${tier===i?' on':''}" data-etier="${i}" aria-pressed="${tier===i}"><b>${n}</b><small>${s}</small></button>`).join('');
   const assume=q=>{const st=assumeState(q.id),curA=ss.profile_answers[q.id];return `<div class="assume">
       <span class="q">${esc(q.text)}</span><span class="a">${esc(curA||'Not sure yet')}</span>
       ${st==='assumed'&&q.basis?`<span class="basis">Assumed because ${esc(lc(q.basis).replace(/\.$/,''))}.</span>`:''}
@@ -788,35 +827,40 @@ function engineHtml(d){
       ${NEWBIE&&q.beginner_note?`<span class="basis">${esc(q.beginner_note)}</span>`:''}
     </div>`;};
   const rows=viable.map(o=>{
-    const on=o.id===pick;
-    let inner=`${o===best&&tier>=2?'<span class="bdg fit">Fits your answers best</span>':''}${o===leanOpt&&dr.agent_pick?'<span class="bdg lean">Agent leans here</span>':''}<h3>${esc(cap(o.plain_name||o.name))}</h3><p class="tech">${esc(o.name)}</p>`;
+    const on=o.id===pick,hasMicro=typeof o.micro==='number';
+    let inner=`<h3>${esc(cap(o.plain_name||o.name))}</h3><p class="tech">${esc(o.name)}</p>`;
+    if(tier>=2&&hasMicro)inner+=`<div class="micro"><span>${esc(dr.micro_label||'How they compare')}</span><div class="micro-track"><div class="micro-fill" style="width:${Math.max(4,Math.round(o.micro*10))}%"></div></div></div>`;
     if(tier>=2)inner+=`<p class="sum">${esc(o.summary||'')}</p>`;
-    if(tier>=2&&on)inner+=`<div class="ewhen"><b>Now</b><span>${esc(cap(((o.story||{}).now||'').replace(/^this week,?\s*/i,'')))}</span><b>In 6 months</b><span>${esc(cap(((o.story||{}).later||'').replace(/^in 6 months,?\s*/i,'')))}</span></div>
-      <ul class="facts">${(o.good||[]).map(g=>`<li><span>${esc(g.text)}</span><span class="src" style="color:var(--accent)">good · ${esc(g.when)}</span></li>`).join('')}${(o.bad||[]).map(x=>`<li><span>${esc(x.text)}</span><span class="src" style="color:var(--oneway)">bad · ${esc(x.when)}</span></li>`).join('')}</ul>`;
-    if(tier>=3&&on)inner+=learnHtml(o);
-    return `<div class="eoptrow"><button class="eopt${on?' on':''}" data-epick="${esc(o.id)}" aria-pressed="${on}">${inner}</button><button class="ehyper" data-hyper="${esc(o.id)}" aria-label="Deep dive into ${esc(o.name)}"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2.5h4v4"/><path d="M13.5 2.5L9 7"/><path d="M6.5 13.5h-4v-4"/><path d="M2.5 13.5L7 9"/></svg></button></div>`;
+    if(tier>=2&&on&&(o.journey||[]).length)inner+=`<div class="journey">${o.journey.map(s=>`<div class="jstep">${esc(s)}</div>`).join('')}</div>`;
+    if(tier>=3&&on&&(o.numbers||[]).length)inner+=`<div class="nums">${o.numbers.map(n=>`<div class="num-row"><span>${esc(n[0])}</span><span>${esc(n[1])}</span></div>`).join('')}</div>`;
+    if(tier>=3&&on)inner+=`<div class="mchip-row"><span class="mchip-label">Unlocks</span>${(o.good||[]).map(g=>`<span class="mchip">${esc(g.text)}</span>`).join('')}</div><div class="mchip-row"><span class="mchip-label">Watch out</span>${(o.bad||[]).map(x=>`<span class="mchip bad">${esc(x.text)}</span>`).join('')}</div>`;
+    return `<div class="optrow"><button class="opt${on?' on':''}" data-epick="${esc(o.id)}" aria-pressed="${on}">${inner}</button><button class="hyper-btn" data-hyper="${esc(o.id)}" aria-label="Deep dive into ${esc(o.name)}"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2.5h4v4"/><path d="M13.5 2.5L9 7"/><path d="M6.5 13.5h-4v-4"/><path d="M2.5 13.5L7 9"/></svg></button></div>`;
   }).join('');
+  const trajs=viable.filter(o=>Array.isArray(o.trajectory)&&o.trajectory.length===2);
+  const chart=(tier>=3&&dr.growth&&trajs.length===viable.length&&viable.length)?growthHtml(dr,viable,pick):'';
   const leanStrip=(dr.lean&&dr.lean.why&&leanOpt)?`<p class="sub">The agent's lean</p><p>It leans toward <b>${esc(lc(leanOpt.plain_name||leanOpt.name))}</b> — ${esc(dr.lean.why)}</p>`+
     (dr.lean.flips||[]).map(f=>`<p class="basis">Would flip if ${esc(lc(f).replace(/\.$/,''))}.</p>`).join('')+
     (dr.lean.assumptions||[]).map((a,i)=>{const st=leanSt(i);return `<div class="assume"><span class="q">${esc(a)}</span><span class="ctl"><button class="small-btn" data-lok="${i}" aria-pressed="${st==='confirmed'}">Right</button><button class="small-btn" data-lch="${i}" aria-pressed="${st==='challenged'}">Change</button>${st==='unchecked'?'':`<span class="state ok">${st==='challenged'?'Challenged':'Confirmed'}</span>`}</span></div>`;}).join(''):'';
   return `<div class="qhead"><span class="qnum">${esc(d.title)} · ${doorWord(dr.door||d.door)}</span></div>
     <h1>${esc(dr.question)}</h1>
-    ${dr.analogy?`<div class="emodel"><b>The one idea</b>${esc(dr.analogy)}</div>`:''}
+    ${dr.analogy?`<div class="model"><b>The one idea</b>${esc(dr.analogy)}</div>`:''}
     <p class="small">${esc(dr.undo)}${dr.assumes?` ${esc(dr.assumes)}`:''}</p>
-    <div class="etiers" role="group" aria-label="Explanation depth">${tiers}</div>
+    <div class="edu-head"><h2>Walk through it</h2>${dr.voice_open?`<button class="listen-btn" data-elisten>${G.speaking?'Stop':'Listen'}</button>`:''}</div>
+    <div class="tiers" role="group" aria-label="Explanation depth">${tiers}</div>
     ${own?`<div class="assume"><span class="a">${esc(own.text)}</span>${NEWBIE&&own.beginner_note?`<span class="basis">${esc(own.beginner_note)}</span>`:''}<div class="chips">${own.answers.map((x,i)=>`<button data-oa="${i}" data-q="${esc(own.id)}" aria-pressed="${x.label===ownAns}">${esc(x.label)}</button>`).join('')}</div></div>`:''}
     ${rows}
-    ${ruled.map(o=>`<p class="ruled"><s>${esc(o.plain_name||o.name)}</s> ruled out: ${esc(o.ruled_out)}</p>`).join('')}
+    ${chart}
+    ${ruled.length?`<details class="ghost"><summary>Rejected: ${ruled.length}</summary><ul>${ruled.map(o=>`<li><b>${esc(o.plain_name||o.name)}</b> — ${esc(o.ruled_out)}</li>`).join('')}</ul></details>`:''}
     ${tier>=3&&signals.length?`<p class="sub">What it noticed</p><ul>${signals.slice(0,4).map(e=>`<li><span>${esc(e.detail)}</span></li>`).join('')}</ul>`:''}
     ${tier>=3&&(dr.risks||[]).length?`<p class="sub">What it's watching out for</p><ul>${dr.risks.map(r=>`<li class="risk"><span>${esc(r)}</span></li>`).join('')}</ul>`:''}
     ${tier>=3&&prof.length?`<p class="sub">What it assumed about you · correct anything that's wrong</p><div>${prof.map(assume).join('')}</div>`:''}
     ${tier>=2&&opt?leanStrip:(tier>=2&&(dr.lean||{}).why&&leanOpt?'<p class="small">Pick an option to see your agent\'s lean.</p>':'')}
-    <div class="eacts"><button class="btn primary" data-s="choose" data-o="${opt?esc(opt.id):''}"${opt?'':' disabled'}>${CHECK}Confirm${opt?' '+esc(lc(opt.plain_name||opt.name)):''}</button></div>
-    <div class="escape"><span>Not sold?</span>
-      ${leanOpt?`<button class="link" data-s="delegate">Go with the agent's lean</button>`:`<button class="link" data-s="delegate">I don't mind, use the default</button>`}
-      <button class="link" data-s="refine">${(G.refineOpen||{})[d.id]?'Hide condition':'Add a condition'}</button>
-      <button class="link" data-s="park">Not now</button>
-      <button class="link" data-s="abandon">Back to chat</button>${newbieToggle()}</div>
+    <div class="row"><button class="btn primary" data-s="choose" data-o="${opt?esc(opt.id):''}"${opt?'':' disabled'}>${CHECK}Confirm${opt?' '+esc(lc(opt.plain_name||opt.name)):''}</button></div>
+    <div class="escape-row"><span>Not sold?</span>
+      ${leanOpt?`<button class="escape-btn" data-s="delegate">Go with the agent's lean</button>`:`<button class="escape-btn" data-s="delegate">I don't mind, use the default</button>`}
+      <button class="escape-btn" data-s="refine">${(G.refineOpen||{})[d.id]?'Hide condition':'Add a condition'}</button>
+      <button class="escape-btn" data-s="park">Not now</button>
+      <button class="escape-btn" data-s="abandon">Back to chat</button>${newbieToggle()}</div>
     ${(G.refineOpen||{})[d.id]?`<textarea class="refine" id="refineIn" placeholder="For example: use this, but keep everything exportable as plain files.">${esc((G.notes||{})[d.id]||'')}</textarea>`:''}
     <p class="small">${opt&&opt!==best?`You picked this over ${esc(best.plain_name||best.name)}, which fits your answers better. `:''}${fl.length?`If ${esc(revisitText(fl[0]))}, ${esc(fl[0].win.plain_name||fl[0].win.name)} would fit better.`:'No single answer change would flip this.'}</p>
     <p class="err" id="sErr" hidden></p>`;
@@ -826,26 +870,45 @@ function reviewHtml(){
   const rows=a.map(d=>{const o=out[d.id],dr=draftOf(d.id);
     let label='Unanswered',act='';
     if(!dr){label='Preparing…';}
-    else if(!o){label='Unanswered';act=`<button class="small-btn" data-etab="${esc(d.id)}">Answer</button>`;}
+    else if(!o){label='Unanswered';act=`<button class="rev-a" data-etab="${esc(d.id)}">Answer</button>`;}
     else{const nm=o.choice&&dr?((dr.options.find(x=>x.id===o.choice)||{}).name||o.choice):'';
       label=o.mode==='parked'?'Parked for later':o.mode==='delegated'?nm+' (delegated)':o.mode==='abandoned'?'Sent back to chat':nm;
       const id=o.record?o.record.split('/').pop().slice(0,4):null;
       act=id?`<a class="link" href="#/records/${id}">Record</a>`:'';
     }
-    return `<div class="erev"><div><b>${esc(d.title)}</b><span>${esc(label)}</span></div>${act}</div>`;}).join('');
+    return `<div class="rev-row"><div><b>${esc(d.title)}</b><span>${esc(label)}</span></div>${act}</div>`;}).join('');
   const allDone=!a.length||a.every(d=>out[d.id]);
-  return `<h1>Review before you finish</h1><p class="lead">Check every decision landed where you meant it, then finish so your agent continues.</p>${rows}<div class="eacts"><button class="btn primary" data-s="finish"${allDone?'':' disabled'}>Finish</button></div>${allDone?'':'<p class="small">Decide, delegate, park, or send back each decision to finish.</p>'}`;
+  return `<h1>Review before you finish</h1><p class="lead">Check every decision landed where you meant it, then finish so your agent continues.</p>${rows}<div class="row"><button class="btn primary" data-s="finish"${allDone?'':' disabled'}>Finish</button></div>${allDone?'':'<p class="small">Decide, delegate, park, or send back each decision to finish.</p>'}`;
 }
+function canSpeak(){return 'speechSynthesis' in window;}
+function stopSpeak(){if(!canSpeak())return;speechSynthesis.cancel();if(G.speaking){G.speaking=false;const l=document.querySelector('[data-elisten]');if(l)l.textContent='Listen';}}
+function pickVoice(){const vs=speechSynthesis.getVoices();return vs.find(v=>v.lang&&v.lang.startsWith('en')&&/google|samantha|zira|natural|neural/i.test(v.name))||vs.find(v=>v.lang&&v.lang.startsWith('en'))||vs[0];}
+function speakText(t){if(!canSpeak()||!t)return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);const v=pickVoice();if(v)u.voice=v;u.rate=1.02;u.onend=()=>{G.speaking=false;const l=document.querySelector('[data-elisten]');if(l)l.textContent='Listen';};G.speaking=true;speechSynthesis.speak(u);}
+function growthHtml(dr,opts,pick){
+  const g=dr.growth,mx=10,bw=34,gap=26,labelH=46,H=140,W=opts.length*(bw*2+gap)+gap;
+  const y=v=>H-8-(v/mx)*(H-20);
+  const bars=opts.map((o,i)=>{const x=gap+i*(bw*2+gap),on=o.id===pick;
+    return `<rect x="${x}" y="${y(o.trajectory[0])}" width="${bw}" height="${H-8-y(o.trajectory[0])}" rx="3" fill="${on?'var(--accent)':'var(--line)'}"><title>${esc(o.name)}: ${esc(g.now)}</title></rect><rect x="${x+bw+2}" y="${y(o.trajectory[1])}" width="${bw}" height="${H-8-y(o.trajectory[1])}" rx="3" fill="${on?'var(--accent)':'var(--muted)'}" opacity="${on?'1':'0.55'}"><title>${esc(o.name)}: ${esc(g.later)}</title></rect><text x="${x+bw}" y="${H+14}" text-anchor="middle" font-size="10" fill="var(--muted)">${esc(o.plain_name||o.name)}</text>`;}).join('');
+  const pk=opts.find(o=>o.id===pick);
+  return `<div class="chart"><p class="chart-title">${esc(g.title)}</p><svg class="growth" viewBox="0 0 ${W} ${H+labelH}" role="img" aria-label="${esc(g.title)}">${bars}</svg><p class="chart-note">${pk?`${esc(pk.plain_name||pk.name)} grows from ${esc(g.now)} to ${esc(g.later)}. Shapes, not forecasts.`:'Shapes, not forecasts.'}</p></div>`;
+}
+function closeEmodal(){stopSpeak();const m=$('emodal');if(m)m.innerHTML='';}
 function openHyper(did,oid){
   const dr=draftOf(did),o=(dr.options||[]).find(x=>x.id===oid);if(!o)return;
-  $('whyTitle').textContent=cap(o.plain_name||o.name);$('whySub').textContent=o.name;
-  $('whyBody').innerHTML=`<p>${esc(o.summary||'')}</p>
-    <div class="ewhen"><b>Now</b><span>${esc(cap(((o.story||{}).now||'').replace(/^this week,?\s*/i,'')))}</span><b>In 6 months</b><span>${esc(cap(((o.story||{}).later||'').replace(/^in 6 months,?\s*/i,'')))}</span></div>
-    <ul class="facts">${(o.good||[]).map(g=>`<li><span>${esc(g.text)}</span><span class="src" style="color:var(--accent)">good · ${esc(g.when)}</span></li>`).join('')}${(o.bad||[]).map(x=>`<li><span>${esc(x.text)}</span><span class="src" style="color:var(--oneway)">bad · ${esc(x.when)}</span></li>`).join('')}</ul>
-    ${learnHtml(o)}
-    <div class="row"><button class="btn primary" id="hyperChoose">Choose ${esc(o.name)}</button></div>`;
-  $('hyperChoose').onclick=()=>{closeWhy();chooseSession('chosen',oid);};
-  $('whySheet').classList.add('on');$('whySheet').setAttribute('aria-hidden','false');$('scrim').classList.add('on');
+  G.ehyper=oid;
+  const docs=[...new Set((dr.options||[]).map(x=>((x.learn||{}).docs_url||'').trim()).filter(Boolean))].slice(0,2);
+  $('emodal').innerHTML=`<div class="m-veil moment"><div class="m-sheet" role="dialog" aria-modal="true" aria-label="${esc(o.name)}">
+    <div class="m-sheet-top"><div><h2>${esc(cap(o.plain_name||o.name))}</h2><p>${esc(o.name)}${dr.agent_pick===o.id?' · your agent leans here':''}</p></div><button class="x-btn" data-eveil aria-label="Close">✕</button></div>
+    <p class="m-sheet-story">${esc(o.summary||'')}</p>
+    ${(o.journey||[]).length?`<p class="m-sheet-sec">How it works</p><div class="journey">${o.journey.map(s=>`<div class="jstep">${esc(s)}</div>`).join('')}</div>`:''}
+    ${(o.numbers||[]).length?`<p class="m-sheet-sec">The trade-offs</p><div class="nums">${o.numbers.map(n=>`<div class="num-row"><span>${esc(n[0])}</span><span>${esc(n[1])}</span></div>`).join('')}</div>`:''}
+    <div class="mchip-row"><span class="mchip-label">Unlocks</span>${(o.good||[]).map(g=>`<span class="mchip">${esc(g.text)}</span>`).join('')}</div>
+    <div class="mchip-row"><span class="mchip-label">Watch out</span>${(o.bad||[]).map(x=>`<span class="mchip bad">${esc(x.text)}</span>`).join('')}</div>
+    ${o.learn?`<p class="m-sheet-sec">Living with it</p><p class="m-sheet-story" style="font-size:13.5px">${esc(o.learn.what||'')}${o.learn.living_with?' '+esc(o.learn.living_with):''}</p>`:''}
+    <p class="m-sheet-sec">Keep learning</p><ul class="m-learn-list">${docs.map(u=>`<li><a href="${esc(u)}" target="_blank" rel="noopener">${esc(u.replace(/^https?:\/\//,'').split('/')[0])}</a></li>`).join('')}<li><a href="https://duckduckgo.com/?q=${encodeURIComponent(o.name+' vs alternatives')}" target="_blank" rel="noopener">Search the web for comparisons</a></li></ul>
+    <div class="m-sheet-actions">${o.voice?`<button class="listen-btn" data-ehyperspeak>Listen to this story</button>`:''}<button class="btn primary" id="hyperChoose">Choose ${esc(o.name)}</button></div>
+  </div></div>`;
+  $('hyperChoose').onclick=()=>{closeEmodal();chooseSession('chosen',oid);};
 }
 async function abandonSession(d){
   try{
@@ -992,7 +1055,10 @@ app.addEventListener('click',async e=>{
   if(!/^#\/session/.test(location.hash))return;
   const b=e.target.closest('button');if(!b)return;
   if(b.dataset.ex){$('taskIn').value=b.dataset.ex;return;}
+  if(e.target.classList&&e.target.classList.contains('m-veil'))return closeEmodal();
+  if(b.dataset.etab!=null||b.dataset.etier!=null||b.dataset.epick!=null||b.dataset.hyper!=null)stopSpeak();
   const s=b.dataset.s;
+  if(s==='choose'||s==='delegate'||s==='park'||s==='abandon'||s==='finish')stopSpeak();
   if(s==='start')return startSession($('taskIn').value.trim());
   if(s==='retry')return startSession(SS().task,true);
   if(s==='begin'){G.view='tabs';return renderSession();}
@@ -1007,6 +1073,9 @@ app.addEventListener('click',async e=>{
   if(b.dataset.etier){G.etier[cur().id]=+b.dataset.etier;return renderSession();}
   if(b.dataset.epick){const dd=cur();G.epick=G.epick||{};G.epick[dd.id]=G.epick[dd.id]===b.dataset.epick?null:b.dataset.epick;return renderSession();}
   if(b.dataset.hyper){const dd=cur();return openHyper(dd.id,b.dataset.hyper);}
+  if(b.dataset.eveil!=null)return closeEmodal();
+  if(b.dataset.elisten){const dd=cur(),dr=draftOf(dd.id);if(G.speaking){stopSpeak();return;}const pk=((G.epick||{})[dd.id]);const o=pk&&(dr.options||[]).find(x=>x.id===pk);speakText(o&&o.voice?o.voice+' Still like this one? Hit confirm.':dr.voice_open||'');b.textContent='Stop';return;}
+  if(b.dataset.ehyperspeak){const dr=draftOf(cur().id);const o=(dr.options||[]).find(x=>x.id===G.ehyper);if(o&&o.voice){if(G.speaking)stopSpeak();else speakText(o.voice);}return;}
   if(b.dataset.chg){G.changing=G.changing===b.dataset.chg?null:b.dataset.chg;return renderSession();}
   if(b.dataset.setans){const q=SS().plan.profile.find(x=>x.id===b.dataset.setans),v=q.answers[+b.dataset.i];G.changing=null;
     await saveAnswers({profile_answers:{[q.id]:v},confirmed:{[q.id]:v===q.assumed&&assumeState(q.id)!=='changed'?'confirmed':'changed'}});return renderSession();}
@@ -1079,7 +1148,7 @@ app.addEventListener('click',e=>{
 });
 $('whyClose').onclick=closeWhy;$('scrim').onclick=closeWhy;
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape')return closeWhy();
+  if(e.key==='Escape'){closeEmodal();return closeWhy();}
   if(!F||F.done||F.step!=='ask'||!/^#\/decide\//.test(location.hash)||$('whySheet').classList.contains('on'))return;
   const dec=S.decisions.find(d=>d.id===F.id);if(!dec)return;const q=toAsk(dec)[F.qi];
   if(q&&/^[1-9]$/.test(e.key)&&+e.key<=q.a.length)answer(dec,+e.key-1);
