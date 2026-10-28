@@ -51,12 +51,12 @@ Updated with every landed slice. Phases are shippable slices, smallest first.
   lean strip with 1 flip + ≤3 chips). Demo beat: flip the decision by changing
   a chip.
   - [x] Draft contract: authored lean (why + ≤3 assumptions + ≤2 flips) + checks + 10 tests
-  - [x] Page: lean strip + Right/Change chips persist + record tags + verified-live docs tag
   - [x] Sample: persistence-layer draft carries lean for click-through
-  - [ ] Owner click-through: chip change flows to the record
-- [ ] **P2 — Review gate + batch record** (Oct 31–Nov 1): answered/skipped tabs,
-  escape row that truly unblocks wait, review gate, batch MADR with path-tied
-  confidence + Ruled-out reasons.
+  - [x] Course correction: session view rebuilt on the decision-moments engine (tabs, tiers, hyper dive, review) — stories wall deleted, record path untouched
+  - [x] Loading wall gone: tabs render as drafts land; no more 30s dead screen
+  - [ ] Owner click-through: tiers + lean strip + review + finish
+- [ ] **P2 — Review gate + batch record** (Oct 31–Nov 1): landed early with the engine rebuild — decided tabs, escape row (delegate/park/back-to-chat, all unblock wait), gated review + finish, per-confirm MADR records.
+  - [ ] Owner click-through covers P1 + P2 together
 - [ ] **P3 — Demo + recording** (Nov 2–3): Muse-only single session, 3–5 minute
   arc (trigger → Compare → lean → chip-flip → commit → MADR in repo).
 
