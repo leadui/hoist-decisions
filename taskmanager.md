@@ -77,6 +77,7 @@ Source: `/Users/oliveway/CODE/hoist-decisions-muse/` — `taskmanager.md` (appro
 - API key: stored in the macOS Keychain as `hoist-meta-api`; run with `MODEL_API_KEY="$(security find-generic-password -s hoist-meta-api -w)" .venv/bin/python hoist_audit.py <target>`. Never print it.
 - Setup: Python 3.12 venv in `.venv` with `openai` installed (`.venv/bin/python`). The system `python3` is 3.9, which is too old for the house style. `export MODEL_API_KEY=...` (from dev.meta.ai; never commit it, never print it).
 - Try the loop: `python3 hoist.py install <project>`, then restart Muse Code there. Test without Muse Code: pipe a PreToolUse payload into `BROWSER=true python3 hoist.py gate` (see the 2026-10-27 Now note).
+- Preview the page without a live run: `cd site && python3 -m http.server 8000`, open http://localhost:8000/#/session (sample mode, no API calls). Live runs serve the same file fresh from disk on every request — old UI there means a cached tab, hard-reload. GitHub Pages redeploys `site/` on every push to main.
 - Free check: `.venv/bin/python hoist_audit.py <path-or-git-url> --dry-run` (prints evidence count, token estimate, worst-case cost; saves prompt to `.hoist/last_prompt.txt`)
 - Real scan: `.venv/bin/python hoist_audit.py <path-or-git-url>` → local repo writes to `<repo>/docs/decisions/`; URL writes to `./hoist-out/<name>/`
 - Re-render without an API call: `.venv/bin/python hoist_audit.py <target> --from-json .hoist/last_response.json`
