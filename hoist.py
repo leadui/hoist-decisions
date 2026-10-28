@@ -9,7 +9,7 @@ Commands:
 
 Standard library only. The page and its server listen on 127.0.0.1 and never call an API.
 """
-import argparse, json, os, re, shlex, shutil, socket, subprocess, sys, threading, time, urllib.request, webbrowser
+import argparse, concurrent.futures, json, os, re, shlex, shutil, socket, subprocess, sys, threading, time, urllib.request, webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -317,6 +317,15 @@ def make_handler(root):
                     ses["answers"].setdefault(k, {}).update(v)
                 save_session(root, ses)
                 return self.send(200, session_state(root))
+            m = re.fullmatch(r"/api/session/decisions/([a-z0-9-]{1,60})/deep", self.path)
+            if m:
+                f = root / ".hoist" / "drafts" / f"{m.group(1)}.json"
+                if not f.exists():
+                    return self.send(404, {"error": "No such decision in this task."})
+                try:
+                    return self.send(200, deepen_draft(root, m.group(1)))
+                except (Exception, SystemExit) as e:
+                    return self.send(502, {"error": f"Muse Spark couldn't write the deep dive ({e})."})
             m = re.fullmatch(r"/api/session/decisions/([a-z0-9-]{1,60})", self.path)
             if m:
                 ses = load_session(root)
@@ -485,7 +494,7 @@ Reply with JSON only:
  "decisions": [{"id": "kebab-case", "title": "plain verb phrase", "scope": "one sentence: what this decision covers and what it leaves to others",
    "door": 1|2|3, "owner": "you"|"agent", "mode": "ask"|"default"|"log", "default": str, "why": str, "depends_on": [ids]}]}"""
 
-DRAFT_SYSTEM = """You are Hoist. You help a person make one decision that an AI agent is about to make for them and
+LEAN_SYSTEM = """You are Hoist. You help a person make one decision that an AI agent is about to make for them and
 that is hard to undo. The person is smart but may not know the field. Write the way a patient expert explains
 something to a friend: short sentences, plain words, no hype, no marketing adjectives, no scores or percentages.
 
@@ -500,7 +509,6 @@ Contract (reply with JSON only):
  "assumes": "one sentence on what this takes as given from other decisions, or empty",
  "door": 1|2|3,
  "micro_label": "2 to 4 words naming what the comparison bars measure, e.g. ops burden",
- "growth": {"title": "chart title in plain words", "now": "label for today, e.g. today", "later": "label for the future, e.g. at 10x"},
  "analogy": "one everyday sentence that captures the shape of this decision: what is cheap now and expensive to change later",
  "risks": ["what the agent is watching out for in this decision, one short sentence each, at most 3"],
  "profile_effects": [{"profile_id": "id from the profile", "answers": [{"label": "exact answer text from the profile",
@@ -512,14 +520,9 @@ Contract (reply with JSON only):
    "analogy": "one sentence comparing this option to something from everyday life, matching how the trade-off works",
    "story": {"now": "one sentence: what it is like this week", "later": "one sentence: what it is like in 6 months"},
    "journey": ["exactly 4 short steps of what physically happens with this option, in order, plain words"],
-   "numbers": [["label", "value"], "2 to 4 rows of concrete scale or cost facts; write estimate when estimated, never invent precision"],
    "micro": "0 to 10: where this option sits on micro_label. A shape for bars, not a number shown to the person",
-   "trajectory": ["0 to 10 now", "0 to 10 later: where this option heads on the growth chart. Shapes, not forecasts"],
    "summary": "one line",
    "good": [{"when": "now"|"later", "text": "..."}], "bad": [{"when": "now"|"later", "text": "..."}],
-   "learn": {"what": "two plain sentences describing what it is and how it works", "living_with": "two sentences on what day-to-day life with it is like",
-     "terms": [{"term": "...", "meaning": "one line"}], "docs_url": "official documentation home page, or empty if unsure"},
-   "check_current": "if the option names a product, vendor, plan, or price: one sentence on what to confirm is still true before relying on it; else empty",
    "ruled_out": "" or "reason it cannot work here"}],
  "default_option": "option id", "default_reason": "one sentence",
  "agent_pick": "option id or empty",
@@ -541,17 +544,14 @@ Rules for options:
 - A config file shows what exists today, not a fixed constraint, unless a recorded decision says so.
 - Put options that cannot work given the evidence in ruled_out with the reason instead of leaving them as weak choices.
 - Every option has at least one bad item and at least one item about later.
-- learn describes the option itself. Never write "you will learn".
 Rules for the lean:
 - lean.why explains the pick in one sentence a newcomer understands. Leave lean out when agent_pick is empty.
 - Each assumption is about the person's situation (budget, team, patience, scale), never about a product.
   The person confirms or challenges each one; challenged assumptions mark the lean as uncertain.
 - Each flip is a concrete condition under which another option would fit better.
-Rules for the walk-through (journeys, numbers, bars):
+Rules for the walk-through (journeys, bars):
 - journey is the mechanism as 4 physical steps (what moves where, in order). It teaches how the option works, not features.
-- numbers are concrete facts a newcomer can picture (reads per second, who does the work, what the bill follows).
-  Mark guesses as estimates. Never show scores, ratings, or percentages.
-- micro and trajectory are 0 to 10 shapes for bars and the growth chart, judged against each other, never precise.
+- micro is a 0 to 10 shape for the comparison bars, judged across options, never precise.
   micro_label names the dimension honestly (burden, cost shape, lock-in). Bars carry no numbers on screen.
 Rules for analogies and stories:
 - An analogy maps how the trade-off works (what is shared, what is expensive to move, who maintains it), using
@@ -560,7 +560,30 @@ Rules for analogies and stories:
   a box of loose cards).
 - story.now and story.later describe what living with it is like for this person, not features. Later is honest
   about the cost.
-- terms: up to 4 terms the option's text uses that a newcomer may not know."""
+Reply with the lean draft only: no numbers, trajectory, learn, check_current, or growth — those come in a later round."""
+
+
+DEEP_SYSTEM = """You are Hoist. A person is deciding one hard-to-undo choice and just opened the deep dive.
+You get the lean draft (options, stories, journeys) plus project evidence. Write ONLY the deep
+material as JSON: concrete numbers, the growth shape, what each option is, and what to verify.
+
+Contract (reply with JSON only):
+{"growth": {"title": "chart title in plain words", "now": "label for today, e.g. today", "later": "label for the future, e.g. at 10x"},
+ "deep_options": [{"id": "option id copied exactly from the draft",
+   "numbers": [["label", "value"], "2 to 4 rows of concrete scale or cost facts; write estimate when estimated, never invent precision"],
+   "trajectory": ["0 to 10 now", "0 to 10 later: where this option heads on the growth chart. Shapes, not forecasts"],
+   "learn": {"what": "two plain sentences describing what it is and how it works", "living_with": "two sentences on what day-to-day life with it is like",
+     "terms": [{"term": "...", "meaning": "one line"}], "docs_url": "official documentation home page, or empty if unsure"},
+   "check_current": "if the option names a product, vendor, plan, or price: one sentence on what to confirm is still true before relying on it; else empty"}]}
+
+Rules:
+- One entry per option in the draft, with the id copied exactly. No other options.
+- numbers are concrete facts a newcomer can picture (reads per second, who does the work, what the bill follows).
+  Mark guesses as estimates. Never show scores, ratings, or percentages.
+- trajectory values are 0 to 10 shapes for the growth chart, judged against each other, never precise.
+- learn describes the option itself. Never write "you will learn".
+- terms: up to 4 terms the option's text uses that a newcomer may not know.
+- Short sentences, plain words, no hype, no marketing adjectives."""
 
 
 def project_context(root, task, limit=9000):
@@ -596,7 +619,7 @@ VENDORS = ("vercel", "netlify", "aws", "azure", "gcp", "google cloud", "heroku",
 
 
 def check_draft(d, profile=None):
-    """Quality rules from the ADR guidance; returns problems in plain words (empty = passes)."""
+    """Lean-draft quality rules; returns problems in plain words (empty = passes). Deep material has check_deep."""
     problems = []
     if profile:
         known = {q["id"]: set(q.get("answers", [])) for q in profile}
@@ -624,22 +647,13 @@ def check_draft(d, profile=None):
             problems.append(f"option '{o.get('id')}' has no downside")
         if not any(x.get("when") == "later" for x in (o.get("good") or []) + (o.get("bad") or [])):
             problems.append(f"option '{o.get('id')}' says nothing about later")
-        if not (o.get("learn") or {}).get("what"):
-            problems.append(f"option '{o.get('id')}' has no plain explanation")
         if not (o.get("plain_name") and o.get("analogy") and (o.get("story") or {}).get("now") and (o.get("story") or {}).get("later")):
             problems.append(f"option '{o.get('id')}' needs plain_name, analogy, and story now/later")
         journey = o.get("journey") or []
         if len(journey) != 4 or any(not str(s).strip() for s in journey):
             problems.append(f"option '{o.get('id')}' needs a journey of 4 steps")
-        numbers = o.get("numbers") or []
-        if not 1 <= len(numbers) <= 4 or any(not isinstance(n, (list, tuple)) or len(n) != 2
-                                             or not str(n[0]).strip() or not str(n[1]).strip() for n in numbers):
-            problems.append(f"option '{o.get('id')}' needs 1 to 4 number rows")
         if not isinstance(o.get("micro"), (int, float)) or isinstance(o.get("micro"), bool) or not 0 <= o["micro"] <= 10:
             problems.append(f"option '{o.get('id')}' needs micro 0 to 10")
-        traj = o.get("trajectory") or []
-        if len(traj) != 2 or any(not isinstance(v, (int, float)) or isinstance(v, bool) or not 0 <= v <= 10 for v in traj):
-            problems.append(f"option '{o.get('id')}' needs trajectory [now, later] 0 to 10")
     qs = d.get("questions") or []
     if len(qs) > 3:
         problems.append(f"asks {len(qs)} questions; at most 3")
@@ -657,9 +671,6 @@ def check_draft(d, profile=None):
         problems.append("the decision needs an everyday analogy")
     if not str(d.get("micro_label") or "").strip():
         problems.append("the decision needs micro_label for the comparison bars")
-    growth = d.get("growth") or {}
-    if not (growth.get("title") and growth.get("now") and growth.get("later")):
-        problems.append("the decision needs growth title/now/later labels")
     if d.get("default_option") not in {o.get("id") for o in viable}:
         problems.append("default_option is not a workable option")
     if d.get("agent_pick") and d["agent_pick"] not in {o.get("id") for o in viable}:
@@ -689,7 +700,30 @@ def check_draft(d, profile=None):
     for w in ("%", " score", "best-in-class", "industry-leading", "seamless", "blazing", "you will learn"):
         if w in text:
             problems.append(f"uses '{w.strip()}': no scores or marketing words")
-    for o in opts:  # keep only docs links that answer
+    return problems
+
+
+def check_deep(d):
+    """Deep-material rules for one draft; returns problems in plain words (empty = passes)."""
+    problems = []
+    for o in [x for x in d.get("options") or [] if not x.get("ruled_out")]:
+        if not (o.get("learn") or {}).get("what"):
+            problems.append(f"option '{o.get('id')}' has no plain explanation")
+        numbers = o.get("numbers") or []
+        if not 1 <= len(numbers) <= 4 or any(not isinstance(n, (list, tuple)) or len(n) != 2
+                                             or not str(n[0]).strip() or not str(n[1]).strip() for n in numbers):
+            problems.append(f"option '{o.get('id')}' needs 1 to 4 number rows")
+        traj = o.get("trajectory") or []
+        if len(traj) != 2 or any(not isinstance(v, (int, float)) or isinstance(v, bool) or not 0 <= v <= 10 for v in traj):
+            problems.append(f"option '{o.get('id')}' needs trajectory [now, later] 0 to 10")
+    growth = d.get("growth") or {}
+    if not (growth.get("title") and growth.get("now") and growth.get("later")):
+        problems.append("the decision needs growth title/now/later labels")
+    text = (json.dumps(d.get("growth") or {}) + json.dumps([o.get("numbers") for o in d.get("options") or []])).lower()
+    for w in ("%", " score", "best-in-class", "industry-leading", "seamless", "blazing", "you will learn"):
+        if w in text:
+            problems.append(f"deep material uses '{w.strip()}': no scores or marketing words")
+    for o in d.get("options") or []:  # keep only docs links that answer
         url = (o.get("learn") or {}).get("docs_url") or ""
         if url and not link_ok(url):
             o["learn"]["docs_url"] = ""
@@ -744,7 +778,8 @@ def plan(task, project):
             print()
 
 
-def make_draft(root, which, task=""):
+def make_draft_lean(root, which, task=""):
+    """Fast first pass: everything Glance and Compare need. Runs in parallel across decisions."""
     plan_file = root / ".hoist" / "plan.json"
     pl = json.loads(plan_file.read_text()) if plan_file.exists() else {}
     task = task or pl.get("task", "")
@@ -753,25 +788,76 @@ def make_draft(root, which, task=""):
     out = root / ".hoist" / "drafts"; out.mkdir(parents=True, exist_ok=True)
     slug = (entry or {}).get("id") or re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")[:50]
     others = []
-    for x in pl.get("decisions", []):
+    for x in pl.get("decisions", []):  # lean drafts run in parallel, so only plan defaults are visible here
         if x is entry:
             continue
-        f = out / f"{x['id']}.json"
-        default = json.loads(f.read_text()).get("default_option") if f.exists() else x.get("default")
-        others.append(f"- {x['title']} ({x.get('mode')}): {x.get('scope', '')} Default if not decided: {default}")
+        others.append(f"- {x['title']} ({x.get('mode')}): {x.get('scope', '')} Default if not decided: {x.get('default')}")
     prompt = (f"Decision to draft: {title}\n" + (f"Scope: {entry.get('scope')}\n" if entry else "")
               + ("Other decisions in this task, handled elsewhere:\n" + "\n".join(others) + "\n" if others else "")
               + ("Profile questions (asked once):\n" + json.dumps(pl.get("profile", []), indent=1) + "\n" if pl.get("profile") else "")
               + "\n" + project_context(root, task))
-    d = muse_json(DRAFT_SYSTEM, prompt, f"draft:{root.name}")
+    d = muse_json(LEAN_SYSTEM, prompt, f"lean:{root.name}")
     problems = check_draft(d, pl.get("profile"))
     if problems:  # one repair round, then report honestly
         print(f"Quality check failed ({len(problems)}): {'; '.join(problems)}. Asking Muse Spark to fix it.", file=sys.stderr)
-        d = muse_json(DRAFT_SYSTEM, prompt + "\n\nYour last draft broke these rules; fix them:\n- " + "\n- ".join(problems)
-                      + "\n\nLast draft:\n" + json.dumps(d), f"draft-fix:{root.name}")
+        d = muse_json(LEAN_SYSTEM, prompt + "\n\nYour last lean draft broke these rules; fix them:\n- " + "\n- ".join(problems)
+                      + "\n\nLast draft:\n" + json.dumps(d), f"lean-fix:{root.name}")
         problems = check_draft(d, pl.get("profile"))
     path = out / f"{slug}.json"
-    path.write_text(json.dumps({"id": slug, "title": title, "task": task, "problems": problems, **d}, indent=2))
+    path.write_text(json.dumps({"id": slug, "title": title, "task": task, "problems": problems, "deep": False, **d}, indent=2))
+    return d, problems, path
+
+
+def merge_deep(dr, payload):
+    """Fold one deep payload into a lean draft dict. Unknown option ids are ignored."""
+    out = json.loads(json.dumps(dr))
+    if isinstance(payload.get("growth"), dict):
+        out["growth"] = payload["growth"]
+    by_id = {o.get("id"): o for o in out.get("options", [])}
+    for e in payload.get("deep_options") or []:
+        o = by_id.get(e.get("id"))
+        if not o:
+            continue
+        for k in ("numbers", "trajectory", "learn", "check_current"):
+            if k in e:
+                o[k] = e[k]
+    out["deep"] = True
+    return out
+
+
+def deepen_draft(root, did):
+    """Fill one lean draft's deep material (numbers, growth, learn). Returns the merged draft; cheap no-op when done."""
+    f = root / ".hoist" / "drafts" / f"{did}.json"
+    dr = json.loads(f.read_text())
+    if dr.get("deep"):
+        return dr
+    task = dr.get("task", "")
+    lean = {k: v for k, v in dr.items() if k not in ("deep", "problems", "deep_problems")}
+    prompt = (f"Decision: {dr.get('title', did)}\nTask: {task}\n\nLean draft:\n{json.dumps(lean, indent=1)}\n\n"
+              + project_context(root, task))
+    payload = muse_json(DEEP_SYSTEM, prompt, f"deep:{root.name}:{did}")
+    merged = merge_deep(dr, payload)
+    problems = check_deep(merged)
+    if problems:  # one repair round, then report honestly
+        print(f"Deep check failed ({len(problems)}): {'; '.join(problems)}. Asking Muse Spark to fix it.", file=sys.stderr)
+        payload = muse_json(DEEP_SYSTEM, prompt + "\n\nYour last deep material broke these rules; fix them:\n- " + "\n- ".join(problems)
+                            + "\n\nLast deep material:\n" + json.dumps(payload), f"deep-fix:{root.name}:{did}")
+        merged = merge_deep(dr, payload)
+        problems = check_deep(merged)
+    merged["deep_problems"] = problems
+    f.write_text(json.dumps(merged, indent=2))
+    return merged
+
+
+def make_draft(root, which, task=""):
+    """Full draft for the CLI: lean first, then deep inline."""
+    d, problems, path = make_draft_lean(root, which, task)
+    try:
+        d = deepen_draft(root, path.stem)
+        problems = list(problems) + [f"deep: {p}" for p in d.get("deep_problems", [])]
+    except (Exception, SystemExit) as e:
+        problems = list(problems) + [f"deep draft failed: {e}"]
+        d = json.loads(path.read_text())
     return d, problems, path
 
 
@@ -858,16 +944,19 @@ def run_session(root, task, hints="", resume=False):
         asks = [d["id"] for d in p.get("decisions", []) if d.get("mode") == "ask"]
         ses.update(status="drafting", total=len(asks))
         save_session(root, ses)
-        for did in asks:
-            if did in ses["drafted"]:
-                continue
-            ses["current"] = did; save_session(root, ses)
-            try:
-                make_draft(root, did, ses["task"])
-                ses["drafted"].append(did)
-            except (Exception, SystemExit):  # this decision falls back to its default on the page; the rest go on
-                ses["failed"].append(did)
-            save_session(root, ses)
+        todo = [did for did in asks if did not in ses["drafted"]]
+        with concurrent.futures.ThreadPoolExecutor(max_workers=min(4, len(todo) or 1)) as ex:
+            futs = {ex.submit(make_draft_lean, root, did, ses["task"]): did for did in todo}
+            for fut in concurrent.futures.as_completed(futs):
+                did = futs[fut]
+                try:
+                    fut.result()
+                    if did not in ses["drafted"]:
+                        ses["drafted"].append(did)
+                except (Exception, SystemExit):  # this decision falls back to its default on the page; the rest go on
+                    ses["failed"].append(did)
+                ses["current"] = next((x for x in todo if x not in ses["drafted"] and x not in ses["failed"]), None)
+                save_session(root, ses)
         if asks and len(ses["failed"]) == len(asks):
             raise RuntimeError("Muse Spark couldn't write any of the decisions.")
         ses.update(status="ready", current=None)

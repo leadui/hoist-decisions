@@ -44,6 +44,10 @@ PRESENT = [
     ("numbers table", "num-row"),
     ("chips", "Watch out for"),
     ("growth chart", 'class="growth"'),
+    ("chart label tooltip", "<title>' + esc(o.name)"),
+    ("option numbers", "onum"),
+    ("answered pills turn green", "qtab.done"),
+    ("answered chat moment", "Earlier I chose"),
     ("hyper-dive opens", 'data-action="hyper"'),
     # modal closes three ways
     ("modal veil", 'class="veil"'),
@@ -63,6 +67,8 @@ PRESENT = [
     ("replays sample offline", "sample.json"),
     ("files session records", "/api/session/decisions/"),
     ("abandons to chat", "/api/session/abandon"),
+    ("lazy deep pull", "/deep"),
+    ("deep pull indicator", "Pulling the numbers"),
     ("files single decisions", "/api/decisions/"),
     ("Muse Spark progress", "Muse Spark"),
 ]

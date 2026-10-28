@@ -73,6 +73,8 @@
     border: 1px solid var(--line); border-radius: 999px; padding: 5px 14px;
   }
   .qtab[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+  .qtab.done { color: #137333; border-color: #9ed0a8; background: #e6f4ea; }
+  [data-theme="dark"] .qtab.done { color: #7dd79b; border-color: #2f5c3e; background: #12241a; }
 
   .msg { display: flex; gap: 10px; margin-bottom: 12px; }
   .who {
@@ -259,6 +261,13 @@
   }
   .hyper-btn:hover { border-color: var(--accent); color: var(--accent); }
   .opt .chev { float: right; margin-top: 4px; transition: transform 160ms ease; }
+  .opt .onum {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 22px; height: 22px; border-radius: 50%;
+    border: 1px solid var(--line); color: var(--ink-2);
+    font-size: 12px; font-weight: 700; margin-right: 8px; vertical-align: 1px;
+  }
+  .opt[aria-pressed="true"] .onum { border-color: var(--accent); color: var(--accent); }
   .opt[aria-pressed="true"] .chev { transform: rotate(180deg); }
   .expand-hint { font-size: 12.5px; color: var(--ink-2); margin: -4px 0 10px; }
   .veil {
@@ -362,12 +371,14 @@
 
   var state = { qid: null, phase: "moment", path: null, picked: null, depth: 2,
     answers: {}, skipped: {}, abandoned: {}, added: {}, showCustom: false,
-    hyper: null, records: {}, err: null, theme: "light" };
+    hyper: null, records: {}, err: null, theme: "light",
+    deepLoading: {}, deepErr: {}, deepTried: {} };
 
   function resetState() {
     state.qid = null; state.phase = "moment"; state.path = null; state.picked = null;
     state.depth = 2; state.answers = {}; state.skipped = {}; state.abandoned = {};
     state.added = {}; state.showCustom = false; state.hyper = null; state.records = {}; state.err = null;
+    state.deepLoading = {}; state.deepErr = {}; state.deepTried = {};
   }
 
   function Q() {
@@ -424,6 +435,11 @@
     return html;
   }
 
+  function chartName(n) {
+    n = String(n == null ? "" : n);
+    return n.length > 24 ? n.slice(0, 23) + "…" : n;
+  }
+
   function growthHtml() {
     var q = Q();
     var g = q.growth;
@@ -438,7 +454,7 @@
       var o = gopts[i];
       var y = i * rowH + 4;
       var isPick = state.picked === o.value;
-      html += '<text x="0" y="' + (y + 18) + '" font-size="12" style="fill:var(--ink-2)">' + esc(o.name) + "</text>" +
+      html += '<text x="0" y="' + (y + 18) + '" font-size="12" style="fill:var(--ink-2)"><title>' + esc(o.name) + "</title>" + esc(chartName(o.name)) + "</text>" +
         '<rect x="' + labelW + '" y="' + y + '" width="' + bw(o.mNow) + '" height="12" rx="3" style="fill:var(--line)"/>' +
         '<rect x="' + labelW + '" y="' + (y + 16) + '" width="' + bw(o.mLater) + '" height="12" rx="3" style="fill:' +
         (isPick ? "var(--accent)" : "var(--ink-2)") + '" opacity="' + (isPick ? "1" : "0.35") + '"/>';
@@ -469,7 +485,7 @@
       var id = PACKS[i].id;
       var mark = state.answers[id] ? "✓ " : (state.skipped[id] ? "– " : "");
       if (state.answers[id] || state.skipped[id]) done++;
-      html += '<button type="button" class="qtab" data-action="q" data-v="' + esc(id) + '" aria-pressed="' +
+      html += '<button type="button" class="qtab' + (state.answers[id] ? " done" : "") + '" data-action="q" data-v="' + esc(id) + '" aria-pressed="' +
         (state.qid === id ? "true" : "false") + '">' + esc(mark + PACKS[i].tab) + "</button>";
     }
     html += '<span class="qcount">' + done + " of " + PACKS.length + "</span>";
@@ -477,15 +493,58 @@
     return html;
   }
 
-  function momentHtml() {
-    var q = Q();
-    return msgHtml("user", esc(q.chatAsk)) +
-      msgHtml("agent", q.agentAsk) +
-      '<div class="interrupt"><h2>The interruption</h2><p>One question, two paths. Then learn as much as you want.</p>' +
+  function interruptHtml() {
+    return '<div class="interrupt"><h2>The interruption</h2><p>One question, two paths. Then learn as much as you want.</p>' +
       '<div class="path-row">' +
       '<button type="button" class="path-btn" data-action="path" data-v="quick"><strong>Answer here</strong><span>Quick: pick now, thin record.</span></button>' +
       '<button type="button" class="path-btn primary" data-action="path" data-v="hoist"><strong>Decide with Hoist instead</strong><span>Learn the options, then pick. Grounded record.</span></button>' +
       "</div></div>";
+  }
+
+  function momentHtml() {
+    var q = Q();
+    var a = state.answers[q.id];
+    if (a) {
+      return msgHtml("user", "Earlier I chose <strong>" + esc(a.name) + ".</strong>") +
+        msgHtml("agent", "Want to keep it, or walk it again?") +
+        interruptHtml();
+    }
+    return msgHtml("user", esc(q.chatAsk)) +
+      msgHtml("agent", q.agentAsk) +
+      interruptHtml();
+  }
+
+  function deepReady(q) {
+    if (!q.draft) return true;
+    if (q.draft.deep === true) return true;
+    var opts = q.draft.options || [];
+    for (var i = 0; i < opts.length; i++) {
+      if ((opts[i].numbers || []).length || (opts[i].trajectory || []).length) return true;
+    }
+    return false;
+  }
+  function deepPullHtml(q) {
+    if (state.deepErr[q.id]) {
+      return '<div class="researching">' + esc(state.deepErr[q.id]) + "</div>" +
+        '<div class="actions"><button type="button" class="mini-btn" data-action="deepretry" data-v="' + esc(q.id) + '">Try again</button></div>';
+    }
+    return '<div class="researching">Pulling the numbers for the deep dive…</div>';
+  }
+  function triggerDeep(q) {
+    if (!q.draft || state.deepLoading[q.id] || state.deepTried[q.id]) return;
+    if (!LIVE) { state.deepErr[q.id] = "The sample data has no deep dive for this one."; return; }
+    state.deepLoading[q.id] = true;
+    state.deepTried[q.id] = true;
+    state.deepErr[q.id] = null;
+    post("/api/session/decisions/" + q.id + "/deep", {}).then(function (dr) {
+      state.deepLoading[q.id] = false;
+      if (S.session && S.session.drafts) S.session.drafts[q.id] = dr;
+      render();
+    }).catch(function (e) {
+      state.deepLoading[q.id] = false;
+      state.deepErr[q.id] = (e && e.message) || "Couldn't pull the numbers.";
+      render();
+    });
   }
 
   function hoistHtml() {
@@ -511,14 +570,19 @@
     for (var i = 0; i < opts.length; i++) {
       var o = opts[i];
       var on = state.picked === o.value;
+      var open = on || d >= 3;
       html += '<div class="optrow"><button type="button" class="opt" data-action="pick" data-v="' + esc(o.value) + '" aria-pressed="' + (on ? "true" : "false") + '">' +
-        "<b>" + ICONS.chev + esc(o.name) + (o.added ? '<span class="yours">Added by you</span>' : "") + "</b><small>" + esc(o.desc) + "</small>" +
+        "<b>" + '<span class="onum">' + (i + 1) + "</span>" + ICONS.chev + esc(o.name) + (o.added ? '<span class="yours">Added by you</span>' : "") + "</b>" +
+        (d >= 2 ? "<small>" + esc(o.desc) + "</small>" : "") +
         microHtml(q, o, d) +
-        (on && d >= 2 ? '<span class="why">' + esc(o.why) + "</span>" + journeyHtml(o) : "") +
-        (on && d >= 3 ? deepHtml(o) : "") + "</button>" +
+        (open && d >= 2 ? '<span class="why">' + esc(o.why) + "</span>" + journeyHtml(o) : "") +
+        (open && d >= 3 ? deepHtml(o) : "") + "</button>" +
         '<button type="button" class="hyper-btn" data-action="hyper" data-v="' + esc(o.value) + '" aria-label="Hyper dive into ' + esc(o.name) + '">' + ICONS.expand + "</button></div>";
     }
-    if (d >= 3) html += growthHtml();
+    if (d >= 3) {
+      if (deepReady(q)) html += growthHtml();
+      else { html += deepPullHtml(q); triggerDeep(q); }
+    }
     var pickedOpt = optBy(state.picked);
     html += '<div class="actions"><button type="button" class="btn" data-action="confirm"' +
       (state.picked ? "" : " disabled") + ">Confirm choice</button></div>";
@@ -543,7 +607,7 @@
       '<div class="edu"><div class="quick-pick">';
     for (var i = 0; i < q.options.length; i++) {
       html += '<button type="button" class="opt" data-action="quickpick" data-v="' + esc(q.options[i].value) + '" aria-pressed="false">' +
-        "<b>" + esc(q.options[i].name) + "</b><small>" + esc(q.options[i].desc) + "</small></button>";
+        "<b>" + '<span class="onum">' + (i + 1) + "</span>" + esc(q.options[i].name) + "</b><small>" + esc(q.options[i].desc) + "</small></button>";
     }
     html += "</div>";
     if (state.err) html += '<p class="err">' + esc(state.err) + "</p>";
@@ -648,6 +712,7 @@
     if (o.journey && o.journey.length) html += '<div class="sheet-sec">How it works</div>' + journeyHtml(o);
     var deep = deepHtml(o);
     if (deep) html += '<div class="sheet-sec">Numbers and trade-offs</div>' + deep;
+    if (CTX.kind === "session" && q.draft && !deepReady(q)) { html += deepPullHtml(q); triggerDeep(q); }
     if (o.living) html += '<div class="sheet-sec">Living with it</div><p class="sheet-story">' + esc(o.living) + "</p>";
     html += '<div class="sheet-sec">Keep learning</div><ul class="learn-list">';
     for (var i = 0; i < q.links.length; i++) {
@@ -1421,11 +1486,13 @@
     buildSessionPacks();
     if (!PACKS.length) return progressHtml(ses);
     if (!state.qid || !PACKS.some(function (q) { return q.id === state.qid; })) {
-      var first = null;
+      var first = null, any = null;
       for (var i = 0; i < PACKS.length; i++) {
-        if (!state.answers[PACKS[i].id] && !state.skipped[PACKS[i].id]) { first = PACKS[i].id; break; }
+        if (state.answers[PACKS[i].id] || state.skipped[PACKS[i].id]) continue;
+        if (!any) any = PACKS[i].id;
+        if (!PACKS[i].preparing) { first = PACKS[i].id; break; }
       }
-      state.qid = first || PACKS[0].id;
+      state.qid = first || any || PACKS[0].id;
     }
     return engineHtml();
   }
@@ -1547,6 +1614,7 @@
     else if (action === "delegate") delegate();
     else if (action === "propose") propose();
     else if (action === "drop") dropChallenger();
+    else if (action === "deepretry") { state.deepTried[v] = null; state.deepErr[v] = null; render(); }
     else if (action === "review") { state.phase = "review"; state.err = null; render(); }
     else if (action === "change") changeQ(v);
     else if (action === "file") fileRecords();
@@ -1626,7 +1694,7 @@
     });
   }
 
-  window.__hoist = { state: state, boot: boot, render: render, packs: function () { return PACKS; },
+  window.__hoist = { state: state, boot: boot, render: render, packs: function () { return PACKS; }, chartName: chartName,
     switchQ: switchQ, choosePath: choosePath, pick: pick, setDepth: setDepth,
     confirm: confirm, propose: propose, startSession: startSession, ctx: function () { return CTX; } };
 
