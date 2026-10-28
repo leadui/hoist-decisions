@@ -55,6 +55,8 @@ PRESENT = [
     ("modal X action", "hyperx"),
     ("modal backdrop action", "hyperclose"),
     ("modal escape key", '"Escape"'),
+    ("sheet tier pills", "sheet-tiers"),
+    ("typing indicator", 'class="typing"'),
     # escape row + review gate
     ("custom option escape", 'data-v="custom"'),
     ("back-to-chat escape", 'data-v="chat"'),

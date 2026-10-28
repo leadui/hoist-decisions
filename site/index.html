@@ -261,7 +261,7 @@
   }
   .hyper-btn:hover { border-color: var(--accent); color: var(--accent); }
   .opt .chev { float: right; margin-top: 4px; transition: transform 160ms ease; }
-  .opt .onum {
+  .onum {
     display: inline-flex; align-items: center; justify-content: center;
     min-width: 22px; height: 22px; border-radius: 50%;
     border: 1px solid var(--line); color: var(--ink-2);
@@ -291,6 +291,12 @@
   }
   .x-btn:hover { border-color: var(--accent); color: var(--accent); }
   .sheet-sec { font-size: 12.5px; font-weight: 700; margin: 16px 0 6px; color: var(--ink-2); }
+  .sheet-tiers { margin: 12px 0 0; }
+  .typing { display: inline-flex; gap: 4px; margin-left: 6px; vertical-align: 2px; }
+  .typing i { width: 6px; height: 6px; border-radius: 50%; background: var(--ink-2); animation: tblink 1.2s ease-in-out infinite; }
+  .typing i:nth-child(2) { animation-delay: 0.2s; }
+  .typing i:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes tblink { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
   .sheet-story { margin: 0; font-size: 14.5px; }
   .learn-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
   .learn-list a { color: var(--accent); font-size: 14px; }
@@ -347,6 +353,8 @@
     expand: '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2.5h4v4"/><path d="M13.5 2.5L9 7"/><path d="M6.5 13.5h-4v-4"/><path d="M2.5 13.5L7 9"/></svg>',
     chev: '<svg class="chev" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg>'
   };
+
+  var TYPING = ' <span class="typing" aria-hidden="true"><i></i><i></i><i></i></span>';
 
   function $(id) { return document.getElementById(id); }
   function esc(s) {
@@ -528,7 +536,7 @@
       return '<div class="researching">' + esc(state.deepErr[q.id]) + "</div>" +
         '<div class="actions"><button type="button" class="mini-btn" data-action="deepretry" data-v="' + esc(q.id) + '">Try again</button></div>';
     }
-    return '<div class="researching">Pulling the numbers for the deep dive…</div>';
+    return '<div class="researching">Pulling the numbers for the deep dive…' + TYPING + "</div>";
   }
   function triggerDeep(q) {
     if (!q.draft || state.deepLoading[q.id] || state.deepTried[q.id]) return;
@@ -552,7 +560,7 @@
     var d = state.depth;
     if (q.preparing) {
       return msgHtml("agent", "One moment — <strong>" + esc(q.title) + "</strong> is still being written.") +
-        '<div class="edu"><div class="researching">Muse Spark is writing this decision — it will appear here on its own.</div></div>';
+        '<div class="edu"><div class="researching">Muse Spark is writing this decision — it will appear here on its own." + TYPING + "</div></div>';
     }
     var html = msgHtml("agent", "Hoist walk-through: <strong>" + esc(q.shortTitle) + "?</strong> Pick a depth, then an option.") +
       '<div class="edu"><div class="edu-head"><h2>' + esc(q.title) + "</h2></div>" +
@@ -704,21 +712,31 @@
 
   function hyperHtml(o) {
     var q = Q();
+    var idx = 0, all = allOptions();
+    for (var k = 0; k < all.length; k++) if (all[k].value === o.value) idx = k + 1;
     var ddg = "https://duckduckgo.com/?q=" + encodeURIComponent(o.name + " " + q.decision);
     var html = '<div class="veil" data-action="hyperclose"><div class="sheet" role="dialog" aria-modal="true" aria-label="' + esc(o.name) + ' hyper dive">';
-    html += '<div class="sheet-top"><div><h2>' + esc(o.name) + '</h2><p class="sub">' + esc(o.desc) + "</p></div>" +
+    html += '<div class="sheet-top"><div><h2><span class="onum">' + idx + "</span>" + esc(o.name) + '</h2><p class="sub">' + esc(o.desc) + "</p></div>" +
       '<button type="button" class="x-btn" data-action="hyperx">Close</button></div>';
-    html += '<div class="sheet-sec">The story</div><p class="sheet-story">' + esc(o.why) + "</p>";
-    if (o.journey && o.journey.length) html += '<div class="sheet-sec">How it works</div>' + journeyHtml(o);
-    var deep = deepHtml(o);
-    if (deep) html += '<div class="sheet-sec">Numbers and trade-offs</div>' + deep;
-    if (CTX.kind === "session" && q.draft && !deepReady(q)) { html += deepPullHtml(q); triggerDeep(q); }
-    if (o.living) html += '<div class="sheet-sec">Living with it</div><p class="sheet-story">' + esc(o.living) + "</p>";
-    html += '<div class="sheet-sec">Keep learning</div><ul class="learn-list">';
-    for (var i = 0; i < q.links.length; i++) {
-      html += '<li><a href="' + esc(q.links[i].u) + '" target="_blank" rel="noopener">' + esc(q.links[i].t) + "</a></li>";
+    html += '<div class="tiers sheet-tiers" role="group" aria-label="Explanation depth">';
+    for (var t = 0; t < TIERS.length; t++) {
+      html += '<button type="button" class="tier" data-action="depth" data-v="' + TIERS[t].id + '" aria-pressed="' +
+        (state.depth === TIERS[t].id ? "true" : "false") + '"><b>' + esc(TIERS[t].name) + "</b></button>";
     }
-    html += '<li><a href="' + esc(ddg) + '" target="_blank" rel="noopener">Search the web for ' + esc(o.name) + "</a></li></ul>";
+    html += "</div>";
+    html += '<div class="sheet-sec">The story</div><p class="sheet-story">' + esc(o.why) + "</p>";
+    if (state.depth >= 2 && o.journey && o.journey.length) html += '<div class="sheet-sec">How it works</div>' + journeyHtml(o);
+    var deep = state.depth >= 3 ? deepHtml(o) : "";
+    if (deep) html += '<div class="sheet-sec">Numbers and trade-offs</div>' + deep;
+    if (CTX.kind === "session" && q.draft && state.depth >= 3 && !deepReady(q)) { html += deepPullHtml(q); triggerDeep(q); }
+    if (state.depth >= 2 && o.living) html += '<div class="sheet-sec">Living with it</div><p class="sheet-story">' + esc(o.living) + "</p>";
+    if (state.depth >= 2) {
+      html += '<div class="sheet-sec">Keep learning</div><ul class="learn-list">';
+      for (var i = 0; i < q.links.length; i++) {
+        html += '<li><a href="' + esc(q.links[i].u) + '" target="_blank" rel="noopener">' + esc(q.links[i].t) + "</a></li>";
+      }
+      html += '<li><a href="' + esc(ddg) + '" target="_blank" rel="noopener">Search the web for ' + esc(o.name) + "</a></li></ul>";
+    }
     html += '<div class="sheet-actions">' +
       '<button type="button" class="btn" data-action="hyperpick" data-v="' + esc(o.value) + '">Choose ' + esc(o.name) + "</button></div>";
     return html + "</div></div>";
@@ -1403,7 +1421,7 @@
     var line = ses.status === "planning" ? "Reading your project and finding the lasting decisions…"
       : "Writing decision " + Math.min(n + 1, total || 1) + " of " + (total || "?") + " — deciding starts with the first draft.";
     return msgHtml("agent", "Working on <strong>" + esc(ses.task || "") + ".</strong>") +
-      '<div class="edu"><div class="researching">' + esc(line) + "</div>" +
+      '<div class="edu"><div class="researching">' + esc(line) + TYPING + "</div>" +
       '<p class="q-hint">Muse Spark writes the questions and options; Hoist checks every draft against its rules before you see it.</p></div>';
   }
 
@@ -1631,7 +1649,7 @@
       if (ev.target && ev.target.closest && ev.target.closest(".sheet")) return;
       closeHyper();
     }
-    else if (action === "hyperpick") { state.hyper = null; pick(v); }
+    else if (action === "hyperpick") { if (optBy(v)) { state.hyper = null; state.picked = v; confirm("chosen"); } }
     else if (action === "ex") { var el = $("taskIn"); if (el) el.value = v; }
     else if (action === "start") { var ti = $("taskIn"); startSession(ti ? ti.value : "", false); }
     else if (action === "retry") startSession((S.session || {}).task || "", true);
