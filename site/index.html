@@ -73,6 +73,19 @@
   .opt[aria-pressed="true"]{border:2px solid var(--bk-signal);padding:11px 13px}
   .opt[aria-pressed="true"] .onum{border-color:var(--bk-signal);color:var(--bk-ink)}
   .escape-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--bk-line);font-size:13px;color:var(--bk-muted)}
+  .captured{display:flex;gap:12px;align-items:center;margin:0 0 14px;padding:12px 14px;border-radius:12px;border:1.5px solid var(--bk-good);background:color-mix(in srgb, var(--bk-good) 10%, var(--bk-tile));animation:capIn .35s ease-out}
+  .captured b{display:block;font-size:15px}
+  .captured span:not(.cap-check){display:block;font-size:13px;color:var(--bk-muted)}
+  .cap-check{flex:none;display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--bk-good);color:#fff;font-weight:800;animation:capPop .45s cubic-bezier(.2,1.4,.4,1)}
+  .cap-check.sm{width:20px;height:20px;font-size:12px;margin-right:4px;vertical-align:-4px}
+  .commitbar.is-captured{border-color:var(--bk-good)}
+  #bk-moment .bk-stamp.is-captured{background:var(--bk-good);color:#fff}
+  #bk-moment.is-captured .bk-opt.is-chosen{border-color:var(--bk-good)}
+  .moment-enter{animation:momentIn .32s ease-out}
+  @keyframes capIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+  @keyframes capPop{from{transform:scale(.4)}to{transform:scale(1)}}
+  @keyframes momentIn{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion: reduce){.captured,.cap-check,.moment-enter{animation:none}}
   .canvas-bar{margin:0 0 10px;display:grid;gap:6px}
   .cb-head{display:flex;align-items:center;gap:12px}
   .cb-map{display:grid;gap:3px;width:64px;flex:none;padding:4px;border:2.5px solid var(--bk-ink);border-radius:10px;grid-auto-rows:7px;background:var(--bk-ink)}
@@ -184,13 +197,13 @@
 
   var state = { qid: null, phase: "moment", path: null, picked: null,
     answers: {}, skipped: {}, abandoned: {}, added: {}, showCustom: false,
-    records: {}, err: null, theme: "light", kindView: {}, critic: {}, criticBusy: null };
+    records: {}, err: null, theme: "light", kindView: {}, critic: {}, criticBusy: null, saving: false, enter: false };
 
   function resetState() {
     state.qid = null; state.phase = "moment"; state.path = null; state.picked = null;
     state.answers = {}; state.skipped = {}; state.abandoned = {};
     state.added = {}; state.showCustom = false; state.records = {}; state.err = null;
-    state.kindView = {}; state.critic = {}; state.criticBusy = null;
+    state.kindView = {}; state.critic = {}; state.criticBusy = null; state.saving = false; state.enter = false;
   }
 
   function Q() {
@@ -442,15 +455,33 @@
     }
     var data = momentData(q, state.picked);
     var prev = state.answers[q.id];
-    var html = (prev ? '<p class="hint">Earlier you selected <strong>' + esc(prev.name) + "</strong> — tap a card to change it, or commit to keep it.</p>" : "") +
-      canvasBarHtml(q, data) + '<div id="bk-moment"></div>' + criticHtml(q, data);
-    html += '<p class="hint">' + (state.picked ? "Tap another card to change your pick." : "Tap a card to pick it — why it wins and what to watch is on the card.") + "</p>";
+    var captured = isCaptured(q);
+    var rec = state.records[q.id] || {};
+    var next = nextUnanswered();
+    var nextQ = null;
+    for (var ni = 0; ni < PACKS.length; ni++) if (PACKS[ni].id === next) nextQ = PACKS[ni];
+    var html = "";
+    if (captured) {
+      html += '<div class="captured" role="status"><span class="cap-check" aria-hidden="true">✓</span><div><b>Decision ' + esc(momentNum()) + " captured: " + esc(prev.name) + "</b>" +
+        "<span>" + (rec.record ? "Recorded in <code>" + esc(rec.record) + "</code>" : "Recorded for your agent") +
+        (nextQ ? ". Next up: " + esc(nextQ.shortTitle) + "." : ". Every moment is decided — review the set next.") + "</span></div></div>";
+    } else if (prev) {
+      html += '<p class="hint">You captured <strong>' + esc(prev.name) + "</strong> earlier. Commit again to replace it with your new pick, or tap it to go back.</p>";
+    }
+    html += canvasBarHtml(q, data) + '<div id="bk-moment"' + (captured ? ' class="is-captured"' : "") + "></div>" + criticHtml(q, data);
+    if (!captured) html += '<p class="hint">' + (state.picked ? "Tap another card to change your pick." : "Tap a card to pick it — why it wins and what to watch is on the card.") + "</p>";
     if (data.metrics.length) html += '<p class="hint">Bars are relative within this option set, not absolute costs.</p>';
     var po = optBy(state.picked);
-    html += '<div class="actions commitbar"><span class="hint" style="margin:0">' +
-      (po ? "Selected: <strong>" + esc(po.name) + "</strong>" : "Pick a card above — committing needs a pick first.") +
-      '</span><span class="spacer"></span><button type="button" class="btn" data-action="confirm"' +
-      (state.picked ? "" : " disabled") + ">Commit choice</button></div>";
+    if (captured) {
+      html += '<div class="actions commitbar is-captured"><span class="hint" style="margin:0"><span class="cap-check sm" aria-hidden="true">✓</span> Captured: <strong>' + esc(prev.name) + "</strong>" +
+        '</span><span class="spacer"></span><button type="button" class="btn" data-action="next">' +
+        (nextQ ? "Next: " + esc(nextQ.shortTitle) + " →" : "Review &amp; commit →") + "</button></div>";
+    } else {
+      html += '<div class="actions commitbar"><span class="hint" style="margin:0">' +
+        (state.saving ? "Saving <strong>" + esc(po ? po.name : "") + "</strong>…" : po ? "Selected: <strong>" + esc(po.name) + "</strong>" : "Pick a card above — committing needs a pick first.") +
+        '</span><span class="spacer"></span><button type="button" class="btn" data-action="confirm"' +
+        (state.picked && !state.saving ? "" : " disabled") + ">" + (state.saving ? "Saving…" : prev ? "Replace decision" : "Commit choice") + "</button></div>";
+    }
     if (state.err) html += '<p class="err">' + esc(state.err) + "</p>";
     html += '<div class="escape-row"><span>Not sold?</span>' +
       '<button type="button" class="escape-btn" data-action="escape" data-v="custom">Add your option</button>';
@@ -816,10 +847,16 @@
   }
   function advance() {
     var next = nextUnanswered();
-    state.picked = null; state.showCustom = false; state.err = null;
+    state.picked = null; state.showCustom = false; state.err = null; state.enter = true;
     if (next) { state.qid = next; state.phase = "hoist"; state.path = "hoist"; ensurePick(Q()); }
     else state.phase = "review";
     render();
+    state.enter = false;
+    if (typeof window !== "undefined" && window.scrollTo) window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+  function isCaptured(q) {
+    var a = q && state.answers[q.id];
+    return !!(a && a.value === state.picked && !state.saving);
   }
   function confirm(mode) {
     var a = currentAnswer();
@@ -827,15 +864,22 @@
     var q = Q();
     var opt = optBy(a.value);
     mode = mode || "chosen";
-    state.err = null;
+    if (state.saving) return;
+    state.err = null; state.saving = true;
     render();
     saveChoice(q, opt, mode, state.path).then(function (rec) {
+      state.saving = false;
       state.answers[q.id] = { name: opt.name, value: opt.value, custom: !!opt.added, path: state.path, mode: mode };
       state.records[q.id] = rec;
       delete state.skipped[q.id];
       delete state.abandoned[q.id];
-      advance();
+      /* Stay on the decided moment so the capture is visible; "Next" moves on. */
+      state.qid = q.id; state.picked = opt.value; state.phase = "hoist";
+      render();
+      var cap = document.querySelector(".captured");
+      if (cap && cap.scrollIntoView) cap.scrollIntoView({ behavior: "smooth", block: "start" });
     }).catch(function (e) {
+      state.saving = false;
       state.err = (e && e.message) || "Couldn't save.";
       render();
     });
@@ -1509,7 +1553,7 @@
       : "One canvas per hard choice. Compare, commit — one record at the end.";
     var html = '<p class="lede">' + esc(lede) + "</p>" +
       '<div class="qtabs" role="group" aria-label="Question">' + tabsHtml() + "</div>";
-    if (state.phase === "moment" || state.phase === "hoist") html += hoistHtml();
+    if (state.phase === "moment" || state.phase === "hoist") html += '<div' + (state.enter ? ' class="moment-enter"' : "") + ">" + hoistHtml() + "</div>";
     else if (state.phase === "review") html += reviewHtml();
     else if (state.phase === "record") html += recordHtml();
     return html;
@@ -1598,7 +1642,9 @@
       else {
         var data = momentData(q, state.picked);
         var comp = composeMoment(q, data);
-        mountInto("bk-moment", comp.template, data, { questions: { lead: state.picked ? "Your options — tap to change the pick" : "Your options — tap one to pick it" } });
+        var capd = isCaptured(q);
+        mountInto("bk-moment", comp.template, data, { questions: { lead: capd ? "Your options — decided" : state.picked ? "Your options — tap to change the pick" : "Your options — tap one to pick it" } });
+        if (capd) m.querySelectorAll(".bk-opt.is-chosen .bk-stamp, .bk-oh.is-chosen .bk-stamp").forEach(function (st) { st.textContent = "✓ Captured"; st.classList.add("is-captured"); });
       }
       optionCardsWire(q);
     }
@@ -1681,6 +1727,7 @@
     else if (action === "change") changeQ(v);
     else if (action === "file") fileRecords();
     else if (action === "confirm") confirm("chosen");
+    else if (action === "next") advance();
     else if (action === "kind") { var kq = Q(); if (kq) { state.kindView[kq.id] = v; render(); } }
     else if (action === "critic") askCritic(v);
     else if (action === "restart") {
