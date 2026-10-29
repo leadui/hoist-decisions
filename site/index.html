@@ -312,6 +312,24 @@
   }
   .restart:hover { border-color: var(--ink-2); }
 
+  @media (max-width: 560px) {
+    .page { padding: 20px 14px 48px; }
+    .topbar { flex-wrap: wrap; }
+    .topbar h1 { font-size: 20px; }
+    .interrupt, .edu, .record-wrap { margin-left: 0; }
+    .num-row { grid-template-columns: 96px 1fr; font-size: 12.5px; }
+    .journey { flex-direction: column; }
+    .jstep:not(:last-child) { margin-right: 0; margin-bottom: 16px; }
+    .jstep:not(:last-child)::after {
+      content: "↓"; right: auto; left: 50%; top: auto; bottom: -17px;
+      transform: translateX(-50%);
+    }
+    .actions { justify-content: stretch; }
+    .actions .btn { width: 100%; text-align: center; }
+    .optrow .hyper-btn { width: 42px; }
+    .sheet { padding: 16px 14px 20px; }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { transition: none !important; animation: none !important; }
   }

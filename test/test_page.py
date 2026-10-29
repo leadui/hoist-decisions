@@ -35,6 +35,7 @@ PRESENT = [
     ("rows expand options", 'data-action="pick"'),
     ("model box", "The one idea that decides this"),
     # moments components
+    ("mobile rules", "@media (max-width: 560px)"),
     ("journey steps", "jstep"),
     ("journey arrows", "What happens step by step"),
     ("micro-bars", "micro-track"),

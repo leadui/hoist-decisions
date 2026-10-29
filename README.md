@@ -44,7 +44,7 @@ python3 hoist.py wait ID [project]    # wait for a decision, then print the outc
 python3 hoist_audit.py <path-or-url>  # Muse Spark: find the decisions a repo has already made
 ```
 
-`hoist_audit.py` needs `pip install openai` and a Muse Spark key in `MODEL_API_KEY`. Everything else runs on the standard library, on your machine. The decision page listens only on 127.0.0.1 and makes no API calls.
+`hoist_audit.py` needs `pip install openai` and a Muse Spark key in `MODEL_API_KEY`. Everything else runs on the standard library. The decision page serves from 127.0.0.1 while Muse drafts each moment over the API.
 
 ## Status
 
