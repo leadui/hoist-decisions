@@ -39,20 +39,22 @@
     font-family: ui-sans-serif, system-ui, "Segoe UI", Helvetica, Arial, sans-serif;
     font-size: 15px; line-height: 1.55;
   }
-  .page { max-width: 700px; margin: 0 auto; padding: 28px 20px 64px; }
+  .page { max-width: 760px; margin: 0 auto; padding: 28px 20px 64px; }
   .topbar { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 6px; }
   .topbar h1 { font-size: 24px; letter-spacing: -0.01em; margin: 0; font-weight: 700; }
   .topnav { display: flex; gap: 8px; align-items: center; }
   .topnav a {
     font-size: 13px; font-weight: 600; color: var(--ink-2); text-decoration: none;
-    border: 1px solid var(--line); border-radius: 999px; padding: 5px 14px; white-space: nowrap;
+    border: 1px solid var(--line); border-radius: 999px; padding: 8px 16px; white-space: nowrap;
+    display: inline-flex; align-items: center; min-height: 44px;
   }
   .topnav a.on { color: var(--accent); border-color: var(--accent); }
   .theme-btn {
     font: inherit; font-size: 13px; font-weight: 600;
     background: transparent; color: var(--ink);
     border: 1px solid var(--line); border-radius: 999px;
-    padding: 6px 14px; cursor: pointer; white-space: nowrap;
+    padding: 8px 16px; cursor: pointer; white-space: nowrap;
+    display: inline-flex; align-items: center; min-height: 44px;
   }
   .theme-btn:hover { border-color: var(--accent); color: var(--accent); }
   :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -73,6 +75,7 @@
     border: 1px solid var(--line); border-radius: 999px; padding: 5px 14px;
   }
   .qtab[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+  .qtab[data-empty="1"] { opacity: 0.55; }
   .qtab.done { color: #137333; border-color: #9ed0a8; background: #e6f4ea; }
   [data-theme="dark"] .qtab.done { color: #7dd79b; border-color: #2f5c3e; background: #12241a; }
 
@@ -245,7 +248,7 @@
   .optrow { display: flex; gap: 8px; align-items: stretch; margin-bottom: 8px; }
   .optrow .opt { flex: 1; margin-bottom: 0; min-width: 0; }
   .hyper-btn {
-    flex: none; width: 46px; cursor: pointer;
+    flex: none; width: 46px; height: 56px; align-self: flex-start; cursor: pointer;
     border: 1px solid var(--line); border-radius: 8px;
     background: var(--bg); color: var(--ink-2);
     display: flex; align-items: center; justify-content: center;
@@ -326,6 +329,7 @@
     }
     .actions { justify-content: stretch; }
     .actions .btn { width: 100%; text-align: center; }
+    .qcount { flex-basis: 100%; margin: 2px 0 6px; }
     .optrow .hyper-btn { width: 42px; }
     .sheet { padding: 16px 14px 20px; }
   }
@@ -340,7 +344,7 @@
   <div class="topbar">
     <h1>Hoist</h1>
     <div class="topnav">
-      <a id="nav-home" href="#/">Open</a>
+      <a id="nav-home" href="#/">Start</a>
       <a id="nav-session" href="#/session">Session</a>
       <a id="nav-records" href="#/records">Records</a>
       <button class="theme-btn" id="theme-toggle" type="button">Theme: Light</button>
@@ -500,10 +504,11 @@
       var mark = state.answers[id] ? "✓ " : (state.skipped[id] ? "– " : "");
       if (state.answers[id] || state.skipped[id]) done++;
       html += '<button type="button" class="qtab' + (state.answers[id] ? " done" : "") + '" data-action="q" data-v="' + esc(id) + '" aria-pressed="' +
-        (state.qid === id ? "true" : "false") + '">' + esc(mark + PACKS[i].tab) + "</button>";
+        (state.phase !== "review" && state.qid === id ? "true" : "false") + '">' + esc(mark + PACKS[i].tab) + "</button>";
     }
     html += '<span class="qcount">' + done + " of " + PACKS.length + "</span>";
-    html += '<button type="button" class="qtab" data-action="review">Review &amp; commit</button>';
+    html += '<button type="button" class="qtab" data-action="review" aria-pressed="' + (state.phase === "review" ? "true" : "false") + '"' +
+      (done ? "" : ' data-empty="1"') + ">Review &amp; commit</button>";
     return html;
   }
 
@@ -647,12 +652,16 @@
 
   function reviewHtml() {
     var rows = reviewRows();
-    var html = msgHtml("agent", "Every moment is decided — <strong>review the set, then commit it:</strong>") +
+    var doneCount = 0;
+    for (var di = 0; di < rows.length; di++) if (rows[di].done) doneCount++;
+    var allDone = doneCount === rows.length;
+    var lead = allDone ? "Every moment is decided — <strong>review the set, then commit it:</strong>"
+      : (doneCount ? "<strong>" + doneCount + " of " + rows.length + " decided</strong> — review what's here, or answer the rest:"
+        : "Nothing decided yet — <strong>answer or skip each moment, then commit the set:</strong>");
+    var html = msgHtml("agent", lead) +
       '<div class="edu">';
-    var allDone = true;
     for (var i = 0; i < rows.length; i++) {
       var r = rows[i];
-      if (!r.done) allDone = false;
       html += '<div class="rev-row"><div><b>' + esc(r.title) + "</b>" +
         '<span class="rev-a">' + esc(r.label) + "</span></div>" +
         (r.changeable ? '<button type="button" class="escape-btn" data-action="change" data-v="' + esc(r.id) + '">' +
@@ -718,8 +727,14 @@
     if (CTX.kind === "session" && q.draft && !deepReady(q)) { html += deepPullHtml(q); triggerDeep(q); }
     if (o.living) html += '<div class="sheet-sec">Living with it</div><p class="sheet-story">' + esc(o.living) + "</p>";
     html += '<div class="sheet-sec">Keep learning</div><ul class="learn-list">';
+      var shownDocs = {};
+      if (o.docs) {
+        html += '<li><a href="' + esc(o.docs) + '" target="_blank" rel="noopener">' + esc(o.name) + " docs</a></li>";
+        shownDocs[o.docs] = true;
+      }
       for (var i = 0; i < q.links.length; i++) {
-        html += '<li><a href="' + esc(q.links[i].u) + '" target="_blank" rel="noopener">' + esc(q.links[i].t) + "</a></li>";
+        if (shownDocs[q.links[i].u]) continue;
+        html += '<li><a href="' + esc(q.links[i].u) + '" target="_blank" rel="noopener">Background: ' + esc(q.links[i].t) + "</a></li>";
       }
       html += '<li><a href="' + esc(ddg) + '" target="_blank" rel="noopener">Search the web for ' + esc(o.name) + "</a></li></ul>";
     html += '<div class="sheet-actions">' +
@@ -1063,7 +1078,7 @@
     var rows = [];
     var all = ses.plan.decisions.filter(function (d) { return d.mode === "default"; });
     for (var i = 0; i < all.length; i++) {
-      rows.push({ id: all[i].id, title: all[i].title, label: "Default stands: " + all[i].default + " · review later", done: true, changeable: false });
+      rows.push({ id: all[i].id, title: all[i].title, label: "Default stands: " + all[i].default + " · using default", done: true, changeable: false });
     }
     var asks = ses.plan.decisions.filter(function (d) { return d.mode === "ask"; });
     for (var j = 0; j < asks.length; j++) {
@@ -1307,10 +1322,15 @@
     }
     var file = nextLocalFile(slug2);
     S.records.push({ file: file, markdown: md2 });
-    S.session.outcomes[q.id] = { choice: payload.choice, mode: mode, record: "docs/decisions/" + file };
+    sesOutcomes()[q.id] = { choice: payload.choice, mode: mode, record: "docs/decisions/" + file };
     return Promise.resolve({ markdown: md2, record: "docs/decisions/" + file, mode: mode });
   }
 
+  function sesOutcomes() {
+    if (!S.session) S.session = {};
+    if (!S.session.outcomes) S.session.outcomes = {};
+    return S.session.outcomes;
+  }
   function saveParked(q) {
     var md = madrParked(q);
     if (CTX.kind === "decide") {
@@ -1340,7 +1360,7 @@
     }
     var file = nextLocalFile(slug);
     S.records.push({ file: file, markdown: md });
-    S.session.outcomes[q.id] = { choice: null, mode: "parked", record: "docs/decisions/" + file };
+    sesOutcomes()[q.id] = { choice: null, mode: "parked", record: "docs/decisions/" + file };
     return Promise.resolve({ markdown: md, record: "docs/decisions/" + file, mode: "parked" });
   }
 
@@ -1348,7 +1368,7 @@
     if (LIVE) {
       return post("/api/session/abandon", { id: q.id }).then(function (ses) { S.session = ses; return {}; });
     }
-    S.session.outcomes[q.id] = { choice: null, mode: "abandoned", record: "", note: "Sent back to chat." };
+    sesOutcomes()[q.id] = { choice: null, mode: "abandoned", record: "", note: "Sent back to chat." };
     return Promise.resolve({});
   }
 
@@ -1370,7 +1390,7 @@
         }
         var file = nextLocalFile(slug);
         S.records.push({ file: file, markdown: md });
-        S.session.outcomes[d.id] = { choice: d.default, mode: "default", record: "docs/decisions/" + file };
+        sesOutcomes()[d.id] = { choice: d.default, mode: "default", record: "docs/decisions/" + file };
         return null;
       });
     });
@@ -1386,7 +1406,7 @@
       '<div class="edu"><h2>What are we deciding?</h2>' +
       '<p class="q-hint">Your agent reads the project and Muse Spark prepares each moment. Expand anything, hyper-dive anywhere, then pick.</p>' +
       '<textarea class="task-input" id="taskIn" aria-label="Task">' + (LIVE ? "" : esc(EXAMPLES[0])) + "</textarea>" +
-      '<div class="ex-row">' + EXAMPLES.map(function (e) {
+      '<div class="ex-row">' + EXAMPLES.filter(function (e) { return LIVE || e !== EXAMPLES[0]; }).map(function (e) {
         return '<button type="button" class="escape-btn" data-action="ex" data-v="' + esc(e) + '">' + esc(e) + "</button>";
       }).join("") + "</div>" +
       '<div class="actions"><button type="button" class="btn" data-action="start">Start deciding together</button></div>' +
@@ -1453,7 +1473,7 @@
       return step(300);
     }).then(function () {
       S.session = { task: base.task, status: "ready", plan: base.plan, drafts: base.drafts,
-        drafted: ids.slice(), total: ids.length, profile_answers: {}, answers: {}, outcomes: {} };
+        drafted: ids.slice(), total: ids.length, profile_answers: {}, answers: {}, outcomes: ((S.session || {}).outcomes || {}) };
       SIM = null;
       buildSessionPacks();
       if (!state.qid && PACKS.length) state.qid = PACKS[0].id;
@@ -1524,7 +1544,12 @@
       var title = "Record";
       var m = /^#\s+(.+)$/m.exec(recs[i].markdown || "");
       if (m) title = m[1];
-      html += '<a class="opt" href="#/records/' + esc(recs[i].file) + '"><b>' + esc(title) + "</b><small>" + esc(recs[i].file) + "</small></a>";
+      var sub = recs[i].file;
+      var dm = /^date:\s*(\S+)/m.exec(recs[i].markdown || "");
+      if (dm) sub = dm[1] + " · " + sub;
+      var om = />\s*\*\*Decision:\*\*\s*([^.*]+)/.exec(recs[i].markdown || "");
+      if (om) sub += " — " + om[1].trim().slice(0, 80);
+      html += '<a class="opt" href="#/records/' + esc(recs[i].file) + '"><b>' + esc(title) + "</b><small>" + esc(sub) + "</small></a>";
     }
     return html + "</div>";
   }
