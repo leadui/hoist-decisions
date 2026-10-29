@@ -37,6 +37,7 @@ PRESENT = [
     ("ui examples", "Decision moment 2 of 3"),
     ("demo styling", ".demo .opt[aria-pressed"),
     ("madr viewer", 'data-madr="2"'),
+    ("muse terminal", "hoist.py wait"),
     ("cube arrows", 'id="prev"'),
     ("moment numeral", ">01<"),
     ("three.js pinned", "three@0.169.0"),

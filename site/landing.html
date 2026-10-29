@@ -176,6 +176,8 @@
   pre.code .kw{color:var(--acc)}
   .term-line{display:flex;gap:12px}
   .term-line .p{color:var(--acc);user-select:none}
+  .blink{animation:blink 1.2s ease-in-out infinite}
+  @keyframes blink{50%{opacity:.2}}
   .foot{border-top:1px solid var(--line);padding:56px 0 64px;color:var(--dim);font-size:14px}
   .foot-grid{display:flex;gap:32px;justify-content:space-between;flex-wrap:wrap;align-items:flex-start}
   .foot nav{display:flex;gap:22px;flex-wrap:wrap}
@@ -253,7 +255,7 @@
       <div class="hero-tag">
         <span class="eb"><i></i>Meta Global AI Developer Hackathon</span>
         <p class="tagline">Stop rolling the dice on <strong>AI decisions.</strong></p>
-        <p class="hero-sub">Hoist pauses your agent at every one-way door — expand each option, commit the record, send it back to work.</p>
+        <p class="hero-sub">Your Muse session pauses at every one-way door. You decide in the browser while it waits — then it carries on with your call, on the record.</p>
       </div>
       <div class="cta-row">
         <a class="btn pri" href="index.html#/session">Try the live demo <span class="arr">↗</span></a>
@@ -269,18 +271,18 @@
     <div class="sec-head reveal">
       <span class="eb"><i></i>02 · The problem</span>
       <h2>One line of diff.<br>Weeks to undo.</h2>
-      <p>Your agent picks a database, an auth scheme, a hosting platform — mid-task, mid-diff, with no pause. Switching later means a migration, a rewrite, or living with it. educated decisions need a moment; Hoist makes that moment.</p>
+      <p>Muse picks a database, an auth scheme, a hosting platform — mid-task, mid-diff, no pause. Switching later means a migration, a rewrite, or living with it. Big calls deserve a moment; Hoist makes that moment.</p>
     </div>
     <div class="bento">
       <div class="bezel c6 reveal"><div class="core">
         <div class="step-n">WITHOUT HOIST</div>
         <h3>The agent guesses, you discover</h3>
-        <p><code>npm install mongoose</code> lands in a diff at 2am. Nobody chose MongoDB — it simply happened. Six months later the schema fights you on every feature.</p>
+        <p>Muse drops <code>npm install mongoose</code> into a diff at 2am. Nobody chose MongoDB — it simply happened. Six months later the schema fights you on every feature.</p>
       </div></div>
       <div class="bezel c6 reveal" style="--d:.12s"><div class="core">
         <div class="step-n">WITH HOIST</div>
         <h3>The agent pauses, you decide</h3>
-        <p>The hook notices what changed, not what was typed. The agent waits. You get a decision moment: each option expanded, trade-offs charted, then one commit sends your agent back with your choice.</p>
+        <p>Muse asks instead: answer here, or decide with Hoist. Pick Hoist and the session pauses — you get a decision moment with every option expanded and charted, then one commit sends Muse back with your choice.</p>
       </div></div>
     </div>
   </section>
@@ -292,9 +294,19 @@
     <div class="sec-head reveal">
       <span class="eb"><i></i>03 · The decision moment</span>
       <h2>Five steps. Ninety seconds. Zero regrets.</h2>
-      <p>From interruption to committed record, the whole loop is built to educate first and decide second.</p>
+      <p>Muse pauses. You learn the options, make the call, commit the record — back to work.</p>
     </div>
-    <div class="bento">
+    <div class="bezel c12 reveal"><div class="core">
+      <div class="step-n">LIVE FROM THE TERMINAL · YOUR MUSE SESSION, INTERRUPTED</div>
+<pre class="code"><div class="term-line"><span class="p">$</span><span>muse "add user accounts with saved projects"</span></div>
+<div class="term-line"><span class="p">◼</span><span>Muse is about to add <span class="hd">mongoose</span> — one-way door, asking first.</span></div>
+<div class="term-line"><span class="p">?</span><span>How should we decide this?  Answer here / <span class="hd">Decide with Hoist instead</span></span></div>
+<div class="term-line"><span class="p">❯</span><span class="kw">Decide with Hoist instead</span></div>
+<div class="term-line"><span class="p">◼</span><span>Hoist will walk you through these. Decide at <span class="cm">http://127.0.0.1:7317/#/session</span>.</span></div>
+<div class="term-line"><span class="p">$</span><span>python3 hoist.py wait  <span class="cm"># Muse waits here <span class="blink">●</span></span></span></div>
+<div class="term-line"><span class="p">✓</span><span class="kw">Committed 0002-sqlite-persistence.md</span><span> — Muse resumes with your call.</span></div></pre>
+    </div></div>
+    <div class="bento" style="margin-top:20px">
       <div class="bezel c7 reveal"><div class="core">
         <div class="step-n">01 · EXPAND</div>
         <h3>Every option opens inline</h3>
@@ -308,7 +320,7 @@
       <div class="bezel c4 reveal"><div class="core">
         <div class="step-n">03 · INTERRUPT</div>
         <h3>Paused, not blocked</h3>
-        <p>The hook catches lasting choices from tool calls. Quick-pick here, or walk through it.</p>
+        <p>Muse asks: answer here, or Hoist. Pick Hoist and the browser opens while <code>hoist wait</code> holds the session.</p>
       </div></div>
       <div class="bezel c4 reveal" style="--d:.1s"><div class="core">
         <div class="step-n">04 · COMMIT</div>
