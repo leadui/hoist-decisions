@@ -128,6 +128,7 @@ def test_landing_v2():
                          ("Muse Spark credit", "Muse Spark"), ("reduced motion", "prefers-reduced-motion"), ("mobile menu", 'id="burger"')]:
         check("v2 has " + name, needle in V2, repr(needle))
     check("v2 has exactly one live canvas", V2.count('id="live"') == 1)
+    check("v2 demo links open the Start terminal", 'href="index.html#/"' in V2 and "index.html#/session" not in V2)
     check("v2 has no 3D scene", "three.module" not in V2 and "importmap" not in V2 and "GLTFLoader" not in V2)
     for f in ("Inter", "Roboto"):
         check("v2 avoids " + f, '"' + f + '"' not in V2)
