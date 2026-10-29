@@ -36,9 +36,7 @@ PRESENT = [
     ("record canvas data", "recordData"),
     # decision-moment flow
     ("moment box", "Decision moment"),
-    ("two paths", "Walk through it"),
     ("tabs switch questions", 'data-action="q"'),
-    ("quick picks commit", 'data-action="quickpick"'),
     ("moment names its question", "Earlier you chose"),
     ("mobile rules", "@media (max-width: 560px)"),
     ("answered pills turn green", "qtab.done"),
@@ -64,6 +62,8 @@ PRESENT = [
     ("sample badge", "Sample data"),
     ("conflict block", "Do not add"),
     ("commit verb", "Commit choice"),
+    ("sticky commit bar", "commitbar"),
+    ("connected stepper", ".qtabs::before"),
     ("cards pick options", "optionCardsWire"),
     ("rich option cards", "optioncards"),
 ]
@@ -104,6 +104,8 @@ ABSENT = [
     ("no seal wording", "seal"),
     ("no confirm verb", "Confirm choice"),
     ("no choose verb", "Choose "),
+    ("no fork step", "Walk through it"),
+    ("no fork action", 'data-action="path"'),
     ("no hyper dive", 'data-action="hyper"'),
     ("no deep pull", "/deep"),
     ("no hyper modal", "hyperHtml"),

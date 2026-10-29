@@ -345,14 +345,14 @@
     </div></div>
     <div class="bento" style="margin-top:20px">
       <div class="bezel c7 reveal"><div class="core">
-        <div class="step-n"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"/><path d="m21 3-7 7"/><path d="m3 21 7-7"/><path d="M9 21H3v-6"/></svg>01 · EXPAND</div>
-        <h3>Every option opens inline</h3>
-        <p>Tap any option for its deep dive: plain-words story, journey, numbers, growth chart. First paint in seconds — deep numbers load only when you open them.</p>
+        <div class="step-n"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"/><path d="m21 3-7 7"/><path d="m3 21 7-7"/><path d="M9 21H3v-6"/></svg>01 · ONE CANVAS</div>
+        <h3>Every option, full detail, one screen</h3>
+        <p>No second screen to open: each card carries its facts, steps, gains and watch-outs inline. Numbers compare as bars; no invented scores.</p>
       </div></div>
       <div class="bezel c5 reveal" style="--d:.1s"><div class="core">
-        <div class="step-n"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/></svg>02 · HYPER-DIVE</div>
-        <h3>The full screen, one option</h3>
-        <p>Still unsure? The hyper-dive lays everything flat — story, mechanics, numbers, docs, web search.</p>
+        <div class="step-n"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/></svg>02 · TAP TO PICK</div>
+        <h3>The card is the picker</h3>
+        <p>Tap a card and it is chosen — the verdict stamps itself on the canvas. No forms, no extra step between comparing and committing.</p>
       </div></div>
       <div class="bezel c4 reveal"><div class="core">
         <div class="step-n"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="10" x2="10" y1="15" y2="9"/><line x1="14" x2="14" y1="15" y2="9"/></svg>03 · INTERRUPT</div>
@@ -379,17 +379,13 @@
           <div class="interrupt">
             <h2>Decision moment <span class="js-mnum">2 of 3</span></h2>
             <p class="moment-q js-mtitle">Which auth fits a 3-person team?</p>
-            <p>One hard choice, two ways through it. Let us make this decision together.</p>
-            <div class="path-row">
-              <button type="button" class="path-btn" data-mpath="quick"><strong>Answer here</strong><span>Quick: pick now, thin record.</span></button>
-              <button type="button" class="path-btn primary" data-mpath="hoist"><strong>Walk through it</strong><span>Open each option, then pick. Full record.</span></button>
-            </div>
+            <p>One hard choice — every option with its facts, steps and watch-outs, on one canvas. Tap a card to pick it.</p>
           </div>
         </div>
-        <figcaption class="shot-cap">The fork: pick quick or walk the options. Try the tabs — this preview is alive.</figcaption>
+        <figcaption class="shot-cap">One canvas per moment — options first, facts on the card. Try the tabs — this preview is alive.</figcaption>
       </figure>
       <figure class="shot reveal" style="--d:.1s;margin:0">
-        <div class="shot-bar" aria-hidden="true"><i></i><i></i><i></i><span class="shot-url">hoist · option 2 deep dive</span></div>
+        <div class="shot-bar" aria-hidden="true"><i></i><i></i><i></i><span class="shot-url">hoist · the canvas</span></div>
         <div class="shot-body demo">
           <div class="edu" id="mock-edu">
             <h2>Which auth fits a 3-person team?</h2>
@@ -652,12 +648,6 @@
       root.querySelector(".js-mshort").textContent = t.short;
       root.querySelector(".js-mtitle").textContent = t.title;
       renderRightPane(idx);
-    });
-  });
-  eachBtn("[data-mpath]", function (btn) {
-    btn.addEventListener("click", function () {
-      var row = btn.parentNode.querySelectorAll("[data-mpath]");
-      for (var i = 0; i < row.length; i++) row[i].classList.toggle("primary", row[i] === btn);
     });
   });
   function bindMockEdu(scope) {
