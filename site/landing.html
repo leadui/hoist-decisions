@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Hoist — it's okay to stop and ask</title>
 <meta name="description" content="Hoist pauses your coding agent at choices that are hard to undo, explains them in plain words, records what you decide, and sends the agent back to work — or runs on autopilot and writes every call down.">
+<meta property="og:title" content="Hoist — it's okay to stop and ask">
+<meta property="og:description" content="Hoist pauses your coding agent at choices that are hard to undo, explains them in plain words, and records what you decide.">
+<meta property="og:image" content="https://leadui.github.io/hoist-decisions/images/og.jpg">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,650;12..96,780&family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
@@ -85,9 +90,21 @@
   .menu-open .overlay a:nth-child(2){transition-delay:.06s}.menu-open .overlay a:nth-child(3){transition-delay:.12s}
   .menu-open .overlay a:nth-child(4){transition-delay:.18s}.menu-open .overlay a:nth-child(5){transition-delay:.24s}
 
-  /* hero: editorial split */
-  .hero{min-height:100dvh;display:grid;grid-template-columns:1.05fr .95fr;gap:72px;align-items:center;padding:152px 0 96px}
-  .hero h1{font-size:clamp(56px,8.6vw,124px);line-height:.9;margin-top:26px}
+  /* hero: the desk photo (or a clip) as a full-bleed backdrop; the headline sits on its empty wall */
+  .hero{position:relative;isolation:isolate;overflow:hidden;min-height:100dvh;display:flex;align-items:center;padding:140px 0 120px}
+  .hero-bg{position:absolute;inset:0;z-index:-1}
+  .hero-bg img,.hero-bg video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:68% 50%;
+    transform-origin:70% 55%;animation:drift 24s cubic-bezier(.22,1,.36,1) both}
+  .hero-bg video{opacity:0;transition:opacity 1.2s var(--spring)}
+  .hero-bg video.on{opacity:1}
+  .hero-bg::after{content:"";position:absolute;inset:0;
+    background:linear-gradient(90deg,rgba(245,241,232,.97) 0%,rgba(245,241,232,.88) 30%,rgba(245,241,232,.35) 54%,rgba(245,241,232,0) 70%),
+               linear-gradient(180deg,rgba(245,241,232,0) 58%,var(--paper) 100%)}
+  @keyframes drift{from{transform:scale(1.09)}to{transform:scale(1)}}
+  .hero-copy{max-width:600px}
+  .hero-copy .lede{max-width:40ch}
+  .term-box{border-radius:22px;padding:22px 24px;background:var(--night);color:#e4ebe6;box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 24px 50px -28px rgba(18,25,21,.6)}
+  .hero h1{font-size:clamp(56px,8.2vw,120px);line-height:.9;margin-top:26px}
   .hero h1 .serif{font-size:1.08em;color:var(--sage)}
   .hero .lede{font-size:20px}
   .ctas{display:flex;flex-wrap:wrap;gap:12px;margin-top:40px}
@@ -112,6 +129,7 @@
   /* how it works: asymmetric bento */
   .steps{display:grid;gap:20px}
   .split{display:grid;grid-template-columns:5fr 7fr;gap:48px;align-items:center}
+  .split .term{font-size:13.5px}
   .split.top{align-items:end;margin-bottom:6px}
   .split.top p{margin:0}
   .ask{border-radius:20px;padding:24px;background:var(--paper-2);box-shadow:inset 0 0 0 1px var(--hair)}
@@ -183,19 +201,52 @@
   footer nav{display:flex;flex-wrap:wrap;gap:18px}
   footer a{text-decoration:none}footer a:hover{color:var(--ink)}
 
+  /* full-bleed photo band: the yes-person carries the heading */
+  .band{position:relative;isolation:isolate;overflow:hidden;margin:0 16px;border-radius:40px;min-height:88vh;display:flex;align-items:flex-end;padding:0 0 88px;color:#f5f1e8}
+  .band-bg{position:absolute;inset:0;z-index:-1}
+  .band-bg img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 40%;transform:scale(1.06);transition:transform 2.4s cubic-bezier(.22,1,.36,1)}
+  .band.in .band-bg img{transform:none}
+  .band-bg::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(14,20,17,.9) 0%,rgba(14,20,17,.62) 34%,rgba(14,20,17,.12) 68%,rgba(14,20,17,0) 100%)}
+  .band h2{color:#f5f1e8;max-width:14ch}
+  .band h2 .serif{color:var(--signal)}
+  .band .eyebrow{color:#f5f1e8;background:rgba(245,241,232,.12);box-shadow:inset 0 0 0 1px rgba(245,241,232,.2)}
+  .band-cap{margin:22px 0 0;font-size:18px;color:rgba(245,241,232,.82);max-width:46ch}
+  .band-cap b{color:#f5f1e8;font-weight:600}
+  .band .sec-num{-webkit-text-stroke-color:rgba(245,241,232,.22);top:64px}
+  .after-band{padding-top:96px}
+
   /* from v1: the 3D icons float above their cards */
   .has-icon{position:relative}
-  .icon3d{position:absolute;top:-64px;right:28px;width:136px;height:auto;z-index:2;pointer-events:none;
-    filter:drop-shadow(0 22px 24px rgba(23,32,27,.22));animation:floaty 6s cubic-bezier(.45,.05,.55,.95) infinite}
+  /* Brand renders: backdrop whitened at export, so multiply drops it on any light surface;
+     a soft edge fade hides what is left of the studio gradient. Never place them on dark cards. */
+  .obj{mix-blend-mode:multiply;-webkit-mask-image:radial-gradient(ellipse 50% 50% at 50% 50%,#000 66%,transparent 100%);mask-image:radial-gradient(ellipse 50% 50% at 50% 50%,#000 66%,transparent 100%)}
+  /* icons sit in the layout (no fixed offsets), on a raised layer, so nothing covers or clips them */
+  .ic{display:block;height:auto;position:relative;z-index:2;pointer-events:none;animation:floaty 6s cubic-bezier(.45,.05,.55,.95) infinite}
+  .head-side{display:flex;flex-direction:column;align-items:flex-end;gap:10px}
+  .head-side .lede{text-align:left;align-self:stretch}
+  .ic-head{width:260px;margin:-140px -10px -6px 0}
+  .head.intro{grid-template-columns:1fr auto;align-items:center;margin-bottom:40px}
+  .ic-hand{width:200px;margin:-30px 4% -20px 0}
+  .ic-card{float:right;width:200px;margin:-76px -14px 6px 14px}
+  .head.wide{grid-template-columns:1fr auto;align-items:center}
+  .head.wide > div{grid-column:1;grid-row:1}
+  .head.wide > .lede{grid-column:1;grid-row:2}
+  .ic-wide{grid-column:2;grid-row:1 / span 2;width:280px;margin:0 2% 0 0}
+  .rec-art{width:240px;margin:18px 0 -14px -14px}
+  .photo{margin:0 0 56px}
+  .photo .core{padding:0;overflow:hidden}
+  .photo img{display:block;width:100%;height:auto;aspect-ratio:3/2;object-fit:cover}
+  .photo.wide img{aspect-ratio:21/9}
+  .photo figcaption{padding:16px 22px;font-size:14px;color:var(--muted);box-shadow:inset 0 1px 0 var(--hair)}
+  .photo figcaption b{color:var(--ink);font-weight:600}
   @keyframes floaty{50%{transform:translateY(-10px) rotate(-2deg)}}
   /* from v1: giant outlined section numbers behind each head */
   section{position:relative}
   .sec-num{position:absolute;top:84px;right:-8px;font:600 clamp(110px,13vw,200px)/1 var(--display);letter-spacing:-.04em;color:transparent;
     -webkit-text-stroke:1.2px rgba(23,32,27,.11);pointer-events:none;user-select:none;z-index:0}
-  .head{position:relative;z-index:1}
-  .head-icon{top:-58px;right:6%;width:128px}
+  .head{position:relative}
   .head.wide{grid-template-columns:1fr}
-  .head.wide h2{max-width:18ch}
+  .head.wide h2{max-width:24ch}
   /* from v1: the install headline rotates the decision it guards */
   .rot{display:inline-block;color:var(--sage)}
   .rot.tick{animation:tick .7s var(--spring)}
@@ -207,7 +258,8 @@
   .rv.d1{transition-delay:.08s}.rv.d2{transition-delay:.16s}.rv.d3{transition-delay:.24s}
   @media (prefers-reduced-motion:reduce){
     .rv,.term .ln,.overlay a{opacity:1;transform:none;filter:none;transition:none}
-    .icon3d,.rot.tick{animation:none}
+    .hero-bg img,.hero-bg video,.band-bg img{animation:none}
+    .ic,.rot.tick{animation:none}
     html{scroll-behavior:auto}
   }
 
@@ -219,7 +271,10 @@
   @media (max-width:860px){
     .wrap{padding:0 16px}
     section{padding:96px 0}
-    .hero{grid-template-columns:1fr;gap:48px;padding:128px 0 64px;min-height:auto}
+    .hero{padding:120px 0 72px;min-height:88dvh}
+    .hero-bg img{object-position:74% 50%}
+    .hero-bg::after{background:linear-gradient(180deg,rgba(245,241,232,.84) 0%,rgba(245,241,232,.72) 55%,var(--paper) 100%)}
+
     .tilt{transform:none}
     .head,.beliefs,.modes,.kit,.install{grid-template-columns:1fr}
     .head{gap:20px;margin-bottom:48px}
@@ -227,7 +282,18 @@
     .core{padding:22px}
     .term{font-size:12.5px}
     .beliefs{gap:0}
-    .icon3d{width:92px;top:-44px;right:14px}
+    .band{margin:0 8px;border-radius:28px;min-height:78vh;padding-bottom:56px}
+    .band-bg img{object-position:38% 40%}
+    .after-band{padding-top:64px}
+    .ic-head{width:160px;margin:-150px -6px -8px 0}
+    .head.intro{grid-template-columns:1fr}
+    .ic-hand{width:130px;margin:-28px 0 -24px auto}
+    .ic-card{width:104px;margin:-52px -8px 2px 8px}
+    .head.wide{grid-template-columns:1fr}
+    .head.wide > div,.head.wide > .lede,.ic-wide{grid-column:1;grid-row:auto}
+    .ic-wide{width:200px;justify-self:end;margin:-12px 0 0}
+    .rec-art{width:200px}
+    .photo.wide img{aspect-ratio:4/3}
     .sec-num{top:60px;font-size:96px}
   }
 </style>
@@ -247,9 +313,12 @@
 </nav>
 
 <main id="top">
-  <div class="wrap">
-    <section class="hero" aria-labelledby="h1">
-      <div>
+  <section class="hero" aria-labelledby="h1">
+    <div class="hero-bg" id="hero-bg" data-video="" aria-hidden="true">
+      <img src="images/desk.webp" width="1600" height="1067" alt="" fetchpriority="high">
+    </div>
+    <div class="wrap">
+      <div class="hero-copy">
         <span class="eyebrow rv"><i></i>Meta Global AI Developer Hackathon</span>
         <h1 id="h1" class="rv d1">It's okay to stop and <span class="serif">ask.</span></h1>
         <p class="lede rv d2">Coding agents make choices in one line of a diff that take weeks to undo. Hoist pauses Muse at those choices, explains them in plain words, and waits while you think. Your call goes on the record, and the agent carries on with it.</p>
@@ -259,24 +328,22 @@
         </div>
         <p class="hero-note rv d3">Python 3.9+ · no dependencies · runs on your machine</p>
       </div>
-      <div class="bezel dark tilt rv d2" aria-label="A Muse Code session, interrupted by Hoist">
-        <div class="core">
-          <div class="term-head" aria-hidden="true"><i></i><i></i><i></i><span style="margin-left:8px">muse code · fieldnotes</span></div>
-<pre class="term" id="term"><span class="ln"><span class="p">$</span><span>muse "add user accounts with saved projects"</span></span><span class="ln"><span class="p">·</span><span class="dim">reading the project, planning the change…</span></span><span class="ln"><span class="p">◼</span><span>About to run <span class="hl">npm install mongoose</span></span></span><span class="ln"><span class="p">?</span><span>The database is hard to change later. How do you want to decide?</span></span><span class="ln"><span class="p"> </span><span class="choice"><b>Answer here</b><b class="on">Decide with Hoist</b></span></span><span class="ln"><span class="p">◼</span><span>Decide at <span class="hl">127.0.0.1:7317</span> — I'll wait.</span></span><span class="ln"><span class="p">✓</span><span class="ok">You chose SQLite. Recorded in docs/decisions/0002. Continuing.</span></span></pre>
-        </div>
+    </div>
+  </section>
       </div>
-    </section>
   </div>
 
   <div class="wrap">
     <section id="how" aria-labelledby="how-h">
       <span class="sec-num" aria-hidden="true">01</span>
-      <div class="head"><img class="icon3d head-icon" src="icons/chart.webp" width="480" height="480" alt="" aria-hidden="true" loading="lazy">
+      <div class="head">
         <div>
           <span class="eyebrow rv"><i></i>How it works</span>
           <h2 id="how-h" class="rv d1">Pause. Decide. <span class="serif">Record.</span></h2>
         </div>
+        <div class="head-side"><img class="ic obj ic-head" src="images/door.webp" width="640" height="570" alt="" aria-hidden="true" loading="lazy">
         <p class="lede rv d2">Hoist only steps in where a choice is hard to walk back. Everywhere else, your agent keeps its speed.</p>
+        </div>
       </div>
       <div class="steps">
         <div class="bezel step rv"><div class="core split">
@@ -285,9 +352,9 @@
             <h3>The agent asks before it commits you</h3>
             <p>A hook watches what the agent changes, not what it says. When it is about to add a database, or ask you something hard to undo, it offers to slow down first.</p>
           </div>
-          <div class="ask" aria-label="The question the agent asks">
-            <p class="ask-q">The database and the sign-in method are hard to change later. <b>How do you want to decide?</b></p>
-            <div class="ask-opts"><span><b>Answer here</b>Quick: I'll ask you the questions now.</span><span class="on"><b>Decide with Hoist</b>Opens a page that explains each option in plain words.</span></div>
+          <div class="term-box" role="group" aria-label="A Muse Code session, interrupted by Hoist">
+            <div class="term-head" aria-hidden="true"><i></i><i></i><i></i><span style="margin-left:8px">muse code · fieldnotes</span></div>
+<pre class="term" id="term"><span class="ln"><span class="p">$</span><span>muse "add user accounts with saved projects"</span></span><span class="ln"><span class="p">·</span><span class="dim">reading the project, planning the change…</span></span><span class="ln"><span class="p">◼</span><span>About to run <span class="hl">npm install mongoose</span></span></span><span class="ln"><span class="p">?</span><span>The database is hard to change later. How do you want to decide?</span></span><span class="ln"><span class="p"> </span><span class="choice"><b>Answer here</b><b class="on">Decide with Hoist</b></span></span><span class="ln"><span class="p">◼</span><span>Decide at <span class="hl">127.0.0.1:7317</span> — I'll wait.</span></span><span class="ln"><span class="p">✓</span><span class="ok">You chose SQLite. Recorded in docs/decisions/0002. Continuing.</span></span></pre>
           </div>
         </div></div>
         <div class="bezel step rv"><div class="core">
@@ -308,6 +375,7 @@
             <div class="step-n"><b>3</b> Record</div>
             <h3>The decision goes back to the agent, in writing</h3>
             <p>You commit; Hoist writes a MADR record to <code>docs/decisions/</code> and the agent continues with your choice. Later, a change that conflicts with a record is blocked, and the record is cited.</p>
+            <img class="ic obj rec-art" src="images/record.webp" width="640" height="556" alt="" aria-hidden="true" loading="lazy">
           </div>
 <pre class="madr" aria-label="Excerpt of a decision record"><span class="k">status:</span> accepted   <span class="k">door:</span> one-way
 <span class="k">deciders:</span> project owner   <span class="k">confidence:</span> medium
@@ -322,15 +390,21 @@
     </section>
   </div>
 
+  <section class="band" id="modes" aria-labelledby="modes-h">
+    <div class="band-bg" aria-hidden="true"><img src="images/yes.webp" width="1600" height="1067" alt="" loading="lazy"></div>
+    <span class="sec-num" aria-hidden="true">02</span>
+    <div class="wrap">
+      <span class="eyebrow rv"><i></i>What we believe</span>
+      <h2 id="modes-h" class="rv d1">Fast is good. <span class="serif">Blind yes</span> is not.</h2>
+      <p class="band-cap rv d2"><b>Approve, approve, approve.</b> Fast, and nobody actually decided anything.</p>
+    </div>
+  </section>
+
   <div class="wrap">
-    <section id="modes" aria-labelledby="modes-h">
-      <span class="sec-num" aria-hidden="true">02</span>
-      <div class="head"><img class="icon3d head-icon" src="icons/idea.webp" width="480" height="480" alt="" aria-hidden="true" loading="lazy">
-        <div>
-          <span class="eyebrow rv"><i></i>What we believe</span>
-          <h2 id="modes-h" class="rv d1">Fast is good. <span class="serif">Blind yes</span> is not.</h2>
-        </div>
-        <p class="lede rv d2">Hoist has two modes, because some days you want to think it through and some days you need to ship. Neither one decides in silence.</p>
+    <section class="after-band" aria-label="Ask or autopilot">
+      <div class="head intro">
+        <p class="lede rv">Hoist has two modes, because some days you want to think it through and some days you need to ship. Neither one decides in silence.</p>
+        <img class="ic obj ic-hand" src="images/hand.webp" width="510" height="640" alt="" aria-hidden="true" loading="lazy">
       </div>
       <ol class="beliefs">
         <li class="rv"><span class="n">i</span><div><b>It's okay to interrupt.</b><span>A pause costs a minute. A wrong database costs weeks.</span></div></li>
@@ -339,14 +413,14 @@
         <li class="rv d1 no"><span class="n">iv</span><div><b>It's not okay to say yes to everything.</b><span>Speed is fine. Silence is not: every call is written down.</span></div></li>
       </ol>
       <div class="modes">
-        <div class="bezel mode rv"><div class="core">
+        <div class="bezel mode rv"><div class="core"><img class="ic obj ic-card" src="images/switch.webp" width="640" height="633" alt="" aria-hidden="true" loading="lazy">
           <span class="tag">Ask · default</span>
           <h3>You decide</h3>
           <p>The agent pauses at hard-to-undo calls and waits while you compare the options on the canvas.</p>
           <ul><li><span>Options in plain words, with analogies</span></li><li><span>Your answers shape the comparison</span></li><li><span>Commit once, the agent continues</span></li></ul>
           <div class="cmd">python3 hoist.py mode ask</div>
         </div></div>
-        <div class="bezel dark mode rv d1 has-icon"><img class="icon3d" src="icons/shield.webp" width="350" height="350" alt="" aria-hidden="true" loading="lazy"><div class="core">
+        <div class="bezel dark mode rv d1"><div class="core">
           <span class="tag">Autopilot</span>
           <h3>The agent decides, on the record</h3>
           <p>No pause. The agent makes the call and Hoist writes it down, marked low confidence until you review it.</p>
@@ -370,7 +444,7 @@
             <a class="btn ghost" href="https://github.com/leadui/bento-madr">GitHub <span class="pod"><svg viewBox="0 0 16 16"><path d="M5 11 11 5M6 5h5v5"/></svg></span></a>
           </div>
         </div>
-        <div class="bezel rv d1 has-icon"><img class="icon3d" src="icons/clipboard.webp" width="480" height="480" alt="" aria-hidden="true" loading="lazy"><div class="core">
+        <div class="bezel rv d1"><div class="core"><img class="ic obj ic-card" src="images/blocks.webp" width="640" height="557" alt="" aria-hidden="true" loading="lazy">
           <div class="step-n">Complete at a glance</div>
           <p style="margin:0 0 8px;color:var(--muted)">White compartments are filled. Yellow is what a record still owes you — and the empty compartment says what to add.</p>
           <div class="maps" id="maps"></div>
@@ -382,7 +456,7 @@
   <div class="wrap">
     <section id="install" aria-labelledby="install-h">
       <span class="sec-num" aria-hidden="true">04</span>
-      <div class="head wide">
+      <div class="head wide"><img class="ic obj ic-wide" src="images/bento.webp" width="640" height="592" alt="" aria-hidden="true" loading="lazy">
         <div>
           <span class="eyebrow rv"><i></i>Install</span>
           <h2 id="install-h" class="rv d1" aria-label="Three commands before your next hard-to-undo decision.">Three commands before your next <span class="rot serif" id="rot" aria-hidden="true">database decision.</span></h2>
@@ -443,10 +517,24 @@
       });
     }, { threshold: 0.01, rootMargin: "0px 0px -8% 0px" });
     document.querySelectorAll(".rv").forEach(function (el) { io.observe(el); });
+    document.querySelectorAll(".band").forEach(function (el) { io.observe(el); });
     io.observe(term);
   } else {
-    document.querySelectorAll(".rv").forEach(function (el) { el.classList.add("in"); });
+    document.querySelectorAll(".rv,.band").forEach(function (el) { el.classList.add("in"); });
     term.classList.add("play");
+  }
+
+  /* hero clip: set data-video="images/hero.mp4" on #hero-bg once the file exists; the photo stays as poster */
+  var bgBox = $("hero-bg"), clip = bgBox && bgBox.getAttribute("data-video");
+  var saveData = navigator.connection && navigator.connection.saveData;
+  if (clip && !reduce && !saveData) {
+    var v = document.createElement("video");
+    v.muted = true; v.loop = true; v.playsInline = true; v.autoplay = true;
+    v.setAttribute("muted", ""); v.setAttribute("playsinline", ""); v.preload = "auto";
+    v.poster = "images/desk.webp"; v.src = clip;
+    v.addEventListener("canplay", function () { v.classList.add("on"); }, { once: true });
+    bgBox.appendChild(v);
+    var p = v.play(); if (p && p.catch) p.catch(function () {});
   }
 
   /* the decision Hoist guards, one after another */

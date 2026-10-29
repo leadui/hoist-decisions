@@ -128,6 +128,18 @@ def test_landing_v2():
                          ("Muse Spark credit", "Muse Spark"), ("reduced motion", "prefers-reduced-motion"), ("mobile menu", 'id="burger"')]:
         check("v2 has " + name, needle in V2, repr(needle))
     check("v2 has exactly one live canvas", V2.count('id="live"') == 1)
+    site = Path(__file__).resolve().parent.parent / "site"
+    for img in set(re.findall(r'src="(images/[^"]+)"', V2)):
+        check("v2 image exists: " + img, (site / img).exists())
+    check("v2 uses the brand renders", "images/door.webp" in V2 and "images/yes.webp" in V2)
+    check("v2 renders blend into the page", "mix-blend-mode:multiply" in V2)
+    check("v2 hero uses the desk photo as a backdrop", 'class="hero-bg"' in V2 and "images/desk.webp" in V2)
+    check("v2 hero has a video slot", 'data-video=' in V2 and "createElement(\"video\")" in V2)
+    check("v2 yes-person is a full-bleed band", 'class="band"' in V2 and "images/yes.webp" in V2)
+    check("v2 has no framed photos left", 'class="bezel photo' not in V2)
+    check("v2 icons sit in the layout, not offset", "icon3d" not in V2 and V2.count('class="ic obj') == 6)
+    check("v2 terminal lives in the Pause step", 'class="term-box"' in V2 and "hero-term" not in V2)
+    check("v2 link preview image", 'og:image' in V2 and (site / "images" / "og.jpg").exists())
     check("v2 demo links open the Start terminal", 'href="index.html#/"' in V2 and "index.html#/session" not in V2)
     check("v2 has no 3D scene", "three.module" not in V2 and "importmap" not in V2 and "GLTFLoader" not in V2)
     for f in ("Inter", "Roboto"):
