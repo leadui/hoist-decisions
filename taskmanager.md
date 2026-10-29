@@ -3,6 +3,7 @@
 `scope: project`
 
 ## Now — where we are (resume here)
+- 2026-10-28: **Section rhythm + isometric viewer (local).** Alternating sections (tint bands, centered heads, numerals left/right); MADR viewer recast in amber with isometric tilt + floating tiles; ASCII sweep removed for a clean fade-rise switch. Verified by screenshot.
 - 2026-10-28: **QA-team punch implemented (local).** Browser vision fixed (unsandboxed Chromium + Playwright driver). 3-agent visual QA → 20-item punch, all done: demo review honesty + SIM race fix, per-option hyper links, compact hyper rails, records enrichment, Start nav, 760px column, 44px targets, mobile stacking; landing hero reframe (headline legible both sizes), live interactive UI mocks (tabs/expand/hyper/commit), copy cuts, Lucide step glyphs, MADR 2-col pairing, scroll-margin, mobile hero fixes. Verified by re-shoot: 0px overflow everywhere, no page errors.
 - 2026-10-28: **Cleanup + shipped (pushed to main).** Removed exploration extras (nova-agent/, design-world/, test_nova.py, CLAUDE.md post-pivot duplicate) — all recoverable from history. Live-demo audit: no code bugs (Pages falls back to sample.json + relative catalog.json correctly, hash routes + deploy workflow sound); the demo was simply stale, shipping fresh fixes it. README/plan.md/taskmanager updated. Repo now ships: hoist.py + skill + catalog, site/ (app + landing + sample), tests, docs.
 

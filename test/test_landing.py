@@ -38,7 +38,7 @@ PRESENT = [
     ("demo styling", ".demo .opt[aria-pressed"),
     ("madr viewer", 'data-madr="2"'),
     ("muse terminal", "hoist.py wait"),
-    ("ascii sweep", "madrSweep"),
+    ("madr switch", "madrShow"),
     ("live mocks", "data-mopt"),
     ("cube arrows", 'id="prev"'),
     ("moment numeral", ">01<"),
