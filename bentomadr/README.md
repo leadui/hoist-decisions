@@ -84,7 +84,7 @@ Every field is optional. A compartment with no data renders hatched, with a prom
 }
 ```
 
-See `samples.js` for six complete examples.
+See `samples.js` for six complete examples, and open `index.html` next to these files for the catalog (templates, components, chooser, devil’s advocate). The same catalog runs on the Hoist site as `site/bentomadr.html`.
 
 ## Devil's advocate
 

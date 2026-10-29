@@ -25,9 +25,12 @@ PRESENT = [
     ("kit js", "bento-kit.js"),
     ("record template", "madr-record"),
     ("completeness strip", "completeness"),
-    ("builder", "builder"),
-    ("component index", "BentoKit.components"),
-    ("live render", "BentoKit.render"),
+    ("swappable templates", "Swap a compartment"),
+    ("component library", "renderComponent"),
+    ("chooser", "K.recommend"),
+    ("critic over the API", "/api/advocate"),
+    ("component index", "K.components"),
+    ("live render", "K.render("),
     ("theme toggle", "theme-toggle"),
 ]
 ABSENT = [

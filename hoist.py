@@ -290,6 +290,10 @@ def make_handler(root):
                 return self.send(200, (HOME / "site" / "bento-kit.css").read_bytes(), "text/css")
             if path == "/bento-kit.js":
                 return self.send(200, (HOME / "site" / "bento-kit.js").read_bytes(), "text/javascript")
+            if path == "/bentomadr.html":
+                return self.send(200, (HOME / "site" / "bentomadr.html").read_bytes(), "text/html")
+            if path == "/samples.js":
+                return self.send(200, (HOME / "site" / "samples.js").read_bytes(), "text/javascript")
             if path == "/api/state":
                 records = [{"file": p.name, "markdown": p.read_text()} for p in sorted(records_dir(root).glob("[0-9][0-9][0-9][0-9]-*.md"))]
                 return self.send(200, {"project": root.name, "root": str(root), "live": True, "build": build_stamp(),
