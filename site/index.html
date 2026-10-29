@@ -73,6 +73,19 @@
   .opt[aria-pressed="true"]{border:2px solid var(--bk-signal);padding:11px 13px}
   .opt[aria-pressed="true"] .onum{border-color:var(--bk-signal);color:var(--bk-ink)}
   .escape-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--bk-line);font-size:13px;color:var(--bk-muted)}
+  .canvas-bar{margin:0 0 10px;display:grid;gap:6px}
+  .cb-head{display:flex;align-items:center;gap:12px}
+  .cb-map{display:grid;gap:3px;width:64px;flex:none;padding:4px;border:2.5px solid var(--bk-ink);border-radius:10px;grid-auto-rows:7px;background:var(--bk-ink)}
+  .cb-map span{border-radius:2px;background:var(--bk-tile, #fff)}
+  .cb-map span.ok{background:var(--bk-tile, #fff)}
+  .cb-map span.miss{background:var(--bk-signal)}
+  .cb-title{display:block;font-size:15px}
+  .cb-count{display:block;font-size:12.5px;color:var(--bk-muted)}
+  .cb-kinds{display:flex;flex-wrap:wrap;gap:6px}
+  .cb-kind{font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;background:transparent;color:var(--bk-muted);border:1px solid var(--bk-line);border-radius:999px;padding:4px 11px;min-height:32px}
+  .cb-kind[aria-pressed="true"]{background:var(--bk-ink);color:var(--bk-bg, #fff);border-color:var(--bk-ink)}
+  .cb-why{margin:0;font-size:12.5px;line-height:1.5;color:var(--bk-muted);max-width:90ch}
+  .critic-row .escape-btn[aria-pressed="true"]{border-color:var(--bk-signal);box-shadow:inset 0 0 0 1px var(--bk-signal)}
   .escape-btn{font:inherit;font-size:13px;font-weight:600;cursor:pointer;background:transparent;color:var(--bk-ink);border:1px solid var(--bk-line);border-radius:999px;padding:5px 13px;min-height:36px}
   .escape-btn:hover{border-color:var(--bk-accent);color:var(--bk-accent)}
   .custom-row{display:flex;gap:8px;margin-top:10px}
@@ -171,12 +184,13 @@
 
   var state = { qid: null, phase: "moment", path: null, picked: null,
     answers: {}, skipped: {}, abandoned: {}, added: {}, showCustom: false,
-    records: {}, err: null, theme: "light" };
+    records: {}, err: null, theme: "light", kindView: {}, critic: {}, criticBusy: null };
 
   function resetState() {
     state.qid = null; state.phase = "moment"; state.path = null; state.picked = null;
     state.answers = {}; state.skipped = {}; state.abandoned = {};
     state.added = {}; state.showCustom = false; state.records = {}; state.err = null;
+    state.kindView = {}; state.critic = {}; state.criticBusy = null;
   }
 
   function Q() {
@@ -202,18 +216,6 @@
     /* Kit assets missing: keep working with controls instead of blanking. */
     window.__BK_MISSING = true;
   } else {
-  BentoKit.templates["moment"] = { id: "moment", name: "Decision moment", cols: "1fr 1fr",
-    areas: ["options options", "problem verdict", "evidence evidence", "gains costs", "plan plan"],
-    md: { cols: "1fr", areas: ["options", "problem", "verdict", "evidence", "gains", "costs", "plan"] },
-    slots: [["options", "proscons"], ["problem", "problem"], ["verdict", "decision"], ["evidence", "compare"], ["gains", "gains"], ["costs", "costs"], ["plan", "timeline"]] };
-  BentoKit.templates["moment-evidence"] = { id: "moment-evidence", name: "Decision moment (no path yet)", cols: "1fr 1fr",
-    areas: ["options options", "problem verdict", "evidence evidence", "gains costs"],
-    md: { cols: "1fr", areas: ["options", "problem", "verdict", "evidence", "gains", "costs"] },
-    slots: [["options", "proscons"], ["problem", "problem"], ["verdict", "decision"], ["evidence", "compare"], ["gains", "gains"], ["costs", "costs"]] };
-  BentoKit.templates["moment-plain"] = { id: "moment-plain", name: "Decision moment (pros and cons)", cols: "1fr 1fr",
-    areas: ["options options", "problem verdict", "gains costs"],
-    md: { cols: "1fr", areas: ["options", "problem", "verdict", "gains", "costs"] },
-    slots: [["options", "proscons"], ["problem", "problem"], ["verdict", "decision"], ["gains", "gains"], ["costs", "costs"]] };
   BentoKit.templates["madr-record"] = { id: "madr-record", name: "MADR record", cols: "1.2fr 1fr 1fr",
     areas: ["problem verdict verdict", "problem gains costs", "confirm people people", "shelf shelf shelf", "more more more"],
     md: { cols: "1fr 1fr", areas: ["problem problem", "verdict verdict", "gains costs", "confirm people", "shelf shelf", "more more"] },
@@ -236,6 +238,7 @@
   }
   function momentData(q, pickedId) {
     var opts = allOptions();
+    var drivers = driversOf(q);
     var context = [];
     if (q.model) context.push(q.model);
     var dr = q.draft;
@@ -267,8 +270,106 @@
       metrics: metricsOf(q, opts),
       attributes: attributes,
       consequences: picked ? { good: (picked.unlocks || []).slice(), bad: (picked.watch || []).slice(), neutral: [] } : null,
-      timeline: picked && (picked.journey || []).length ? picked.journey.map(function (st, i) { return { when: "Step " + (i + 1), what: st }; }) : null
+      timeline: picked && (picked.journey || []).length ? picked.journey.map(function (st, i) { return { when: "Step " + (i + 1), what: st }; }) : null,
+      criteria: drivers.criteria, ratings: drivers.ratings,
+      assumptions: assumptionsOf(q, pickedId, drivers.used),
+      risks: risksOf(dr),
+      confirmation: (dr && dr.confirm) || [],
+      people: peopleOf(q),
+      more: moreOf(q, opts),
+      advocate: pickedId ? criticFor(q, pickedId) : null
     };
+  }
+
+  /* ── Draft fields → kit compartments ── */
+  var KIND_IDS = ["tech-choice", "vendor-select", "build-vs-buy", "product-bet", "migration", "process-change"];
+  function kindOf(q) {
+    var k = state.kindView[q.id] || (q.draft && q.draft.kind) || (q.plan && q.plan.kind) || (q.catalog && q.catalog.bento_kind);
+    return KIND_IDS.indexOf(k) >= 0 ? k : "tech-choice";
+  }
+  function sessionPlan() {
+    var ses = (S && S.session) || SIM;
+    return (ses && ses.plan) || null;
+  }
+  /* Profile answers become the matrix: one row per answer the person holds (or the agent assumed),
+     rated + where Muse Spark said it favors an option and − where it counts against. */
+  function driversOf(q) {
+    var out = { criteria: [], ratings: {}, used: [] };
+    var dr = q.draft, plan = sessionPlan();
+    if (!dr || !plan) return out;
+    var ses = (S && S.session) || SIM || {};
+    var given = ses.profile_answers || {};
+    (dr.profile_effects || []).forEach(function (pe) {
+      var prof = null;
+      (plan.profile || []).forEach(function (p) { if (p.id === pe.profile_id) prof = p; });
+      if (!prof) return;
+      var held = given[prof.id] || prof.assumed;
+      var ans = null;
+      (pe.answers || []).forEach(function (a) { if (a.label === held) ans = a; });
+      if (!ans || !(ans.effects || []).length) return;
+      var row = {};
+      (ans.effects || []).forEach(function (e) {
+        var v = (row[e.option] || 0) + (e.dir === "favors" ? 1 : e.dir === "against" ? -1 : 0);
+        row[e.option] = Math.max(-2, Math.min(2, v));
+      });
+      q.options.forEach(function (o) { if (row[o.value] == null) row[o.value] = 0; });
+      out.criteria.push({ id: prof.id, name: held + (given[prof.id] ? "" : " (assumed)"), weight: 1 });
+      out.ratings[prof.id] = row;
+      out.used.push({ prof: prof, held: held, given: !!given[prof.id], pe: pe });
+    });
+    return out;
+  }
+  function assumptionsOf(q, pickedId, used) {
+    var out = [];
+    (used || []).forEach(function (u) {
+      var flip = null;
+      (u.pe.answers || []).forEach(function (a) {
+        if (flip || a.label === u.held) return;
+        (a.effects || []).forEach(function (e) {
+          if (!flip && e.dir === "favors" && e.option !== pickedId && optBy(e.option)) flip = "it is really “" + a.label + "”: " + optBy(e.option).name + " fits better";
+        });
+      });
+      out.push({ text: u.held, test: u.prof.basis ? "Why it was assumed: " + u.prof.basis : "", killIf: flip ? "If " + flip : "", status: u.given ? "holding" : "untested" });
+    });
+    var lean = q.draft && q.draft.lean;
+    if (lean && pickedId && pickedId === q.agentPick) {
+      var flips = lean.flips || [];
+      (lean.assumptions || []).forEach(function (t, i) {
+        out.push({ text: t, test: "", killIf: flips[i] ? flips[i].replace(/^if\s+/i, "If ") : "", status: "untested" });
+      });
+    }
+    return out.slice(0, 5);
+  }
+  var LEVEL = { low: 2, medium: 3, high: 4, "very high": 5 };
+  function risksOf(dr) {
+    return ((dr && dr.risks) || []).filter(function (r) { return r && typeof r === "object" && r.text; }).map(function (r) {
+      var L = typeof r.likelihood === "number" ? r.likelihood : LEVEL[String(r.likelihood || "").toLowerCase()] || 3;
+      var I = typeof r.impact === "number" ? r.impact : LEVEL[String(r.impact || "").toLowerCase()] || 3;
+      return { text: r.text, likelihood: L, impact: I, mitigation: r.mitigation || "" };
+    });
+  }
+  function peopleOf(q) {
+    var agent = (q.dec && q.dec.agent) || "Muse Code";
+    return { decided: ["You"], responsible: [agent + " (your agent)"], consulted: q.draft ? ["Muse Spark (drafted the options)"] : [], informed: [] };
+  }
+  function moreOf(q, opts) {
+    var out = [];
+    ((q.draft && q.draft.evidence) || []).forEach(function (e) {
+      var src = e.source === "profile" ? "assumed" : e.source === "inferred" ? "inferred by Muse Spark" : e.source;
+      out.push("**" + src + "** — " + (e.detail || ""));
+    });
+    (q.links || []).forEach(function (l) { out.push("[" + l.t + "](" + l.u + ")"); });
+    opts.forEach(function (o) { if (o.check) out.push("Check before relying on " + o.name + ": " + o.check); });
+    return out.slice(0, 8);
+  }
+  var PERSONAS = ["skeptic", "maintainer", "oncall", "cfo", "security"];
+  function criticFor(q, optionId) {
+    var live = (state.critic[q.id] || {})[optionId];
+    if (live) return live;
+    var baked = q.draft && q.draft.advocate && q.draft.advocate[optionId];
+    if (!baked) return null;
+    for (var i = 0; i < PERSONAS.length; i++) if (baked[PERSONAS[i]]) return baked[PERSONAS[i]];
+    return null;
   }
   function optionCardsWire(q) {
     var mount = $("bk-moment");
@@ -342,7 +443,7 @@
     var data = momentData(q, state.picked);
     var prev = state.answers[q.id];
     var html = (prev ? '<p class="hint">Earlier you selected <strong>' + esc(prev.name) + "</strong> — tap a card to change it, or commit to keep it.</p>" : "") +
-      '<div id="bk-moment"></div>';
+      canvasBarHtml(q, data) + '<div id="bk-moment"></div>' + criticHtml(q, data);
     html += '<p class="hint">' + (state.picked ? "Tap another card to change your pick." : "Tap a card to pick it — why it wins and what to watch is on the card.") + "</p>";
     if (data.metrics.length) html += '<p class="hint">Bars are relative within this option set, not absolute costs.</p>';
     var po = optBy(state.picked);
@@ -363,6 +464,81 @@
         '<button type="button" class="mini-btn" data-action="propose">Add it</button></div>';
     }
     return html;
+  }
+
+  function composeMoment(q, data) {
+    if (typeof BentoKit === "undefined" || !BentoKit.compose) return null;
+    var c = BentoKit.compose(data, { kind: kindOf(q), lead: "proscons", skip: ["proscons"], extras: ["advocate"] });
+    /* The page column is narrow, so the template's two-column layout is the desktop layout here. */
+    c.wide = { cols: c.template.cols, areas: c.template.areas };
+    c.template.cols = c.template.md.cols; c.template.areas = c.template.md.areas;
+    return c;
+  }
+  function canvasBarHtml(q, data) {
+    var c = composeMoment(q, data);
+    if (!c) return "";
+    var own = (q.draft && q.draft.kind) || "tech-choice";
+    var slots = c.template.slots, filled = 0, missing = [];
+    var cells = slots.map(function (sl) {
+      var comp = BentoKit.components[sl[1]], ok = false;
+      try { ok = !!comp.needs(data); } catch (e) { ok = false; }
+      if (ok) filled++; else missing.push(comp.name);
+      return '<span class="' + (ok ? "ok" : "miss") + '" style="grid-area:' + sl[0] + '" title="' + esc(comp.name + (ok ? " — filled" : " — missing")) + '"></span>';
+    }).join("");
+    var areas = c.wide.areas.map(function (r) { return '"' + r + '"'; }).join(" ");
+    var html = '<div class="canvas-bar"><div class="cb-head"><span class="cb-map" role="img" aria-label="' + filled + " of " + slots.length +
+      ' compartments filled" style=\'grid-template-columns:' + c.wide.cols + ";grid-template-areas:" + areas + '\'>' + cells + "</span>" +
+      '<div><b class="cb-title">Bento Kit · ' + esc(BentoKit.templates[c.kind].name) + "</b>" +
+      '<span class="cb-count">' + filled + " of " + slots.length + " compartments filled" +
+      (missing.length ? " · missing: " + esc(missing.join(", ").toLowerCase()) : "") + "</span></div></div>" +
+      '<div class="cb-kinds" role="group" aria-label="Canvas for this kind of decision">';
+    KIND_IDS.forEach(function (k) {
+      html += '<button type="button" class="cb-kind" data-action="kind" data-v="' + k + '" aria-pressed="' + (c.kind === k ? "true" : "false") + '"' +
+        (k === own ? ' title="The kind Muse Spark gave this decision"' : "") + ">" + esc(BentoKit.templates[k].name) + (k === own ? " ✦" : "") + "</button>";
+    });
+    html += "</div>";
+    var why = BentoKit.templates[c.kind].for;
+    var sw = Object.keys(c.swaps).map(function (a) { return BentoKit.components[c.swaps[a]].name; });
+    if (sw.length) why += " Filled from this decision's data: " + sw.join(", ").toLowerCase() + ".";
+    html += '<p class="cb-why">' + esc(why) + "</p></div>";
+    return html;
+  }
+  function criticHtml(q, data) {
+    if (!state.picked || typeof BentoKit === "undefined") return "";
+    var baked = (q.draft && q.draft.advocate && q.draft.advocate[state.picked]) || {};
+    var avail = PERSONAS.filter(function (p) { return LIVE || baked[p]; });
+    if (!avail.length) return "";
+    var cur = data.advocate && data.advocate.persona;
+    var html = '<div class="escape-row critic-row"><span>Stress-test ' + esc((optBy(state.picked) || {}).name || "the pick") + " with</span>";
+    avail.forEach(function (pid) {
+      var P = null;
+      BentoKit.advocate.personas.forEach(function (x) { if (x.id === pid) P = x; });
+      var busy = state.criticBusy === pid;
+      html += '<button type="button" class="escape-btn" data-action="critic" data-v="' + pid + '" aria-pressed="' + (cur === pid ? "true" : "false") + '"' +
+        (state.criticBusy ? " disabled" : "") + ">" + esc(busy ? "Asking…" : P.name) + "</button>";
+    });
+    return html + "</div>";
+  }
+  function askCritic(pid) {
+    var q = Q();
+    if (!q || !state.picked) return;
+    var opt = state.picked;
+    var baked = q.draft && q.draft.advocate && q.draft.advocate[opt] && q.draft.advocate[opt][pid];
+    var keep = function (r) {
+      state.critic[q.id] = state.critic[q.id] || {};
+      r.persona = pid;
+      state.critic[q.id][opt] = r;
+    };
+    if (baked) { keep(baked); render(); return; }
+    if (!LIVE) return;
+    var d = momentData(q, opt);
+    d.advocate = null;
+    state.criticBusy = pid; state.err = null; render();
+    post("/api/advocate", { prompt: BentoKit.advocate.prompt(d, pid) }).then(function (r) {
+      state.criticBusy = null; keep(r); render();
+    }, function (e) {
+      state.criticBusy = null; state.err = "The critic could not answer: " + e.message; render();
+    });
   }
 
   function answerLabel(ans) {
@@ -1421,11 +1597,8 @@
       if (window.__BK_MISSING) m.innerHTML = fallbackOptsHtml(q);
       else {
         var data = momentData(q, state.picked);
-        var ev = [];
-        if (data.attributes.length) ev.push("facts");
-        if (data.metrics.length) ev.push("numbers");
-        var tpl = !ev.length ? "moment-plain" : ((data.timeline || []).length ? "moment" : "moment-evidence");
-        mountInto("bk-moment", tpl, data, { swap: BentoKit.recommend({ kind: "tech-choice", evidence: ev }).swaps });
+        var comp = composeMoment(q, data);
+        mountInto("bk-moment", comp.template, data, { questions: { lead: state.picked ? "Your options — tap to change the pick" : "Your options — tap one to pick it" } });
       }
       optionCardsWire(q);
     }
@@ -1508,6 +1681,8 @@
     else if (action === "change") changeQ(v);
     else if (action === "file") fileRecords();
     else if (action === "confirm") confirm("chosen");
+    else if (action === "kind") { var kq = Q(); if (kq) { state.kindView[kq.id] = v; render(); } }
+    else if (action === "critic") askCritic(v);
     else if (action === "restart") {
       if (CTX.kind === "decide") { location.hash = "#/"; return; }
       S.session = null; SIM = null;

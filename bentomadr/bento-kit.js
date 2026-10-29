@@ -5,6 +5,7 @@
  *    BentoKit.render(element, templateId, decision, {swap: {slotArea: componentId}})
  *    BentoKit.renderComponent(element, componentId, decision)
  *    BentoKit.recommend({kind, evidence: [...]})   → {template, swaps, reasons}
+ *    BentoKit.compose(decision, {kind, lead, skip, extras, hideEmpty}) → {template, evidence, swaps, extra, empty, reasons}
  *    BentoKit.advocate.prompt(decision, personaIds) → string for any LLM; .render(result) → html
  */
 (function (root) {
@@ -403,6 +404,50 @@
     return {template: t.id, swaps, reasons};
   }
 
+  /* ───────── compose: let the data choose the compartments ─────────
+     Starts from the template for the decision's kind, fills empty slots with a same-family component that has
+     data, and appends full-width rows for evidence the template had no slot for. `lead` puts one component on
+     top (a picker, say); `skip` keeps components out (because the page shows them elsewhere). */
+  const EVIDENCE_OF = {matrix:'judgements', compare:'facts', bars:'numbers', line:'time', quadrant:'candidates', risks:'risks', timeline:'sequence', assumptions:'beliefs'};
+  const FAMILY_ORDER = ['evidence', 'plan', 'effects', 'context'];
+  function compose(d, {kind, lead, skip = [], maxExtra = 4, extras, hideEmpty = false} = {}){
+    const t = T[kind] || T['tech-choice'];
+    const has = id => !!C[id] && !skip.includes(id) && C[id].needs(d);
+    const evidence = Object.keys(EVIDENCE_OF).filter(has).map(id => EVIDENCE_OF[id]);
+    const placed = new Set(lead ? [lead] : []), swaps = {}, reasons = [], drop = [];
+    t.slots.forEach(([, cid]) => { if(has(cid)) placed.add(cid); });
+    t.slots.forEach(([area, cid]) => {
+      if(has(cid)) return;
+      const alt = Object.values(C).find(c => c.family === C[cid].family && !c.shelf && !placed.has(c.id) && has(c.id));
+      if(alt){ swaps[area] = alt.id; placed.add(alt.id); reasons.push(`${alt.name} sits where ${C[cid].name} would: ${skip.includes(cid) ? 'that one is shown elsewhere on the page' : 'there is nothing for it yet'}.`); }
+      else if(skip.includes(cid)) drop.push(area);
+    });
+    const shown = id => placed.has(id);
+    // gains + costs say the same as the consequences ledger: keep the pair whenever either is available
+    const redundant = id => (id === 'flip' && shown('decision')) || (id === 'consequences' && (shown('gains') || shown('costs') || has('gains') || has('costs'))) || ((id === 'gains' || id === 'costs') && shown('consequences'));
+    const extra = Object.values(C).filter(c => !c.core && !c.shelf && has(c.id) && !placed.has(c.id) && !redundant(c.id) && (!extras || extras.includes(c.id)))
+      .sort((a, b) => FAMILY_ORDER.indexOf(a.family) - FAMILY_ORDER.indexOf(b.family)).slice(0, maxExtra);
+    extra.forEach(c => { const g = GUIDE.find(x => x.use === c.id); reasons.push(`Added ${c.name}${g ? ': ' + g.if.charAt(0).toLowerCase() + g.if.slice(1) : ''}.`); });
+    const n = t.cols.split(' ').length, m = t.md.cols.split(' ').length;
+    const row = (a, k) => Array(k).fill(a).join(' ');
+    const keep = r => !r.split(' ').every(a => drop.includes(a));
+    const ex = extra.map((c, i) => ['x' + (i + 1), c.id]);
+    const template = {id: t.id + '+composed', name: t.name, for: t.for, cols: t.cols,
+      areas: [...(lead ? [row('lead', n)] : []), ...t.areas.filter(keep), ...ex.map(([a]) => row(a, n))],
+      md: {cols: t.md.cols, areas: [...(lead ? [row('lead', m)] : []), ...t.md.areas.filter(keep), ...ex.map(([a]) => row(a, m))]},
+      slots: [...(lead ? [['lead', lead]] : []), ...t.slots.filter(([a]) => !drop.includes(a)).map(([a, c]) => [a, swaps[a] || c]), ...ex]};
+    const gone = template.slots.filter(([, c]) => !C[c].needs(d)).map(([a]) => a);
+    const empty = template.slots.filter(([a]) => gone.includes(a)).map(([, c]) => C[c].name);
+    if(hideEmpty && gone.length){
+      // an empty compartment hands its cells to a neighbour in the same row; a row with nothing left goes
+      const close = rows => rows.map(r => { const cells = r.split(' '), live = cells.filter(a => !gone.includes(a));
+        return live.length ? cells.map((a, i) => gone.includes(a) ? (cells.slice(0, i).reverse().find(x => !gone.includes(x)) || live[0]) : a).join(' ') : null; }).filter(Boolean);
+      template.areas = close(template.areas); template.md.areas = close(template.md.areas);
+      template.slots = template.slots.filter(([a]) => !gone.includes(a));
+    }
+    return {kind: t.id, template, evidence, swaps, extra: extra.map(c => c.id), empty, hidden: hideEmpty ? empty : [], reasons};
+  }
+
   /* ───────── devil's advocate ───────── */
   const PERSONAS = [
     {id:'skeptic', name:'The devil’s advocate', lens:'Argue the strongest case against the chosen option, whatever it is.'},
@@ -487,7 +532,7 @@ ${lines.join('\n')}`;
   const BentoKit = {
     version: '0.1.0',
     components: C, templates: T, guide: GUIDE, kinds: KINDS,
-    render, renderComponent, toHTML, recommend,
+    render, renderComponent, toHTML, recommend, compose,
     analyze: {scores, robustness, crossover},
     advocate: {personas: PERSONAS, types: TYPES, prompt: advocatePrompt, render: renderNotes},
     util: {esc, md}

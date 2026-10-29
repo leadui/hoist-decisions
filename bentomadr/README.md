@@ -56,6 +56,8 @@ BentoKit.render(el, 'vendor-select', decision, { swap: { facts: 'matrix' } });
 
 `BentoKit.guide` holds these rules as data. `BentoKit.recommend({kind, evidence})` applies them. It never swaps out a core compartment (problem, decision, confirm, people).
 
+`BentoKit.compose(decision, {kind, lead, skip, maxExtra, hideEmpty})` goes one step further and lets the data choose: it starts from the template for `kind`, fills each empty slot with a same-family compartment that has data, and appends full-width rows for evidence the template had no slot for (Gains and Costs win over the Consequences ledger; Flip is left out when the Decision stamp already shows it). `lead` puts one compartment on top, such as option cards people tap to pick; `hideEmpty` closes empty compartments instead of hatching them. It returns `{template, evidence, swaps, extra, empty, reasons}`; render `template` as usual. Hoist's decision moments use it with `lead: "proscons"`.
+
 ## Decision data
 
 Every field is optional. A compartment with no data renders hatched, with a prompt saying what to add.

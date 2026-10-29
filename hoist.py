@@ -343,6 +343,14 @@ def make_handler(root):
                                                "note": str(body.get("note") or "")[:500]}
                 save_session(root, ses)
                 return self.send(200, session_state(root))
+            if self.path == "/api/advocate":
+                prompt = str(body.get("prompt", ""))
+                if not prompt.startswith("You are reviewing a team's decision record in the role of") or len(prompt) > 12000:
+                    return self.send(400, {"error": "That is not a critic prompt from the kit."})
+                try:
+                    return self.send(200, muse_json(ADVOCATE_SYSTEM, prompt, f"advocate:{root.name}", max_output=3000))
+                except (Exception, SystemExit) as e:
+                    return self.send(502, {"error": f"Muse Spark couldn't answer ({e})."})
             if self.path == "/api/session/abandon":
                 st = abandon_decision(root, str(body.get("id", "")))
                 if not st:
@@ -538,7 +546,10 @@ Contract (reply with JSON only):
  "door": 1|2|3,
  "micro_label": "2 to 4 words naming what the comparison bars measure, e.g. ops burden",
  "analogy": "one everyday sentence that captures the shape of this decision: what is cheap now and expensive to change later",
- "risks": ["what the agent is watching out for in this decision, one short sentence each, at most 3"],
+ "kind": "tech-choice"|"vendor-select"|"build-vs-buy"|"product-bet"|"migration"|"process-change",
+ "risks": [{"text": "what could go wrong with this decision, one short sentence", "likelihood": "low"|"medium"|"high",
+   "impact": "low"|"medium"|"high", "mitigation": "one short sentence: what keeps it small"}],
+ "confirm": ["at most 2 plain checks the person can see within a month that show the choice is working"],
  "profile_effects": [{"profile_id": "id from the profile", "answers": [{"label": "exact answer text from the profile",
    "effects": [{"option": "option id", "dir": "favors"|"against", "reason": "short"}]}]}],
  "questions": [{"id": "kebab-case", "text": "...", "why": "one sentence: what the answer changes",
@@ -572,6 +583,12 @@ Rules for options:
 - A config file shows what exists today, not a fixed constraint, unless a recorded decision says so.
 - Put options that cannot work given the evidence in ruled_out with the reason instead of leaving them as weak choices.
 - Every option has at least one bad item and at least one item about later.
+Rules for kind, risks and confirm:
+- kind names the shape of the decision, which picks the canvas it is shown on: tech-choice (an approach or library),
+  vendor-select (a supplier or hosted tool), build-vs-buy (make it, buy it, or adopt open source), product-bet (which
+  initiative to fund), migration (moving from A to B), process-change (how people work).
+- At most 3 risks, specific to this project. Likelihood and impact are words, never numbers.
+- confirm items are observations, not activities ("saves still load after a redeploy", not "ship the feature").
 Rules for the lean:
 - lean.why explains the pick in one sentence a newcomer understands. Leave lean out when agent_pick is empty.
 - Each assumption is about the person's situation (budget, team, patience, scale), never about a product.
@@ -589,6 +606,10 @@ Rules for analogies and stories:
 - story.now and story.later describe what living with it is like for this person, not features. Later is honest
   about the cost.
 Reply with the lean draft only: no numbers, trajectory, learn, check_current, or growth — those come in a later round."""
+
+
+ADVOCATE_SYSTEM = """You stress-test one decision a person is about to make, in the voice of the persona the prompt names.
+Plain words, short sentences, specific to this project. Reply with the JSON the prompt asks for and nothing else."""
 
 
 DEEP_SYSTEM = """You are Hoist. A person is deciding one hard-to-undo choice and just opened the deep dive.

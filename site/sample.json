@@ -164,11 +164,26 @@
     "undo": "Switching the database later means exporting all users and projects and rewriting all data access code.",
     "assumes": "Takes as given that projects are private to one user and auth will be email + password with secure hashing.",
     "door": 2,
-    "analogy": "It's like picking where to keep important notebooks \u2014 a loose pile on the desk is quick now but hard to trust later, a personal binder is portable, a library cabinet is built to keep them forever.",
+    "analogy": "It's like picking where to keep important notebooks — a loose pile on the desk is quick now but hard to trust later, a personal binder is portable, a library cabinet is built to keep them forever.",
     "risks": [
-     "File storage can corrupt with concurrent writes from multiple users",
-     "Losing user data would break trust when people expect projects to stay until deleted",
-     "Picking a heavy managed service too early adds ops work for a simple app"
+     {
+      "text": "File storage can corrupt with concurrent writes from multiple users",
+      "likelihood": "low",
+      "impact": "high",
+      "mitigation": "Use SQLite WAL mode and transactions for all writes."
+     },
+     {
+      "text": "Losing user data would break trust when people expect projects to stay until deleted",
+      "likelihood": "low",
+      "impact": "high",
+      "mitigation": "Enable daily backup of the single SQLite file."
+     },
+     {
+      "text": "Picking a heavy managed service too early adds ops work for a simple app",
+      "likelihood": "low",
+      "impact": "medium",
+      "mitigation": "Stay on embedded file to avoid extra hosting cost."
+     }
     ],
     "profile_effects": [
      {
@@ -323,7 +338,7 @@
       "id": "file-json",
       "name": "JSON files on server disk",
       "plain_name": "loose notes on desk",
-      "analogy": "Keeping every user and project as loose papers on your desk \u2014 fast to grab, but they scatter if two people grab at once.",
+      "analogy": "Keeping every user and project as loose papers on your desk — fast to grab, but they scatter if two people grab at once.",
       "story": {
        "now": "You write users.json and projects.json this week with no new dependencies.",
        "later": "In 6 months you are fixing race conditions, file locks, and manual cleanup when disk fills."
@@ -392,7 +407,7 @@
       "id": "sqlite-embedded",
       "name": "SQLite embedded database",
       "plain_name": "personal binder with sleeves",
-      "analogy": "Keeping everything in one organized binder on your shelf \u2014 still yours to carry, but pages don't scatter and you can find things fast.",
+      "analogy": "Keeping everything in one organized binder on your shelf — still yours to carry, but pages don't scatter and you can find things fast.",
       "story": {
        "now": "You add one library and one db file, tables for users and projects work right away.",
        "later": "In 6 months you still have one file to back up, and queries for a user's projects are easy and safe."
@@ -461,7 +476,7 @@
       "id": "managed-postgres",
       "name": "Managed Postgres",
       "plain_name": "library filing cabinet",
-      "analogy": "Storing notebooks in a library filing system \u2014 someone else maintains the cabinet, and anyone can find their stuff, but you rent the space.",
+      "analogy": "Storing notebooks in a library filing system — someone else maintains the cabinet, and anyone can find their stuff, but you rent the space.",
       "story": {
        "now": "You provision a hosted Postgres and wire connection strings and env vars this week.",
        "later": "In 6 months backups, sharing, and scaling are easy, but you are paying and managing a remote service for a small app."
@@ -571,6 +586,74 @@
      "title": "Headroom: today vs at 10x scale",
      "now": "today",
      "later": "at 10x"
+    },
+    "kind": "tech-choice",
+    "confirm": [
+     "Same user account can log in from a second device and see saved projects",
+     "Saved projects remain after server restart"
+    ],
+    "advocate": {
+     "sqlite-embedded": {
+      "skeptic": {
+       "verdict": "You chose SQLite because JSON is messy, not because SQLite is proven safe for this many users on one server you haven't sized.",
+       "strength": "weak",
+       "challenges": [
+        {
+         "type": "risk",
+         "title": "One file loss wipes all users and projects",
+         "why": "Single-file durability still fails if disk dies; you list L4 trust loss but have zero replication plan."
+        },
+        {
+         "type": "weak_evidence",
+         "title": "No numbers for concurrent writes",
+         "why": "You dismiss Postgres for ops but never state expected users, writes/sec, or why SQLite won't lock."
+        },
+        {
+         "type": "hidden_cost",
+         "title": "SQLite backups need locking, not just copying file",
+         "why": "Assumption says back up one file, but hot copy while writes happen risks corruption without WAL plan."
+        },
+        {
+         "type": "missing_criterion",
+         "title": "Success ignores multi-device writes, not just reads",
+         "why": "Measure is login from second device, but need simultaneous save from two devices without overwrite."
+        },
+        {
+         "type": "question",
+         "title": "What kills single-server assumption?",
+         "why": "You assume one server is enough forever but never define user count or storage size that forces Postgres move."
+        }
+       ],
+       "persona": "skeptic"
+      },
+      "maintainer": {
+       "verdict": "You gave me a single file to guard forever but no docs on where it lives or how to back it up — I can run it, but I can't hire for it or undo it safely.",
+       "strength": "mixed",
+       "challenges": [
+        {
+         "type": "hidden_cost",
+         "title": "One-file backup strategy is undocumented",
+         "why": "Record says 'back up one file' but not where it lives, how to copy it hot, or restore after corrupt writes [L2 I4]."
+        },
+        {
+         "type": "risk",
+         "title": "Undo cost is rewrite of all data access",
+         "why": "Consequences admit move to Postgres needs rewriting all data access code; no ORM or repository layer noted to contain that blast radius."
+        },
+        {
+         "type": "missing_criterion",
+         "title": "Hiring market favors Postgres over SQLite ops",
+         "why": "You dismissed Managed Postgres for ops overhead but didn't weigh that Postgres skills are easier to hire than SQLite file-recovery skills in 2 years."
+        },
+        {
+         "type": "missing_option",
+         "title": "No SQLite replication option evaluated",
+         "why": "Between SQLite and full Postgres, options like Litestream, Turso, or WAL backups would address trust [L2 I4] without heavy ops [L2 I3]."
+        }
+       ],
+       "persona": "maintainer"
+      }
+     }
     }
    },
    "authentication-mechanism": {
@@ -585,9 +668,24 @@
     "door": 2,
     "analogy": "Choosing how users get into their house - a personal key they make, a one-time code mailed each time, or using the building's master key.",
     "risks": [
-     "Storing passwords badly and leaking user accounts",
-     "Making login too annoying causes people to not save projects",
-     "Adding external login later is hard if accounts are not linked"
+     {
+      "text": "Storing passwords badly and leaking user accounts",
+      "likelihood": "medium",
+      "impact": "high",
+      "mitigation": "Use argon2id with per-user salt and never log or store plaintext passwords."
+     },
+     {
+      "text": "Making login too annoying causes people to not save projects",
+      "likelihood": "medium",
+      "impact": "medium",
+      "mitigation": "Keep sessions long-lived for this single-owner app and allow stay logged in."
+     },
+     {
+      "text": "Adding external login later is hard if accounts are not linked",
+      "likelihood": "high",
+      "impact": "medium",
+      "mitigation": "Model user with stable email key plus nullable provider fields from day one."
+     }
     ],
     "profile_effects": [
      {
@@ -927,7 +1025,75 @@
       "source": "task",
       "detail": "Add user accounts with saved projects implies own auth and ownership required"
      }
-    ]
+    ],
+    "kind": "tech-choice",
+    "confirm": [
+     "New user can sign up, log out, and log back in without password reset",
+     "Database shows only hashed passwords, no plaintext or emailed passwords"
+    ],
+    "advocate": {
+     "password-local": {
+      "skeptic": {
+       "verdict": "You picked the riskiest auth option and justified it with 'classic, full control' - that's a slogan, not evidence, and you left the breach risk you flagged unmitigated.",
+       "strength": "weak",
+       "challenges": [
+        {
+         "type": "risk",
+         "title": "Only chosen option creates L3 I4 breach risk",
+         "why": "Both magic link and OAuth store zero passwords; you chose the one path where leaking accounts is possible."
+        },
+        {
+         "type": "hidden_cost",
+         "title": "You must build all auth security yourself",
+         "why": "Hashing, strength rules, reset flow are now your liability, not delegated to proven provider."
+        },
+        {
+         "type": "weak_evidence",
+         "title": "No evidence hashing will be safe",
+         "why": "Reason says 'safely hashed' but names no algo, library, or pepper/salt plan to prevent L3."
+        },
+        {
+         "type": "missing_criterion",
+         "title": "Offline claim fails on password reset",
+         "why": "Good consequence says works offline, but reset flow still needs email service to recover access."
+        },
+        {
+         "type": "missing_option",
+         "title": "No plan for L4 I3 OAuth migration lock-in",
+         "why": "You flagged adding external login later is hard, but chose design with no account linking strategy."
+        }
+       ],
+       "persona": "skeptic"
+      },
+      "maintainer": {
+       "verdict": "You gave me permanent password duty with no hashing spec to maintain. If I need to add OAuth later, your L4 I3 linking risk means I have to reset every user.",
+       "strength": "weak",
+       "challenges": [
+        {
+         "type": "missing_criterion",
+         "title": "No hashing algorithm or library specified",
+         "why": "Record says 'secure hashing' but not bcrypt/Argon2, cost factor, or library. I can't audit or hire for it."
+        },
+        {
+         "type": "hidden_cost",
+         "title": "You own reset, rules, and breach liability",
+         "why": "Consequences (bad) lists hashing, strength, reset flow. That's permanent security maintenance for a sqlite app."
+        },
+        {
+         "type": "risk",
+         "title": "L4 I3 account linking will force user resets",
+         "why": "You noted adding external login later is hard. Undo cost is migrating passwords and resetting all users. No linking plan."
+        },
+        {
+         "type": "weak_evidence",
+         "title": "Success measures miss security and undo",
+         "why": "Sign up/log in test doesn't prove L3 I4 leak risk is contained or that you can migrate off passwords."
+        }
+       ],
+       "persona": "maintainer"
+      }
+     }
+    }
    },
    "saved-project-schema": {
     "id": "saved-project-schema",
@@ -941,9 +1107,24 @@
     "door": 2,
     "analogy": "Deciding if each notebook has one owner and stays private, or can be lent out, is like choosing a filing cabinet - cheap to label now, expensive to re-sort later.",
     "risks": [
-     "Adding sharing later breaks privacy expectations if model was private-only",
-     "Unlimited history grows storage when users keep projects indefinitely",
-     "No per-user limits lets one account fill the disk"
+     {
+      "text": "Adding sharing later breaks privacy expectations if model was private-only",
+      "likelihood": "medium",
+      "impact": "high",
+      "mitigation": "Lock private-only in UI copy and DB with owner-only checks from day one."
+     },
+     {
+      "text": "Unlimited history grows storage when users keep projects indefinitely",
+      "likelihood": "high",
+      "impact": "medium",
+      "mitigation": "Cap history to last 10 versions and auto-prune older ones."
+     },
+     {
+      "text": "No per-user limits lets one account fill the disk",
+      "likelihood": "medium",
+      "impact": "high",
+      "mitigation": "Enforce per-user max projects and max bytes with hard DB quota check."
+     }
     ],
     "profile_effects": [
      {
@@ -1268,7 +1449,75 @@
       "source": "inferred",
       "detail": "No docs mention team roles, so private ownership is expected default"
      }
-    ]
+    ],
+    "kind": "product-bet",
+    "confirm": [
+     "A logged-in user sees only their own projects when listing",
+     "Attempting to create beyond the per-user limit shows a clear limit error"
+    ],
+    "advocate": {
+     "private-simple": {
+      "skeptic": {
+       "verdict": "You picked the cheapest now, but your own record says fixing it later requires migrating all projects and rewriting access checks. This is a lock-in, not simplicity.",
+       "strength": "weak",
+       "challenges": [
+        {
+         "type": "risk",
+         "title": "Data loss is guaranteed without history",
+         "why": "Users overwrite projects. No version history means no recovery, directly violates safe defaults."
+        },
+        {
+         "type": "hidden_cost",
+         "title": "Adding sharing later breaks your model",
+         "why": "Record admits sharing later breaks privacy expectations and needs full migration. You chose the hardest-to-reverse path."
+        },
+        {
+         "type": "missing_criterion",
+         "title": "Collaboration value not weighted",
+         "why": "Notebooks are shared work. Decision ignores collaboration as a core job, only counts build cost."
+        },
+        {
+         "type": "missing_option",
+         "title": "No simple share-link middle path",
+         "why": "Jumped from private-only to full roles+history. A read-only link option would avoid roles but enable sharing."
+        },
+        {
+         "type": "weak_evidence",
+         "title": "Per-user limit undefined and untested",
+         "why": "No number for cap, no evidence on storage per project, yet you claim predictable storage."
+        }
+       ],
+       "persona": "skeptic"
+      },
+      "maintainer": {
+       "verdict": "You picked simple for me to own, which I thank you for, but you wrote down that undoing it means migrating every project and rewriting checks with zero plan for how I'd do that.",
+       "strength": "mixed",
+       "challenges": [
+        {
+         "type": "risk",
+         "title": "No plan for the rewrite you say is hard",
+         "why": "Record says moving to sharing needs rewriting access checks and migrating all projects, but no migration sketch, feature flag, or owner field design for me to extend."
+        },
+        {
+         "type": "hidden_cost",
+         "title": "Per-user limit value and storage math missing",
+         "why": "You cap per user to stop one account filling disk, but cap number and bytes-per-project not stated, so I can't size storage or hire."
+        },
+        {
+         "type": "missing_criterion",
+         "title": "No retention, delete, or compliance criterion",
+         "why": "Private current-version-only means no recover, no audit log, no hard vs soft delete rule defined for future legal or support needs."
+        },
+        {
+         "type": "weak_evidence",
+         "title": "Success measures ignore predictable storage claim",
+         "why": "You claim predictable storage as good consequence, but measures only check list-isolation and limit error, not disk usage."
+        }
+       ],
+       "persona": "maintainer"
+      }
+     }
+    }
    }
   },
   "drafted": [
