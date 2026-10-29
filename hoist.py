@@ -286,9 +286,14 @@ def make_handler(root):
                 return self.send(200, (HOME / "site" / "index.html").read_bytes(), "text/html")
             if path == "/catalog.json":
                 return self.send(200, (HOME / "catalog.json").read_bytes())
+            if path == "/bento-kit.css":
+                return self.send(200, (HOME / "site" / "bento-kit.css").read_bytes(), "text/css")
+            if path == "/bento-kit.js":
+                return self.send(200, (HOME / "site" / "bento-kit.js").read_bytes(), "text/javascript")
             if path == "/api/state":
                 records = [{"file": p.name, "markdown": p.read_text()} for p in sorted(records_dir(root).glob("[0-9][0-9][0-9][0-9]-*.md"))]
-                return self.send(200, {"project": root.name, "root": str(root), "live": True, "decisions": load_decisions(root),
+                return self.send(200, {"project": root.name, "root": str(root), "live": True, "build": build_stamp(),
+                                       "decisions": load_decisions(root),
                                        "records": records, "session": session_state(root)})
             self.send(404, {"error": "not found"})
 
@@ -362,9 +367,32 @@ def make_handler(root):
     return Handler
 
 
+WATCHED = ("hoist.py", "site/index.html", "site/bento-kit.js", "site/bento-kit.css")
+
+
+def build_stamp():
+    """Newest mtime across the files that define the running build."""
+    return int(max((HOME / p).stat().st_mtime for p in WATCHED if (HOME / p).exists()))
+
+
+def watch_and_restart(root):
+    """Re-exec on code/asset change, so a stale server never serves a new page."""
+    stamp = build_stamp()
+    while True:
+        time.sleep(2)
+        try:
+            now = build_stamp()
+        except OSError:
+            continue
+        if now != stamp:
+            print("Hoist: files changed — restarting the page server.", file=sys.stderr, flush=True)
+            os.execv(sys.executable, [sys.executable, "-u", str(HOME / "hoist.py"), "serve", str(root)])
+
+
 def serve(project):
     root = Path(project).resolve()
     print(f"Hoist decision page for {root.name}: {URL}  (Ctrl+C to stop)")
+    threading.Thread(target=watch_and_restart, args=(root,), daemon=True).start()
     ThreadingHTTPServer(("127.0.0.1", PORT), make_handler(root)).serve_forever()
 
 

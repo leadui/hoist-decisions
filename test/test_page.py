@@ -27,25 +27,22 @@ def check(name, cond, detail=""):
 
 
 PRESENT = [
+    # bento canvas experience (kit does the heavy lifting)
+    ("bento kit css", "bento-kit.css"),
+    ("bento kit js", "bento-kit.js"),
+    ("moment canvas", "bk-moment"),
+    ("moment template", '"moment"'),
+    ("madr record canvas", "madr-record"),
+    ("option dive canvas", "option-dive"),
+    ("record canvas data", "recordData"),
     # decision-moment flow
     ("moment box", "Decision moment"),
-    ("moment names its question", "moment-q"),
     ("two paths", "Walk through it"),
     ("tabs switch questions", 'data-action="q"'),
     ("rows expand options", 'data-action="pick"'),
-    ("model box", "The one idea that decides this"),
-    # moments components
+    ("moment names its question", "Earlier you chose"),
     ("mobile rules", "@media (max-width: 560px)"),
-    ("journey steps", "jstep"),
-    ("journey arrows", "What happens step by step"),
-    ("micro-bars", "micro-track"),
-    ("numbers table", "num-row"),
-    ("chips", "Watch out for"),
-    ("growth chart", 'class="growth"'),
-    ("chart label tooltip", "<title>' + esc(o.name)"),
-    ("option numbers", "onum"),
     ("answered pills turn green", "qtab.done"),
-    ("answered chat moment", "Earlier I chose"),
     ("hyper-dive opens", 'data-action="hyper"'),
     # modal closes three ways
     ("modal veil", 'class="veil"'),
@@ -72,8 +69,12 @@ PRESENT = [
     ("deep pull indicator", "Pulling the numbers"),
     ("files single decisions", "/api/decisions/"),
     ("Muse Spark progress", "Muse Spark"),
+    ("record fields chips", "rec-fields"),
+    ("raw toggle", "View raw"),
+    ("sample badge", "Sample data"),
+    ("conflict block", "Do not add"),
+    ("commit verb", "Commit choice"),
 ]
-
 ABSENT = [
     # retired: agent-lean display
     ("no lean box", "lean-box"),
@@ -109,6 +110,8 @@ ABSENT = [
     ("no file CTA", "File records"),
     ("no seal CTA", "Seal the moments"),
     ("no seal wording", "seal"),
+    ("no confirm verb", "Confirm choice"),
+    ("no choose verb", "Choose "),
 ]
 
 

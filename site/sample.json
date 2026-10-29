@@ -566,7 +566,7 @@
       "detail": "Assumed sharing-needs is private to each user only"
      }
     ],
-    "micro_label": "upkeep burden",
+    "micro_label": "Estimated cost",
     "growth": {
      "title": "Headroom: today vs at 10x scale",
      "now": "today",

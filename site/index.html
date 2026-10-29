@@ -1,348 +1,130 @@
 <!DOCTYPE html>
-<!-- Hoist, rebuilt on the decision-moments engine (Muse POC).
-     Flow, components, and tokens follow examples/decision-moment.html:
-     decision moment -> expanding options -> hyper dive -> saved record.
-     Voice stripped per owner; packs come from live Muse Spark drafts. -->
+<!-- Hoist live demo, rebuilt on the Bento MADR kit (bentomadr/).
+     Every decision moment is a bento canvas; the hyper dive is a
+     per-option canvas; a created MADR record opens as a canvas by
+     default (raw markdown behind a toggle). Data layer unchanged:
+     live Muse Spark drafts in, MADR records out, via hoist.py. -->
 <html lang="en" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Hoist — decision moments</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="bento-kit.css">
 <style>
-  :root, [data-theme="light"] {
-    --bg: #ffffff;
-    --surface: #f4f2ec;
-    --ink: #14181d;
-    --ink-2: #3d4450;
-    --line: #d9dce1;
-    --accent: #0b5fff;
-    --accent-ink: #ffffff;
-    --accent-soft: #e8effd;
-    --code-bg: #10151b;
-    --code-ink: #e8edf2;
+  :root{
+    --ink:var(--bk-ink); --ink-2:var(--bk-muted); --line:var(--bk-line);
+    --accent:var(--bk-accent); --accent-soft:var(--bk-well); --warn:var(--bk-bad);
+    --code-bg:var(--bk-frame); --code-ink:var(--bk-tile);
   }
-  [data-theme="dark"] {
-    --bg: #0e1113;
-    --surface: #171c1f;
-    --ink: #f0f3f5;
-    --ink-2: #b9c2cb;
-    --line: #2c343b;
-    --accent: #5b93ff;
-    --accent-ink: #0b1220;
-    --accent-soft: #16233d;
-    --code-bg: #05080b;
-    --code-ink: #dbe4ec;
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0; background: var(--bg); color: var(--ink);
-    font-family: ui-sans-serif, system-ui, "Segoe UI", Helvetica, Arial, sans-serif;
-    font-size: 15px; line-height: 1.55;
-  }
-  .page { max-width: 760px; margin: 0 auto; padding: 28px 20px 64px; }
-  .topbar { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 6px; }
-  .topbar h1 { font-size: 24px; letter-spacing: -0.01em; margin: 0; font-weight: 700; }
-  .topnav { display: flex; gap: 8px; align-items: center; }
-  .topnav a {
-    font-size: 13px; font-weight: 600; color: var(--ink-2); text-decoration: none;
-    border: 1px solid var(--line); border-radius: 999px; padding: 8px 16px; white-space: nowrap;
-    display: inline-flex; align-items: center; min-height: 44px;
-  }
-  .topnav a.on { color: var(--accent); border-color: var(--accent); }
-  .theme-btn {
-    font: inherit; font-size: 13px; font-weight: 600;
-    background: transparent; color: var(--ink);
-    border: 1px solid var(--line); border-radius: 999px;
-    padding: 8px 16px; cursor: pointer; white-space: nowrap;
-    display: inline-flex; align-items: center; min-height: 44px;
-  }
-  .theme-btn:hover { border-color: var(--accent); color: var(--accent); }
-  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-  .lede { color: var(--ink-2); margin: 4px 0 14px; max-width: 56ch; }
-  .offlinebar {
-    display: none; background: var(--accent-soft);
-    border: 1px solid var(--line); border-radius: 10px;
-    padding: 8px 14px; font-size: 13.5px; margin-bottom: 12px;
-  }
-  .offlinebar.on { display: block; }
-  .err { color: #b3261e; font-size: 13.5px; }
-  [data-theme="dark"] .err { color: #ff8a80; }
-
-  .qtabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
-  .qtab {
-    font: inherit; font-size: 13px; font-weight: 650; cursor: pointer;
-    background: transparent; color: var(--ink-2);
-    border: 1px solid var(--line); border-radius: 999px; padding: 5px 14px;
-  }
-  .qtab[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
-  .qtab[data-empty="1"] { opacity: 0.55; }
-  .qtab.done { color: #137333; border-color: #9ed0a8; background: #e6f4ea; }
-  [data-theme="dark"] .qtab.done { color: #7dd79b; border-color: #2f5c3e; background: #12241a; }
-
-  .msg { display: flex; gap: 10px; margin-bottom: 12px; }
-  .who {
-    flex: none; width: 30px; height: 30px; border-radius: 50%;
-    background: var(--surface); border: 1px solid var(--line);
-    font-size: 12px; font-weight: 700; color: var(--ink-2);
-    display: flex; align-items: center; justify-content: center;
-  }
-  .msg.agent .who { background: var(--accent-soft); border-color: var(--accent-soft); color: var(--accent); }
-  .bubble {
-    border: 1px solid var(--line); border-radius: 4px 12px 12px 12px;
-    padding: 10px 14px; font-size: 14.5px; max-width: 100%;
-  }
-  .msg.user { justify-content: flex-end; }
-  .msg.user .bubble { background: var(--surface); border-radius: 12px 4px 12px 12px; }
-  .msg.user .who { order: 2; }
-
-  .interrupt {
-    border: 2px solid var(--accent); border-radius: 12px;
-    padding: 14px 16px; margin: 6px 0 12px 40px;
-  }
-  .interrupt h2 { font-size: 16px; margin: 0 0 4px; }
-  .interrupt p { font-size: 14px; color: var(--ink-2); margin: 0 0 12px; }
-  .interrupt .moment-q { font-size: 16.5px; font-weight: 650; color: var(--ink); margin: 0 0 8px; }
-  .path-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  @media (max-width: 520px) { .path-row { grid-template-columns: 1fr; } }
-  .path-btn {
-    font: inherit; text-align: left; cursor: pointer;
-    border: 1px solid var(--line); border-radius: 10px;
-    background: var(--bg); color: var(--ink); padding: 10px 14px;
-  }
-  .path-btn:hover { border-color: var(--accent); }
-  .path-btn strong { display: block; font-size: 14.5px; }
-  .path-btn span { font-size: 13px; color: var(--ink-2); }
-  .path-btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
-  .path-btn.primary span { color: var(--accent-ink); opacity: 0.85; }
-
-  .edu { border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin: 0 0 12px 40px; }
-  .edu-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
-  .edu h2 { font-size: 17px; margin: 0; }
-  .q-hint { font-size: 13.5px; color: var(--ink-2); margin: 2px 0 12px; }
-
-  .model {
-    background: var(--surface); border: 1px solid var(--line);
-    border-radius: 8px; padding: 8px 12px; margin-bottom: 12px;
-    font-size: 13.5px;
-  }
-  .model strong { display: block; font-size: 12.5px; margin-bottom: 2px; }
-
-  .opt {
-    display: block; width: 100%; text-align: left; cursor: pointer; font: inherit;
-    background: var(--bg); color: var(--ink);
-    border: 1px solid var(--line); border-radius: 8px;
-    padding: 10px 12px; margin-bottom: 8px;
-  }
-  a.opt { text-decoration: none; }
-  .opt:hover { border-color: var(--ink-2); }
-  .opt[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
-  .opt b { font-size: 14.5px; }
-  .opt small { display: block; font-size: 13px; color: var(--ink-2); margin-top: 1px; }
-  .opt .why { display: block; font-size: 13.5px; margin-top: 6px; }
-  .micro { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
-  .micro small { font-size: 11.5px; color: var(--ink-2); white-space: nowrap; margin: 0; }
-  .micro-track { flex: 1; height: 8px; border-radius: 4px; background: var(--line); }
-  .micro-fill { height: 100%; border-radius: 4px; background: var(--ink-2); }
-  .opt[aria-pressed="true"] .micro-fill { background: var(--accent); }
-  .journey { display: flex; align-items: stretch; gap: 0; margin-top: 8px; flex-wrap: wrap; }
-  .jstep {
-    flex: 1 1 0; min-width: 100px;
-    font-size: 12px; line-height: 1.4; text-align: center;
-    border: 1px solid var(--line); border-radius: 8px;
-    padding: 6px 8px; background: var(--bg); position: relative;
-  }
-  .jstep:not(:last-child) { margin-right: 18px; }
-  .jstep:not(:last-child)::after {
-    content: "→"; position: absolute; right: -16px; top: 50%;
-    transform: translateY(-50%); color: var(--ink-2); font-size: 13px;
-  }
-  .nums { margin: 8px 0 0; }
-  .num-row {
-    display: grid; grid-template-columns: 120px 1fr; gap: 10px;
-    padding: 5px 0; border-top: 1px solid var(--line); font-size: 13px;
-  }
-  .num-row dt { margin: 0; color: var(--ink-2); }
-  .num-row dd { margin: 0; font-weight: 550; }
-  .chip-row { margin-top: 8px; }
-  .chip-label { font-size: 12px; color: var(--ink-2); margin: 6px 0 4px; display: flex; align-items: center; gap: 5px; }
-  .chip {
-    display: inline-block; font-size: 12.5px; font-weight: 550;
-    border-radius: 999px; padding: 2px 10px; margin: 0 6px 6px 0;
-    border: 1px solid var(--line); background: var(--surface);
-  }
-  .chip.go { background: var(--bg); border-color: var(--accent); }
-
-  .chart { margin: 12px 0 4px; }
-  .chart-title { font-size: 13px; font-weight: 700; }
-  .chart-note { font-size: 12px; color: var(--ink-2); margin-top: 2px; }
-  svg.growth text { font-family: ui-sans-serif, system-ui, sans-serif; }
-  .actions { display: flex; justify-content: flex-end; margin-top: 12px; }
-  .btn {
-    font: inherit; font-weight: 650; font-size: 14px; cursor: pointer;
-    border-radius: 8px; padding: 10px 20px;
-    background: var(--accent); border: 1px solid var(--accent); color: var(--accent-ink);
-  }
-  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
-  .quick-pick { display: grid; gap: 8px; margin-top: 10px; }
-  .qcount { font-size: 12.5px; color: var(--ink-2); font-weight: 600; align-self: center; }
-  .escape-row {
-    display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
-    margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line);
-    font-size: 13px; color: var(--ink-2);
-  }
-  .escape-btn {
-    font: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
-    background: transparent; color: var(--ink);
-    border: 1px solid var(--line); border-radius: 999px; padding: 4px 13px;
-  }
-  .escape-btn:hover { border-color: var(--accent); color: var(--accent); }
-  .custom-row { display: flex; gap: 8px; margin-top: 10px; }
-  .custom-row input {
-    flex: 1; font: inherit; font-size: 14px; color: var(--ink);
-    background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
-    padding: 8px 12px;
-  }
-  .task-input {
-    width: 100%; font: inherit; font-size: 14px; color: var(--ink);
-    background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
-    padding: 8px 12px; min-height: 62px; resize: vertical;
-  }
-  .mini-btn {
-    font: inherit; font-size: 13.5px; font-weight: 650; cursor: pointer; white-space: nowrap;
-    border-radius: 8px; padding: 8px 16px;
-    background: var(--accent); border: 1px solid var(--accent); color: var(--accent-ink);
-  }
-  .custom-pick {
-    margin-top: 10px; font-size: 13.5px;
-    border: 1px solid var(--accent); background: var(--accent-soft);
-    border-radius: 8px; padding: 8px 12px;
-  }
-  .custom-pick button {
-    font: inherit; font-size: 12.5px; font-weight: 650; cursor: pointer;
-    background: none; border: none; padding: 0; color: var(--accent); margin-left: 8px;
-  }
-  .rev-row {
-    display: flex; justify-content: space-between; align-items: center; gap: 10px;
-    padding: 10px 0; border-bottom: 1px solid var(--line);
-  }
-  .rev-row:last-of-type { border-bottom: none; }
-  .rev-row b { display: block; font-size: 14px; }
-  .rev-a { display: block; font-size: 13px; color: var(--ink-2); }
-  .record-q { margin-bottom: 14px; }
-  .record-q > strong { display: block; font-size: 13.5px; margin-bottom: 6px; }
-  .deferred-note {
-    background: var(--surface); border: 1px dashed var(--line);
-    border-radius: 10px; padding: 10px 14px; margin-bottom: 14px; font-size: 13.5px; color: var(--ink-2);
-  }
-  .yours {
-    display: inline-block; font-size: 11.5px; font-weight: 700;
-    color: var(--accent); border: 1px solid var(--accent);
-    border-radius: 999px; padding: 0 9px; margin-left: 8px; vertical-align: 2px;
-  }
-  .researching {
-    margin-top: 10px; font-size: 13.5px; color: var(--ink-2);
-    border: 1px dashed var(--accent); border-radius: 8px; padding: 10px 14px;
-    animation: pulse 1.1s ease-in-out infinite;
-  }
-  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
-  .optrow { display: flex; gap: 8px; align-items: stretch; margin-bottom: 8px; }
-  .optrow .opt { flex: 1; margin-bottom: 0; min-width: 0; }
-  .hyper-btn {
-    flex: none; width: 46px; height: 56px; align-self: flex-start; cursor: pointer;
-    border: 1px solid var(--line); border-radius: 8px;
-    background: var(--bg); color: var(--ink-2);
-    display: flex; align-items: center; justify-content: center;
-  }
-  .hyper-btn:hover { border-color: var(--accent); color: var(--accent); }
-  .opt .chev { float: right; margin-top: 4px; transition: transform 160ms ease; }
-  .onum {
-    display: inline-flex; align-items: center; justify-content: center;
-    min-width: 22px; height: 22px; border-radius: 50%;
-    border: 1px solid var(--line); color: var(--ink-2);
-    font-size: 12px; font-weight: 700; margin-right: 8px; vertical-align: 1px;
-  }
-  .opt[aria-pressed="true"] .onum { border-color: var(--accent); color: var(--accent); }
-  .opt[aria-pressed="true"] .chev { transform: rotate(180deg); }
-  .expand-hint { font-size: 12.5px; color: var(--ink-2); margin: -4px 0 10px; }
-  .veil {
-    position: fixed; inset: 0; z-index: 50;
-    background: rgba(10, 14, 20, 0.55);
-    display: flex; align-items: flex-start; justify-content: center;
-    padding: 24px 16px; overflow-y: auto;
-  }
-  .sheet {
-    background: var(--bg); color: var(--ink);
-    border-radius: 14px; max-width: 640px; width: 100%;
-    padding: 20px 20px 24px; margin: auto 0;
-  }
-  .sheet-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
-  .sheet h2 { font-size: 20px; margin: 0; }
-  .sheet .sub { font-size: 13.5px; color: var(--ink-2); margin: 2px 0 0; }
-  .x-btn {
-    flex: none; font: inherit; font-size: 13px; font-weight: 650; cursor: pointer;
-    border: 1px solid var(--line); border-radius: 999px; padding: 5px 14px;
-    background: transparent; color: var(--ink); white-space: nowrap;
-  }
-  .x-btn:hover { border-color: var(--accent); color: var(--accent); }
-  .sheet-sec { font-size: 12.5px; font-weight: 700; margin: 16px 0 6px; color: var(--ink-2); }
-  .typing { display: inline-flex; gap: 4px; margin-left: 6px; vertical-align: 2px; }
-  .typing i { width: 6px; height: 6px; border-radius: 50%; background: var(--ink-2); animation: tblink 1.2s ease-in-out infinite; }
-  .typing i:nth-child(2) { animation-delay: 0.2s; }
-  .typing i:nth-child(3) { animation-delay: 0.4s; }
-  @keyframes tblink { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
-  .sheet-story { margin: 0; font-size: 14.5px; }
-  .learn-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
-  .learn-list a { color: var(--accent); font-size: 14px; }
-  .sheet-actions { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
-
-  .record-wrap { margin: 0 0 12px 40px; }
-  .record-banner {
-    background: var(--accent-soft); border: 1px solid var(--line);
-    border-radius: 10px; padding: 12px 14px; margin-bottom: 12px;
-  }
-  .record-banner h2 { margin: 0 0 4px; font-size: 16px; }
-  .record-banner p { margin: 0; font-size: 13.5px; color: var(--ink-2); }
-  pre.record {
-    background: var(--code-bg); color: var(--code-ink);
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: 12.5px; line-height: 1.6; border-radius: 10px;
-    padding: 14px 16px; overflow-x: auto; white-space: pre-wrap; margin: 0 0 12px;
-  }
-  .restart {
-    font: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer;
-    background: transparent; color: var(--ink);
-    border: 1px solid var(--line); border-radius: 8px; padding: 8px 16px;
-  }
-  .restart:hover { border-color: var(--ink-2); }
-
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bk-paper);color:var(--bk-ink);font-family:var(--bk-body);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  .page{max-width:1060px;margin:0 auto;padding:28px 20px 64px}
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;flex-wrap:wrap}
+  .topbar h1{font-family:var(--bk-display);font-size:26px;letter-spacing:-0.01em;margin:0;font-weight:780}
+  .topbar h1 i{display:inline-block;width:11px;height:11px;border-radius:50%;background:var(--bk-accent);margin-right:9px}
+  .topnav{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .topnav a,.theme-btn{font:inherit;font-size:13px;font-weight:600;color:var(--bk-muted);text-decoration:none;border:1px solid var(--bk-line);border-radius:999px;padding:8px 16px;white-space:nowrap;display:inline-flex;align-items:center;min-height:44px;background:var(--bk-tile);cursor:pointer}
+  .topnav a.on{color:var(--bk-accent);border-color:var(--bk-accent)}
+  .theme-btn:hover{border-color:var(--bk-accent);color:var(--bk-accent)}
+  .theme-btn:focus-visible{outline:2px dashed var(--bk-muted);outline-offset:3px}
+  :focus-visible{outline:2px solid var(--bk-accent);outline-offset:2px}
+  .lede{color:var(--bk-muted);margin:4px 0 14px;max-width:62ch}
+  .offlinebar{display:none;background:var(--bk-choice);border:1px solid var(--bk-signal);border-radius:10px;padding:8px 14px;font-size:13.5px;margin-bottom:12px;color:var(--bk-ink)}
+  .offlinebar.on{display:block}
+  .err{color:var(--bk-bad);font-size:13.5px}
+  .sample-badge{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.04em;color:var(--bk-on-signal);background:var(--bk-signal);border-radius:999px;padding:3px 12px;margin-left:10px;vertical-align:2px;text-decoration:none}
+  .card{background:var(--bk-tile);border:1px solid var(--bk-line);border-radius:16px;padding:18px 20px;margin-bottom:14px}
+  .card h2{font-family:var(--bk-display);font-size:19px;margin:0 0 6px;font-weight:700}
+  .hint{font-size:13.5px;color:var(--bk-muted);margin:2px 0 10px}
+  .btn{font:inherit;font-weight:650;font-size:14px;cursor:pointer;border-radius:10px;padding:11px 22px;background:var(--bk-accent);border:1px solid var(--bk-accent);color:#fff}
+  [data-theme="dark"] .btn{color:#0c1712}
+  .btn:disabled{background:var(--bk-well);border-color:var(--bk-line);color:var(--bk-muted);opacity:1;cursor:not-allowed}
+  .btn.ghost{background:transparent;color:var(--bk-ink);border-color:var(--bk-line)}
+  .mini-btn{font:inherit;font-size:13.5px;font-weight:650;cursor:pointer;white-space:nowrap;border-radius:8px;padding:8px 16px;background:var(--bk-accent);border:1px solid var(--bk-accent);color:#fff}
+  [data-theme="dark"] .mini-btn{color:#0c1712}
+  .actions{display:flex;justify-content:flex-end;gap:10px;margin-top:14px;flex-wrap:wrap;align-items:center}
+  .actions .spacer{flex:1}
+  .qtabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
+  .qtab{font:inherit;font-size:13px;font-weight:650;cursor:pointer;background:var(--bk-tile);color:var(--bk-muted);border:1px solid var(--bk-line);border-radius:999px;padding:6px 14px;min-height:36px}
+  .qtab[aria-pressed="true"]{color:var(--bk-accent);border-color:var(--bk-accent);background:var(--bk-well)}
+  .qtab[data-empty="1"]{opacity:.55}
+  .qtab.done{color:var(--bk-good);border-color:var(--bk-good)}
+  .qcount{font-size:12.5px;color:var(--bk-muted);font-weight:600}
+  .fork{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
+  @media (max-width:520px){.fork{grid-template-columns:1fr}}
+  .fork button{font:inherit;text-align:left;cursor:pointer;border:1px solid var(--bk-line);border-radius:12px;background:var(--bk-tile);color:var(--bk-ink);padding:14px 16px}
+  .fork button strong{display:block;font-size:15px;font-family:var(--bk-display)}
+  .fork button span{font-size:13px;color:var(--bk-muted)}
+  .fork button.primary{background:var(--bk-accent);border-color:var(--bk-accent);color:#fff}
+  [data-theme="dark"] .fork button.primary{color:#0c1712}
+  .fork button.primary span{color:inherit;opacity:.85}
+  .opts{display:grid;gap:10px;margin-top:12px}
+  .optrow{display:flex;gap:10px;align-items:stretch}
+  .opt{flex:1;font:inherit;text-align:left;cursor:pointer;background:var(--bk-tile);color:var(--bk-ink);border:1px solid var(--bk-line);border-radius:12px;padding:12px 14px;min-width:0}
+  .opt .onum{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;border-radius:50%;border:1px solid var(--bk-line);color:var(--bk-muted);font-size:12px;font-weight:700;margin-right:8px;vertical-align:1px}
+  .opt b{font-size:14.5px;font-family:var(--bk-display)}
+  .opt small{display:block;font-size:13px;color:var(--bk-muted);margin-top:1px}
+  .opt[aria-pressed="true"]{border:2px solid var(--bk-signal);padding:11px 13px}
+  .opt[aria-pressed="true"] .onum{border-color:var(--bk-signal);color:var(--bk-ink)}
+  .hyper-btn{flex:none;width:46px;cursor:pointer;border:1px solid var(--bk-line);border-radius:12px;background:var(--bk-tile);color:var(--bk-muted);font-size:17px}
+  .hyper-btn:hover{border-color:var(--bk-accent);color:var(--bk-accent)}
+  .escape-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--bk-line);font-size:13px;color:var(--bk-muted)}
+  .escape-btn{font:inherit;font-size:13px;font-weight:600;cursor:pointer;background:transparent;color:var(--bk-ink);border:1px solid var(--bk-line);border-radius:999px;padding:5px 13px;min-height:36px}
+  .escape-btn:hover{border-color:var(--bk-accent);color:var(--bk-accent)}
+  .custom-row{display:flex;gap:8px;margin-top:10px}
+  .custom-row input{flex:1;font:inherit;font-size:14px;color:var(--bk-ink);background:var(--bk-tile);border:1px solid var(--bk-line);border-radius:8px;padding:8px 12px}
+  .task-input{width:100%;font:inherit;font-size:14px;color:var(--bk-ink);background:var(--bk-tile);border:1px solid var(--bk-line);border-radius:10px;padding:10px 12px;min-height:62px;max-height:240px;resize:vertical}
+  .progress{background:var(--bk-well);border:1px solid var(--bk-line);border-left:3px solid var(--bk-accent);border-radius:10px;padding:12px 14px;font-size:13.5px;color:var(--bk-muted);position:relative;overflow:hidden}
+  .progress::after{content:"";position:absolute;left:0;top:0;bottom:0;width:33%;background:linear-gradient(100deg,transparent,var(--bk-choice),transparent);animation:sweep 1.6s ease-in-out infinite}
+  @keyframes sweep{from{transform:translateX(-100%)}to{transform:translateX(310%)}}
+  .skel{display:grid;gap:10px;margin:12px 0}
+  .skel-bar{height:14px;border-radius:7px;background:var(--bk-well);border:1px solid var(--bk-line);position:relative;overflow:hidden}
+  .skel-bar::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 20%,var(--bk-choice) 50%,transparent 80%);animation:sweep 1.6s ease-in-out infinite}
+  .veil{position:fixed;inset:0;z-index:50;background:rgba(10,14,20,.55);display:flex;align-items:flex-start;justify-content:center;padding:24px 16px;overflow-y:auto}
+  .sheet{background:var(--bk-paper);color:var(--bk-ink);border-radius:16px;max-width:900px;width:100%;padding:18px;margin:auto 0}
+  .sheet-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px}
+  .sheet-top h2{font-family:var(--bk-display);font-size:21px;margin:0}
+  .sheet-top .sub{font-size:13.5px;color:var(--bk-muted);margin:2px 0 0}
+  .x-btn{flex:none;font:inherit;font-size:13px;font-weight:650;cursor:pointer;border:1px solid var(--bk-line);border-radius:999px;padding:6px 14px;background:var(--bk-tile);color:var(--bk-ink);white-space:nowrap;min-height:36px}
+  .x-btn:hover{border-color:var(--bk-accent);color:var(--bk-accent)}
+  .typing{display:inline-flex;gap:4px;margin-left:6px;vertical-align:2px}
+  .typing i{width:6px;height:6px;border-radius:50%;background:var(--bk-muted);animation:tblink 1.2s ease-in-out infinite}
+  .typing i:nth-child(2){animation-delay:.2s}.typing i:nth-child(3){animation-delay:.4s}
+  @keyframes tblink{0%,100%{opacity:.25}50%{opacity:1}}
+  .rec-fields{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px;padding:0}
+  .rec-fields div{font-size:12px;font-weight:600;color:var(--bk-muted);background:var(--bk-tile);border:1px solid var(--bk-line);border-radius:999px;padding:2px 11px}
+  .rec-fields div b{color:var(--bk-ink);font-weight:700}
+  pre.record{background:var(--code-bg);color:var(--code-ink);font-family:var(--bk-mono);font-size:12.5px;line-height:1.6;border-radius:10px;padding:14px 16px;overflow-x:auto;white-space:pre-wrap;margin:0 0 12px}
+  details.raw{margin-top:12px}
+  details.raw summary{font-size:13px;font-weight:600;color:var(--bk-muted);cursor:pointer}
+  details.raw pre.record{margin-top:8px}
+  .conflict-block{font-family:var(--bk-mono);font-size:13px;line-height:1.6;color:var(--bk-bad);background:var(--bk-tile);border:1px solid var(--bk-bad);border-radius:10px;padding:10px 14px;margin-top:10px;white-space:pre-wrap}
+  .rev-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--bk-line)}
+  .rev-row:last-of-type{border-bottom:none}
+  .rev-row b{display:block;font-size:14px}
+  .rev-a{display:block;font-size:13px;color:var(--bk-muted)}
+  .note{background:var(--bk-well);border:1px solid var(--bk-line);border-radius:10px;padding:10px 14px;margin-bottom:10px;font-size:13.5px;color:var(--bk-muted)}
+  .note strong{color:var(--bk-ink)}
+  .list-opt{display:block;text-decoration:none;color:var(--bk-ink)}
   @media (max-width: 560px) {
     .page { padding: 20px 14px 48px; }
-    .topbar { flex-wrap: wrap; }
-    .topbar h1 { font-size: 20px; }
-    .interrupt, .edu, .record-wrap { margin-left: 0; }
-    .num-row { grid-template-columns: 96px 1fr; font-size: 12.5px; }
-    .journey { flex-direction: column; }
-    .jstep:not(:last-child) { margin-right: 0; margin-bottom: 16px; }
-    .jstep:not(:last-child)::after {
-      content: "↓"; right: auto; left: 50%; top: auto; bottom: -17px;
-      transform: translateX(-50%);
-    }
-    .actions { justify-content: stretch; }
-    .actions .btn { width: 100%; text-align: center; }
-    .qcount { flex-basis: 100%; margin: 2px 0 6px; }
-    .optrow .hyper-btn { width: 42px; }
-    .sheet { padding: 16px 14px 20px; }
+    .actions .btn { flex: 1; }
+    .sheet { padding: 14px; }
+    .opts .opt { min-width: 0; }
   }
-
-  @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after { transition: none !important; animation: none !important; }
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{transition:none !important;animation:none !important}
   }
 </style>
 </head>
 <body>
 <div class="page">
   <div class="topbar">
-    <h1>Hoist</h1>
+    <h1><i></i>Hoist</h1>
     <div class="topnav">
       <a id="nav-home" href="#/">Start</a>
       <a id="nav-session" href="#/session">Session</a>
@@ -350,22 +132,18 @@
       <button class="theme-btn" id="theme-toggle" type="button">Theme: Light</button>
     </div>
   </div>
-  <div class="offlinebar" id="offline">Hoist isn't answering — showing the last thing it said. Start it again and reload.</div>
+  <div class="offlinebar" id="offline"><strong>Lost contact with Hoist</strong> — showing the last saved state. Restart Hoist, then reload to pick up where you left off.</div>
   <div id="app" aria-live="polite"></div>
   <div id="modal"></div>
 </div>
-
+<script src="bento-kit.js"></script>
 <script>
 (function () {
   "use strict";
 
   var ICONS = {
-    check: '<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8.5l3.5 3.5 7-8"/></svg>',
-    warn: '<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.8L15 13.5H1z"/><path d="M8 6v3.4"/><circle cx="8" cy="11.4" r="0.4" fill="currentColor"/></svg>',
-    expand: '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2.5h4v4"/><path d="M13.5 2.5L9 7"/><path d="M6.5 13.5h-4v-4"/><path d="M2.5 13.5L7 9"/></svg>',
-    chev: '<svg class="chev" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg>'
+    expand: '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2.5h4v4"/><path d="M13.5 2.5L9 7"/><path d="M6.5 13.5h-4v-4"/><path d="M2.5 13.5L7 9"/></svg>'
   };
-
   var TYPING = ' <span class="typing" aria-hidden="true"><i></i><i></i><i></i></span>';
 
   function $(id) { return document.getElementById(id); }
@@ -380,6 +158,7 @@
   }
   function today() { var d = new Date(); return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2); }
   function doorWord(n) { return n === 3 ? "one-way" : n === 2 ? "heavy" : n === 1 ? "two-way" : "one-way"; }
+  function stripTags(s) { return String(s == null ? "" : s).replace(/<[^>]*>/g, ""); }
 
   var S = null, LIVE = false, CAT = null, PACKS = [], CTX = { kind: "session" }, SIM = null;
 
@@ -413,87 +192,103 @@
     return null;
   }
 
-  function msgHtml(who, text) {
-    return '<div class="msg ' + who + '"><span class="who">' + (who === "agent" ? "H" : "You") + "</span>" +
-      '<div class="bubble">' + text + "</div></div>";
+  /* ── Bento templates registered on the kit ── */
+  if (typeof BentoKit === "undefined") {
+    /* Kit assets missing: keep working with controls instead of blanking. */
+    window.__BK_MISSING = true;
+  } else {
+  BentoKit.templates["moment"] = { id: "moment", name: "Decision moment", cols: "1fr 1.5fr",
+    areas: ["problem options", "verdict options", "evidence options"],
+    md: { cols: "1fr", areas: ["problem", "options", "verdict", "evidence"] },
+    slots: [["problem", "problem"], ["options", "proscons"], ["verdict", "decision"], ["evidence", "bars"]] };
+  BentoKit.templates["moment-plain"] = { id: "moment-plain", name: "Decision moment (no measures)", cols: "1fr 1.5fr",
+    areas: ["problem options", "verdict options"],
+    md: { cols: "1fr", areas: ["problem", "options", "verdict"] },
+    slots: [["problem", "problem"], ["options", "proscons"], ["verdict", "decision"]] };
+  BentoKit.templates["option-dive"] = { id: "option-dive", name: "Option deep dive", cols: "1.3fr 1fr",
+    areas: ["story facts", "gains costs", "path path", "verdict verdict"],
+    md: { cols: "1fr", areas: ["story", "facts", "gains", "costs", "path", "verdict"] },
+    slots: [["story", "problem"], ["facts", "compare"], ["gains", "gains"], ["costs", "costs"], ["path", "timeline"], ["verdict", "decision"]] };
+  BentoKit.templates["option-dive-plain"] = { id: "option-dive-plain", name: "Option deep dive (no facts)", cols: "1.3fr 1fr",
+    areas: ["story story", "gains costs", "path path", "verdict verdict"],
+    md: { cols: "1fr", areas: ["story", "gains", "costs", "path", "verdict"] },
+    slots: [["story", "problem"], ["gains", "gains"], ["costs", "costs"], ["path", "timeline"], ["verdict", "decision"]] };
+  BentoKit.templates["madr-record"] = { id: "madr-record", name: "MADR record", cols: "1.2fr 1fr 1fr",
+    areas: ["problem verdict verdict", "problem gains costs", "confirm people people", "shelf shelf shelf", "more more more"],
+    md: { cols: "1fr 1fr", areas: ["problem problem", "verdict verdict", "gains costs", "confirm people", "shelf shelf", "more more"] },
+    slots: [["problem", "problem"], ["verdict", "decision"], ["gains", "gains"], ["costs", "costs"], ["confirm", "confirm"], ["people", "people"], ["shelf", "proscons"], ["more", "more"]] };
   }
 
-  function journeyHtml(o) {
-    if (!o.journey || !o.journey.length) return "";
-    var html = '<div class="journey" aria-label="What happens step by step">';
-    for (var i = 0; i < o.journey.length; i++) {
-      html += '<div class="jstep">' + esc(o.journey[i]) + "</div>";
+  function prosConsOf(o) {
+    var items = [];
+    (o.unlocks || []).forEach(function (t) { items.push({ kind: "good", text: t }); });
+    (o.watch || []).forEach(function (t) { items.push({ kind: "bad", text: t }); });
+    return items;
+  }
+  function metricsOf(q, opts) {
+    var out = [];
+    if (q.growth) {
+      var nowVals = {}, laterVals = {};
+      opts.forEach(function (o) { nowVals[o.value] = o.mNow; laterVals[o.value] = o.mLater; });
+      out.push({ name: q.growth.title + " · " + q.growth.now, better: "low", values: nowVals });
+      out.push({ name: q.growth.title + " · " + q.growth.later, better: "low", values: laterVals });
+    } else if (q.microLabel) {
+      var vals = {};
+      opts.forEach(function (o) { if (o.micro != null) vals[o.value] = o.micro; });
+      if (Object.keys(vals).length) out.push({ name: q.microLabel, better: "low", values: vals });
     }
-    return html + "</div>";
+    return out;
   }
-
-  function chipsHtml(items, cls) {
-    var html = "";
-    for (var i = 0; i < items.length; i++) html += '<span class="chip ' + cls + '">' + esc(items[i]) + "</span>";
-    return html;
+  function momentData(q, pickedId) {
+    var opts = allOptions();
+    var context = [];
+    if (q.model) context.push(q.model);
+    var dr = q.draft;
+    var whyNow = dr && dr.why_now ? dr.why_now : (q.plan && q.plan.why) || "";
+    var undo = (dr && dr.undo) || (q.plan && q.plan.why) || "";
+    if (whyNow) context.push(whyNow);
+    if (undo && undo !== whyNow) context.push("Cost to undo: " + undo);
+    var picked = pickedId ? optBy(pickedId) : null;
+    var pc = {};
+    opts.forEach(function (o) { pc[o.value] = prosConsOf(o); });
+    return {
+      title: q.title, question: q.title, context: context,
+      options: opts.map(function (o) { return { id: o.value, name: o.name, desc: o.desc }; }),
+      chosen: pickedId || null,
+      because: picked ? (picked.why || picked.desc || "") : null,
+      prosCons: pc, metrics: metricsOf(q, opts)
+    };
   }
-
-  function deepHtml(o) {
-    var nums = o.numbers || [], un = o.unlocks || [], wa = o.watch || [];
-    if (!nums.length && !un.length && !wa.length) return "";
-    var html = "";
-    if (nums.length) {
-      html += '<dl class="nums">';
-      for (var i = 0; i < nums.length; i++) {
-        html += '<div class="num-row"><dt>' + esc(nums[i][0]) + "</dt><dd>" + esc(nums[i][1]) + "</dd></div>";
-      }
-      html += "</dl>";
-    }
-    if (un.length || wa.length) {
-      html += '<div class="chip-row">';
-      if (un.length) html += '<div class="chip-label">' + ICONS.check + "Unlocks</div>" + chipsHtml(un, "go");
-      if (wa.length) html += '<div class="chip-label">' + ICONS.warn + "Watch out for</div>" + chipsHtml(wa, "");
-      html += "</div>";
-    }
-    return html;
-  }
-
-  function chartName(n) {
-    n = String(n == null ? "" : n);
-    return n.length > 24 ? n.slice(0, 23) + "…" : n;
-  }
-
-  function growthHtml() {
-    var q = Q();
-    var g = q.growth;
-    if (!g) return "";
-    var W = 560, rowH = 46, labelW = 190, max = g.max || 10;
-    var gopts = allOptions();
-    var H = gopts.length * rowH + 26;
-    var bw = function (v) { return Math.max(2, Math.round(((v == null ? 5 : v) / max) * (W - labelW - 40))); };
-    var html = '<div class="chart"><div class="chart-title">' + esc(g.title) + "</div>" +
-      '<svg class="growth" viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="' + esc(g.title) + '">';
-    for (var i = 0; i < gopts.length; i++) {
-      var o = gopts[i];
-      var y = i * rowH + 4;
-      var isPick = state.picked === o.value;
-      html += '<text x="0" y="' + (y + 18) + '" font-size="12" style="fill:var(--ink-2)"><title>' + esc(o.name) + "</title>" + esc(chartName(o.name)) + "</text>" +
-        '<rect x="' + labelW + '" y="' + y + '" width="' + bw(o.mNow) + '" height="12" rx="3" style="fill:var(--line)"/>' +
-        '<rect x="' + labelW + '" y="' + (y + 16) + '" width="' + bw(o.mLater) + '" height="12" rx="3" style="fill:' +
-        (isPick ? "var(--accent)" : "var(--ink-2)") + '" opacity="' + (isPick ? "1" : "0.35") + '"/>';
-    }
-    var ly = gopts.length * rowH + 14;
-    html += '<rect x="' + labelW + '" y="' + ly + '" width="12" height="12" rx="3" style="fill:var(--line)"/>' +
-      '<text x="' + (labelW + 18) + '" y="' + (ly + 11) + '" font-size="11" style="fill:var(--ink-2)">' + esc(g.now) + "</text>" +
-      '<rect x="' + (labelW + 110) + '" y="' + ly + '" width="12" height="12" rx="3" style="fill:var(--accent)"/>' +
-      '<text x="' + (labelW + 128) + '" y="' + (ly + 11) + '" font-size="11" style="fill:var(--ink-2)">' + esc(g.later) + "</text>";
-    var picked = optBy(state.picked);
-    var caption = picked
-      ? "Your pick: " + picked.name + " — follow its second bar. That's the future you're signing."
-      : "Pick an option above and its future bar highlights here.";
-    return html + '</svg><div class="chart-note">' + esc(caption) + " Shapes, not forecasts.</div></div>";
-  }
-
-  function microHtml(q, o) {
-    if (o.micro == null || !q.microLabel) return "";
-    var pct = Math.max(3, Math.round((o.micro / 10) * 100));
-    return '<span class="micro"><small>' + esc(q.microLabel) + "</small>" +
-      '<span class="micro-track"><span class="micro-fill" style="display:block;width:' + pct + '%"></span></span></span>';
+  function diveData(q, o) {
+    var opts = allOptions();
+    var labels = [], seen = {};
+    opts.forEach(function (x) {
+      (x.numbers || []).forEach(function (n) { if (!seen[n[0]]) { seen[n[0]] = 1; labels.push(n[0]); } });
+    });
+    var attributes = labels.map(function (label) {
+      var values = {};
+      opts.forEach(function (x) {
+        var hit = null;
+        (x.numbers || []).forEach(function (n) { if (n[0] === label) hit = n[1]; });
+        values[x.value] = hit == null ? "—" : hit;
+      });
+      return { name: label, values: values };
+    });
+    var context = [];
+    if (o.why) context.push(o.why);
+    if (o.living) context.push(o.living);
+    var more = [];
+    (q.links || []).forEach(function (l) { more.push("[" + l.t + "](" + l.u + ")"); });
+    if (o.docs) more.push("[Documentation](" + o.docs + ")");
+    return {
+      title: o.name, question: q.title, context: context,
+      options: opts.map(function (x) { return { id: x.value, name: x.name, desc: x.desc }; }),
+      chosen: o.value, because: o.why || o.desc || "",
+      attributes: attributes,
+      consequences: { good: (o.unlocks || []).slice(), bad: (o.watch || []).slice(), neutral: [] },
+      timeline: (o.journey || []).map(function (s, i) { return { when: "Step " + (i + 1), what: s }; }),
+      more: more
+    };
   }
 
   function tabsHtml() {
@@ -512,26 +307,25 @@
     return html;
   }
 
-  function interruptHtml() {
-    var q = Q();
-    return '<div class="interrupt"><h2>Decision moment ' + esc(momentNum()) + '</h2><p class="moment-q">' + esc(q.title) + '</p><p>One hard choice, two ways through it. Let us make this decision together.</p>' +
-      '<div class="path-row">' +
-      '<button type="button" class="path-btn" data-action="path" data-v="quick"><strong>Answer here</strong><span>Quick: pick now, thin record.</span></button>' +
-      '<button type="button" class="path-btn primary" data-action="path" data-v="hoist"><strong>Walk through it</strong><span>Open each option, then pick. Full record.</span></button>' +
+  function forkHtml(q) {
+    return '<div class="card"><h2>Decision moment ' + esc(momentNum()) + "</h2>" +
+      '<p class="hint">' + esc(q.title) + " One hard choice, two ways through it. Let us make this decision together.</p>" +
+      '<div class="fork">' +
+      '<button type="button" data-action="path" data-v="quick"><strong>Answer here</strong><span>Quick: pick now, thin record.</span></button>' +
+      '<button type="button" class="primary" data-action="path" data-v="hoist"><strong>Walk through it</strong><span>Open each option, then pick. Full record.</span></button>' +
       "</div></div>";
   }
 
   function momentHtml() {
     var q = Q();
-    var a = state.answers[q.id];
-    if (a) {
-      return msgHtml("user", "Earlier I chose <strong>" + esc(a.name) + ".</strong>") +
-        msgHtml("agent", "Want to keep it, or walk it again?") +
-        interruptHtml();
+    if (q.preparing) {
+      return '<div class="card"><h2>' + esc(q.title) + '</h2><div class="progress">Muse Spark is writing this moment — it will appear here on its own.' + TYPING + "</div></div>";
     }
-    return msgHtml("user", esc(q.chatAsk)) +
-      msgHtml("agent", q.agentAsk) +
-      interruptHtml();
+    var a = state.answers[q.id];
+    var head = '<div class="card"><h2>Decision moment ' + esc(momentNum()) + ": " + esc(q.shortTitle) + "?</h2>" +
+      (a ? '<p class="hint">Earlier you chose <strong>' + esc(a.name) + "</strong>. Keep it, or walk it again?</p>"
+         : '<p class="hint">' + esc(stripTags(q.agentAsk || "")) + "</p>") + "</div>";
+    return head + forkHtml(q);
   }
 
   function deepReady(q) {
@@ -545,10 +339,10 @@
   }
   function deepPullHtml(q) {
     if (state.deepErr[q.id]) {
-      return '<div class="researching">' + esc(state.deepErr[q.id]) + "</div>" +
+      return '<p class="err">' + esc(state.deepErr[q.id]) + "</p>" +
         '<div class="actions"><button type="button" class="mini-btn" data-action="deepretry" data-v="' + esc(q.id) + '">Try again</button></div>';
     }
-    return '<div class="researching">Pulling the numbers for the deep dive…' + TYPING + "</div>";
+    return '<div class="progress">Pulling the numbers for the deep dive…' + TYPING + "</div>";
   }
   function triggerDeep(q) {
     if (!q.draft || state.deepLoading[q.id] || state.deepTried[q.id]) return;
@@ -569,64 +363,54 @@
 
   function hoistHtml() {
     var q = Q();
-    if (q.preparing) {
-      return msgHtml("agent", "One moment — <strong>" + esc(q.title) + "</strong> is still being written.") +
-        '<div class="edu"><div class="researching">Muse Spark is writing this moment — it will appear here on its own." + TYPING + "</div></div>';
-    }
-    var html = msgHtml("agent", "Decision moment " + esc(momentNum()) + ": <strong>" + esc(q.shortTitle) + "?</strong> Expand the options, then pick one.") +
-      '<div class="edu"><div class="edu-head"><h2>' + esc(q.title) + "</h2></div>";
-    if (q.model) {
-      html += '<div class="model"><strong>The one idea that decides this</strong>' + esc(q.model) + "</div>";
-    }
+    if (q.preparing) return momentHtml();
     var opts = allOptions();
-    if (!state.picked) html += '<p class="expand-hint">Select an option to open its deep dive — or open the full-screen hyper dive.</p>';
+    var data = momentData(q, state.picked);
+    var html = '<div id="bk-moment"></div>';
+    if (data.metrics.length) html += '<p class="hint">Bars are relative within this option set, not absolute costs.</p>';
+    if (state.picked && !deepReady(q)) { html += deepPullHtml(q); triggerDeep(q); }
+    html += '<div class="opts">';
     for (var i = 0; i < opts.length; i++) {
       var o = opts[i];
       var on = state.picked === o.value;
       html += '<div class="optrow"><button type="button" class="opt" data-action="pick" data-v="' + esc(o.value) + '" aria-pressed="' + (on ? "true" : "false") + '">' +
-        "<b>" + '<span class="onum">' + (i + 1) + "</span>" + ICONS.chev + esc(o.name) + (o.added ? '<span class="yours">Added by you</span>' : "") + "</b><small>" + esc(o.desc) + "</small>" +
-        microHtml(q, o) +
-        (on ? '<span class="why">' + esc(o.why) + "</span>" + journeyHtml(o) : "") +
-        (on ? deepHtml(o) : "") + "</button>" +
-        '<button type="button" class="hyper-btn" data-action="hyper" data-v="' + esc(o.value) + '" aria-label="Hyper dive into ' + esc(o.name) + '">' + ICONS.expand + "</button></div>";
+        '<span class="onum">' + (i + 1) + "</span><b>" + esc(o.name) + "</b>" + (o.added ? ' <span class="hint">(added by you)</span>' : "") +
+        "<small>" + esc(o.desc) + "</small></button>" +
+        '<button type="button" class="hyper-btn" data-action="hyper" data-v="' + esc(o.value) + '" aria-label="Deep dive into ' + esc(o.name) + '">' + ICONS.expand + "</button></div>";
     }
-    if (state.picked) {
-      if (deepReady(q)) html += growthHtml();
-      else { html += deepPullHtml(q); triggerDeep(q); }
-    }
-    var pickedOpt = optBy(state.picked);
-    html += '<div class="actions"><button type="button" class="btn" data-action="confirm"' +
-      (state.picked ? "" : " disabled") + ">Confirm choice</button></div>";
+    html += "</div>";
+    html += '<div class="actions"><span class="spacer"></span><button type="button" class="btn" data-action="confirm"' +
+      (state.picked ? "" : " disabled") + ">Commit choice</button></div>";
+    if (!state.picked) html += '<p class="hint">Pick an option above to enable this — committing needs a pick first.</p>';
     if (state.err) html += '<p class="err">' + esc(state.err) + "</p>";
     html += '<div class="escape-row"><span>Not sold?</span>' +
       '<button type="button" class="escape-btn" data-action="escape" data-v="custom">Add your option</button>';
     if (q.agentPick) html += '<button type="button" class="escape-btn" data-action="delegate">Let the agent decide</button>';
     if (!q.noAbandon) html += '<button type="button" class="escape-btn" data-action="escape" data-v="chat">Back to chat</button>';
+    var pickedOpt = optBy(state.picked);
     html += '<button type="button" class="escape-btn" data-action="escape" data-v="skip">' + (CTX.kind === "decide" ? "Decide later" : "Skip question") + "</button>" +
       ((pickedOpt && pickedOpt.added) ? '<button type="button" class="escape-btn" data-action="drop">Remove ' + esc(pickedOpt.name) + "</button>" : "") + "</div>";
     if (state.showCustom) {
       html += '<div class="custom-row"><input id="custom-input" type="text" placeholder="e.g. Vercel…" aria-label="Your alternative">' +
         '<button type="button" class="mini-btn" data-action="propose">Add it</button></div>';
     }
-    html += "</div>";
     return html;
   }
 
   function quickHtml() {
     var q = Q();
-    var html = msgHtml("agent", "Quick version, no walk-through — <strong>pick one:</strong>") +
-      '<div class="edu"><h2>' + esc(q.title) + '</h2><div class="quick-pick">';
+    var html = '<div class="card"><h2>' + esc(q.title) + '</h2><p class="hint">Quick version, no walk-through — pick one:</p><div class="opts">';
     for (var i = 0; i < q.options.length; i++) {
       html += '<button type="button" class="opt" data-action="quickpick" data-v="' + esc(q.options[i].value) + '" aria-pressed="false">' +
-        "<b>" + '<span class="onum">' + (i + 1) + "</span>" + esc(q.options[i].name) + "</b><small>" + esc(q.options[i].desc) + "</small></button>";
+        '<span class="onum">' + (i + 1) + "</span><b>" + esc(q.options[i].name) + "</b><small>" + esc(q.options[i].desc) + "</small></button>";
     }
     html += "</div>";
     if (state.err) html += '<p class="err">' + esc(state.err) + "</p>";
     html += '<div class="escape-row"><span>Not sold?</span>';
     if (q.agentPick) html += '<button type="button" class="escape-btn" data-action="delegate">Let the agent decide</button>';
     if (!q.noAbandon) html += '<button type="button" class="escape-btn" data-action="escape" data-v="chat">Back to chat</button>';
-    html += '<button type="button" class="escape-btn" data-action="escape" data-v="skip">' + (CTX.kind === "decide" ? "Decide later" : "Skip question") + "</button></div>";
-    return html + "</div>";
+    html += '<button type="button" class="escape-btn" data-action="escape" data-v="skip">' + (CTX.kind === "decide" ? "Decide later" : "Skip question") + "</button></div></div>";
+    return html;
   }
 
   function answerLabel(ans) {
@@ -634,7 +418,6 @@
     if (ans.custom) return ans.name + " (your proposal)";
     return ans.name + " · " + (ans.path === "hoist" ? "compared" : "quick") + (ans.mode === "delegated" ? " · agent" : "");
   }
-
   function reviewRows() {
     var rows = [];
     for (var i = 0; i < PACKS.length; i++) {
@@ -649,17 +432,15 @@
     for (var j = 0; j < defs.length; j++) rows.push(defs[j]);
     return rows;
   }
-
   function reviewHtml() {
     var rows = reviewRows();
     var doneCount = 0;
     for (var di = 0; di < rows.length; di++) if (rows[di].done) doneCount++;
     var allDone = doneCount === rows.length;
-    var lead = allDone ? "Every moment is decided — <strong>review the set, then commit it:</strong>"
-      : (doneCount ? "<strong>" + doneCount + " of " + rows.length + " decided</strong> — review what's here, or answer the rest:"
-        : "Nothing decided yet — <strong>answer or skip each moment, then commit the set:</strong>");
-    var html = msgHtml("agent", lead) +
-      '<div class="edu">';
+    var lead = allDone ? "Every moment is decided — review the set, then commit it:"
+      : (doneCount ? doneCount + " of " + rows.length + " decided — review what's here, or answer the rest:"
+        : "Nothing decided yet — answer or skip each moment, then commit the set:");
+    var html = '<div class="card"><h2>Review the set</h2><p class="hint">' + esc(lead) + "</p>";
     for (var i = 0; i < rows.length; i++) {
       var r = rows[i];
       html += '<div class="rev-row"><div><b>' + esc(r.title) + "</b>" +
@@ -671,8 +452,164 @@
     if (state.err) html += '<p class="err">' + esc(state.err) + "</p>";
     html += '<div class="actions"><button type="button" class="btn" data-action="file"' +
       (allDone ? "" : " disabled") + ">Commit &amp; send back to chat</button></div>";
-    if (!allDone) html += '<p class="q-hint">Answer or skip every moment to commit the set. Nothing is written yet.</p>';
+    if (!allDone) html += '<p class="hint">Answer or skip every moment to commit the set. Nothing is written yet.</p>';
     return html;
+  }
+
+  function parseRecord(md) {
+    var lines = String(md || "").split("\n");
+    var fm = {}, i = 0;
+    if (lines[0] === "---") {
+      i = 1;
+      while (i < lines.length && lines[i] !== "---") {
+        var fmline = /^([a-z-]+):\s*(.*)$/.exec(lines[i]);
+        if (fmline) fm[fmline[1]] = fmline[2];
+        i++;
+      }
+      i++;
+    }
+    var title = "", quote = "", secs = [], cur = null;
+    for (; i < lines.length; i++) {
+      var ln = lines[i];
+      var h1 = /^#\s+(.*)$/.exec(ln);
+      var h2 = /^##\s+(.*)$/.exec(ln);
+      var q = /^>\s?(.*)$/.exec(ln);
+      if (h1 && !title) { title = h1[1]; continue; }
+      if (h2) { if (cur) secs.push(cur); cur = { h: h2[1], blocks: [] }; continue; }
+      if (q) { quote += (quote ? " " : "") + q[1]; continue; }
+      if (!cur) continue;
+      var h3 = /^###\s+(.*)$/.exec(ln);
+      var li = /^-\s+(.*)$/.exec(ln);
+      var ol = /^\d+\.\s+(.*)$/.exec(ln);
+      if (h3) cur.blocks.push({ sub: h3[1] });
+      else if (li) cur.blocks.push({ li: li[1] });
+      else if (ol) cur.blocks.push({ ol: ol[1] });
+      else if (!/^\s*$/.test(ln)) cur.blocks.push({ p: ln });
+    }
+    if (cur) secs.push(cur);
+    return { fm: fm, title: title, quote: quote, secs: secs };
+  }
+  function quoteVal(q, label) {
+    var chunks = String(q).split("**");
+    for (var i = 1; i < chunks.length; i += 2) {
+      if (chunks[i].replace(/:$/, "").toLowerCase() === label.toLowerCase()) return (chunks[i + 1] || "").trim().replace(/\.*$/, "");
+    }
+    return "";
+  }
+  function secByName(r, name) {
+    for (var i = 0; i < r.secs.length; i++) if (r.secs[i].h.toLowerCase().indexOf(name) === 0) return r.secs[i];
+    return null;
+  }
+  function cleanCons(t) { return String(t).replace(/^(Good|Bad), because\s*/i, ""); }
+  function recordData(rec) {
+    var r = parseRecord(rec.markdown || "");
+    var ctxSec = secByName(r, "context");
+    var context = [];
+    var question = "";
+    if (ctxSec) ctxSec.blocks.forEach(function (b) { if (b.p) { if (!question) question = b.p; context.push(b.p); } });
+    var outSec = secByName(r, "decision outcome");
+    var chosenName = "", because = quoteVal(r.quote, "Because");
+    var good = [], bad = [];
+    if (outSec) outSec.blocks.forEach(function (b) {
+      if (b.p && /^Chosen:/i.test(b.p)) {
+        var m = /^Chosen:\s*([^,]+)/i.exec(b.p);
+        if (m) chosenName = m[1].trim();
+        if (!because) because = b.p.replace(/^Chosen:\s*[^,]+,?\s*(because\s*)?/i, "");
+      }
+      if (b.li) { if (/^Bad, because/i.test(b.li)) bad.push(cleanCons(b.li)); else if (/^Good, because/i.test(b.li)) good.push(cleanCons(b.li)); }
+    });
+    if (!because) because = quoteVal(r.quote, "Decision");
+    var optSec = secByName(r, "considered options");
+    var names = [];
+    if (optSec) optSec.blocks.forEach(function (b) {
+      if (b.ol) names.push(b.ol.replace(/\s*\(the agent's pick\)\s*$/, ""));
+      if (b.li && /^Ruled out:/i.test(b.li)) { /* ruled-out stays in raw */ }
+    });
+    var pcSec = secByName(r, "pros and cons");
+    var prosCons = {};
+    names.forEach(function (n) { prosCons[slugify(n)] = []; });
+    if (!chosenName && names.length) {
+      var tm = /:\s*(.+)$/.exec(r.title || "");
+      if (tm) chosenName = names.filter(function (n) { return tm[1].toLowerCase().indexOf(n.toLowerCase()) >= 0; })[0] || "";
+    }
+    var chosenId = slugify(chosenName);
+    if (pcSec) {
+      var curOpt = null;
+      pcSec.blocks.forEach(function (b) {
+        if (b.sub) { curOpt = slugify(b.sub); if (!prosCons[curOpt]) prosCons[curOpt] = []; return; }
+        if (curOpt && b.li) {
+          if (/^Bad, because/i.test(b.li)) prosCons[curOpt].push({ kind: "bad", text: cleanCons(b.li) });
+          else if (/^Good, because/i.test(b.li)) prosCons[curOpt].push({ kind: "good", text: cleanCons(b.li) });
+          else prosCons[curOpt].push({ kind: "neutral", text: b.li });
+        }
+      });
+      Object.keys(prosCons).forEach(function (k) { if (!names.some(function (n) { return slugify(n) === k; })) names.push(k); });
+    }
+    var confSec = secByName(r, "decision outcome");
+    var confirmation = [];
+    if (confSec) {
+      var inConf = false;
+      confSec.blocks.forEach(function (b) {
+        if (b.sub && /confirmation/i.test(b.sub)) { inConf = true; return; }
+        if (b.sub) inConf = false;
+        if (inConf && b.li) confirmation.push(b.li.replace(/^\[ \]\s*/, ""));
+      });
+    }
+    var moreSec = secByName(r, "more information");
+    var more = [];
+    if (moreSec) moreSec.blocks.forEach(function (b) { if (b.li) more.push(b.li); else if (b.p) more.push(b.p); });
+    if (r.fm.confidence) more.unshift("Confidence: " + r.fm.confidence + (r.fm.door ? " · door: " + r.fm.door : "") + ".");
+    var people = {};
+    if (r.fm.deciders) people.decided = [r.fm.deciders];
+    if (r.fm.consulted) people.consulted = [r.fm.consulted];
+    if (r.fm["proposed-by"]) people.responsible = [r.fm["proposed-by"]];
+    return {
+      title: r.title, question: question || r.title, context: context,
+      options: names.map(function (n) { return { id: slugify(n), name: n, desc: "" }; }),
+      chosen: chosenId || null, because: because,
+      consequences: { good: good, bad: bad, neutral: [] },
+      prosCons: prosCons, confirmation: confirmation, people: people, more: more,
+      _fm: r.fm, _title: r.title
+    };
+  }
+  function recordViewHtml(rec, mountId) {
+    var d = recordData(rec);
+    var fields = "";
+    var defs = [["status", "Status"], ["date", "Date"], ["door", "Door"], ["confidence", "Confidence"]];
+    for (var i = 0; i < defs.length; i++) if (d._fm[defs[i][0]]) fields += "<div>" + defs[i][1] + " <b>" + esc(d._fm[defs[i][0]]) + "</b></div>";
+    if (d._fm["deciders"]) fields += "<div>Decided by <b>" + esc(d._fm["deciders"]) + "</b></div>";
+    return (fields ? '<div class="rec-fields">' + fields + "</div>" : "") +
+      '<div id="' + mountId + '"></div>' +
+      '<details class="raw"><summary>View raw</summary><pre class="record">' + esc(rec.markdown || "") + "</pre></details>";
+  }
+
+  var LAST = null;
+  function conflictHtml(dec) {
+    if (LIVE || !CAT || !dec || !dec.choice) return "";
+    var K = CAT[dec.kind];
+    if (!K || !K.options || !K.options[dec.choice]) return "";
+    var keys = Object.keys(K.options).filter(function (k) { return k !== dec.choice; });
+    if (!keys.length) return "";
+    LAST = { dec: dec, K: K };
+    var html = '<div class="card"><h2>Proof the record bites</h2>' +
+      '<p class="hint">The hook blocks anything that conflicts with this record. Try one:</p><div class="opts">';
+    for (var i = 0; i < keys.length; i++) {
+      var pkgs = (K.packages || {})[keys[i]] || [];
+      if (!pkgs.length) continue;
+      html += '<button type="button" class="opt" data-action="conflict" data-v="' + esc(pkgs[0]) + '"><b><code>npm install ' + esc(pkgs[0]) + "</code></b><small>" +
+        esc(K.options[keys[i]].n) + " — conflicts with your " + esc(K.options[dec.choice].n) + " pick.</small></button>";
+    }
+    return html + '</div><div id="conflict-out" aria-live="polite"></div></div>';
+  }
+  function showConflict(pkg) {
+    if (!LAST) return;
+    var dec = LAST.dec, K = LAST.K;
+    var opt = K.options[dec.choice] || {};
+    var who = dec.mode === "delegated" ? "let Hoist pick" : "chose";
+    var msg = "Hoist: the user " + who + " " + (opt.tn || dec.choice) + " for this decision (record: " + (dec.record || "") + "). " +
+      "Do not add `" + pkg + "`. " + (opt.use || "") + " Then continue the original task.";
+    var out = $("conflict-out");
+    if (out) out.innerHTML = '<div class="conflict-block">' + esc(msg) + "</div>";
   }
 
   function recordHtml() {
@@ -681,33 +618,33 @@
       if (state.answers[PACKS[i].id]) filed++;
       else if (state.skipped[PACKS[i].id]) deferred++;
     }
-    var html = msgHtml("agent", "Committed <strong>" + filed + " moment" + (filed === 1 ? "" : "s") + "</strong>" +
-      (deferred ? " — <strong>" + deferred + " deferred</strong>" : "") + ". Here's the set:") +
-      '<div class="record-wrap">';
+    var html = '<p class="lede">Committed <strong>' + filed + " moment" + (filed === 1 ? "" : "s") + "</strong>" +
+      (deferred ? " — <strong>" + deferred + " deferred</strong>" : "") + ". Here's the set:</p>";
     for (var j = 0; j < PACKS.length; j++) {
       var q = PACKS[j];
       var a = state.answers[q.id];
       var rec = state.records[q.id];
       if (a && rec && rec.markdown) {
-        html += '<div class="record-q"><strong>' + esc(q.title) + "</strong>" +
-          '<pre class="record">' + esc(rec.markdown) + "</pre></div>";
+        html += recordViewHtml({ file: (rec.record || "").split("/").pop(), markdown: rec.markdown }, "bk-rec-" + esc(q.id));
       } else if (a) {
-        html += '<div class="deferred-note"><strong>' + esc(q.title) + " — " + esc(a.name) + ".</strong> " +
+        html += '<div class="note"><strong>' + esc(q.title) + " — " + esc(a.name) + ".</strong> " +
           (rec && rec.record ? "Saved as " + esc(rec.record) + "." : "") + "</div>";
       } else if (state.abandoned[q.id]) {
-        html += '<div class="deferred-note"><strong>' + esc(q.title) + " — sent back to chat.</strong> " +
+        html += '<div class="note"><strong>' + esc(q.title) + " — sent back to chat.</strong> " +
           "No choice made; your agent will ask there instead.</div>";
       } else if (state.skipped[q.id]) {
-        html += '<div class="deferred-note"><strong>' + esc(q.title) + " — deferred.</strong> " +
+        html += '<div class="note"><strong>' + esc(q.title) + " — deferred.</strong> " +
           "No choice made; this moment stays open for later." +
           (rec && rec.record ? " Placeholder saved as " + esc(rec.record) + "." : "") + "</div>";
       }
     }
     var defs = defaultRows();
     for (var k = 0; k < defs.length; k++) {
-      html += '<div class="deferred-note"><strong>' + esc(defs[k].title) + " — default stands.</strong> " + esc(defs[k].label) + "</div>";
+      html += '<div class="note"><strong>' + esc(defs[k].title) + " — default stands.</strong> " + esc(defs[k].label) + "</div>";
     }
-    html += '<button type="button" class="restart" data-action="restart">' +
+    if (CTX.kind === "decide" && PACKS.length && PACKS[0].dec) html += conflictHtml(PACKS[0].dec);
+    html += '<div class="note">Committed — your agent already has this and is back to work. You can close this tab; the records stay under <strong>Records</strong>.</div>';
+    html += '<div class="actions"><span class="spacer"></span><button type="button" class="btn ghost" data-action="restart">' +
       (CTX.kind === "decide" ? "Back to start" : "Start another task") + "</button></div>";
     return html;
   }
@@ -717,28 +654,13 @@
     var idx = 0, all = allOptions();
     for (var k = 0; k < all.length; k++) if (all[k].value === o.value) idx = k + 1;
     var ddg = "https://duckduckgo.com/?q=" + encodeURIComponent(o.name + " " + q.decision);
-    var html = '<div class="veil" data-action="hyperclose"><div class="sheet" role="dialog" aria-modal="true" aria-label="' + esc(o.name) + ' hyper dive">';
-    html += '<div class="sheet-top"><div><h2><span class="onum">' + idx + "</span>" + esc(o.name) + '</h2><p class="sub">' + esc(o.desc) + "</p></div>" +
+    var html = '<div class="veil" data-action="hyperclose"><div class="sheet" role="dialog" aria-modal="true" aria-label="' + esc(o.name) + ' deep dive">';
+    html += '<div class="sheet-top"><div><h2><span class="onum">' + idx + "</span> " + esc(o.name) + '</h2><p class="sub">' + esc(o.desc) + " · deep dive for “" + esc(q.title) + "”</p></div>" +
       '<button type="button" class="x-btn" data-action="hyperx">Close</button></div>';
-    html += '<div class="sheet-sec">The story</div><p class="sheet-story">' + esc(o.why) + "</p>";
-    if (o.journey && o.journey.length) html += '<div class="sheet-sec">How it works</div>' + journeyHtml(o);
-    var deep = deepHtml(o);
-    if (deep) html += '<div class="sheet-sec">Numbers and trade-offs</div>' + deep;
+    html += '<div id="bk-dive"></div>';
     if (CTX.kind === "session" && q.draft && !deepReady(q)) { html += deepPullHtml(q); triggerDeep(q); }
-    if (o.living) html += '<div class="sheet-sec">Living with it</div><p class="sheet-story">' + esc(o.living) + "</p>";
-    html += '<div class="sheet-sec">Keep learning</div><ul class="learn-list">';
-      var shownDocs = {};
-      if (o.docs) {
-        html += '<li><a href="' + esc(o.docs) + '" target="_blank" rel="noopener">' + esc(o.name) + " docs</a></li>";
-        shownDocs[o.docs] = true;
-      }
-      for (var i = 0; i < q.links.length; i++) {
-        if (shownDocs[q.links[i].u]) continue;
-        html += '<li><a href="' + esc(q.links[i].u) + '" target="_blank" rel="noopener">Background: ' + esc(q.links[i].t) + "</a></li>";
-      }
-      html += '<li><a href="' + esc(ddg) + '" target="_blank" rel="noopener">Search the web for ' + esc(o.name) + "</a></li></ul>";
-    html += '<div class="sheet-actions">' +
-      '<button type="button" class="btn" data-action="hyperpick" data-v="' + esc(o.value) + '">Choose ' + esc(o.name) + "</button></div>";
+    html += '<p class="hint"><a href="' + esc(ddg) + '" target="_blank" rel="noopener">Search the web for ' + esc(o.name) + "</a></p>";
+    html += '<div class="actions"><button type="button" class="btn" data-action="hyperpick" data-v="' + esc(o.value) + '">Commit ' + esc(o.name) + "</button></div>";
     return html + "</div></div>";
   }
   function openHyper(v) {
@@ -925,11 +847,18 @@
       });
   }
 
+  var BUILD = null;
   function loadState() {
     return fetch("/api/state", { cache: "no-store" }).then(function (r) {
       if (!r.ok) throw new Error("bad state");
       return r.json();
     }).then(function (j) {
+      if (BUILD !== null && j.build && j.build !== BUILD) {
+        /* Server restarted with a new build: reload once into the new page. */
+        location.reload();
+        return new Promise(function () {});
+      }
+      if (BUILD === null && j.build) BUILD = j.build;
       S = j; LIVE = true;
       var off = $("offline");
       if (off) off.classList.remove("on");
@@ -986,14 +915,23 @@
     };
   }
 
+  var LINK_TITLES = {
+    "sqlite.org": "SQLite documentation",
+    "postgresql.org": "PostgreSQL documentation",
+    "cheatsheetseries.owasp.org": "OWASP password storage guide",
+    "developers.google.com": "Google sign-in documentation"
+  };
+  function linkTitle(u) {
+    var host = String(u).replace(/^https?:\/\//, "").split("/")[0].replace(/^www\./, "");
+    return LINK_TITLES[host] || host;
+  }
   function draftLinks(dr) {
     var seen = {}, out = [];
     (dr.options || []).forEach(function (x) {
       var u = x.learn && x.learn.docs_url;
       if (!u || seen[u]) return;
       seen[u] = true;
-      var t = String(u).replace(/^https?:\/\//, "").split("/")[0];
-      out.push({ t: t, u: u });
+      out.push({ t: linkTitle(u), u: u });
     });
     return out;
   }
@@ -1064,7 +1002,7 @@
       chatAsk: dec.task || "Carry on working.",
       agentAsk: esc(dec.agent || "Your agent") + (pkg ? " was about to add <code>" + esc(pkg) + "</code> — " : " hit a hard choice — ") +
         "<strong>" + esc(K.undo || "This is hard to undo.") + "</strong> How do you want to decide?",
-      decision: K.title.toLowerCase(), model: "", microLabel: "estimated cost",
+      decision: K.title.toLowerCase(), model: "", microLabel: "Estimated cost",
       growth: null, links: [], options: opts,
       agentPick: agentPick, noAbandon: true, dec: dec, catalog: K
     }];
@@ -1116,13 +1054,11 @@
     for (var i = 0; i < list.length; i++) if (list[i].id === opt.value) return list[i];
     return null;
   }
-
   function confLine(path, mode) {
     if (mode === "delegated") return { lv: "low", txt: "you didn't compare; the agent's pick stands" };
     if (path !== "hoist") return { lv: "low", txt: "quick-picked without comparison. Revisit recommended" };
     return { lv: "medium", txt: "chosen after comparing all options" };
   }
-
   function madrSession(q, opt, mode, path) {
     var d = q.plan, dr = q.draft, raw = rawOf(q, opt);
     var cf = confLine(path, mode);
@@ -1170,7 +1106,7 @@
       "### Consequences",
       goods.join("\n") + "\n" + bads.join("\n"), "",
       "### Confirmation",
-      check + "- Hoist flags later changes that conflict with this record.", "",
+      check + "- Hoist flags later database changes that conflict with this record.", "",
       "## Pros and Cons of the Options",
       order.slice(1).map(function (o) {
         return "### " + o.name + "\n" + (o.good || []).map(function (g) { return "- Good, because " + lc(g.text); }).join("\n") +
@@ -1181,7 +1117,6 @@
       ""
     ].join("\n");
   }
-
   function madrParked(q) {
     if (CTX.kind === "decide") {
       var K = q.catalog, dec = q.dec;
@@ -1210,7 +1145,6 @@
       "Short term: " + holder + " as a placeholder the agent keeps easy to replace.", ""
     ].join("\n");
   }
-
   function madrDefault(d) {
     var budget = !!d.budget_note;
     var why = budget ? "it's the safe default for projects like this, and Hoist recorded it instead of asking you, to keep the task short"
@@ -1231,7 +1165,6 @@
       "- Confidence: low; nobody chose this on purpose yet.", ""
     ].join("\n");
   }
-
   function madrDecide(q, opt, mode, path) {
     var K = q.catalog, dec = q.dec;
     var custom = !!(opt && opt.added);
@@ -1265,7 +1198,7 @@
       "### Consequences",
       goods.join("\n") + "\n" + bads.join("\n"), "",
       "### Confirmation",
-      "- Hoist blocks changes that conflict with this record.", "",
+      "- Hoist blocks database changes that conflict with this record.", "",
       "## Pros and Cons of the Options",
       order.slice(1).map(function (k) {
         var x = K.options[k];
@@ -1276,7 +1209,6 @@
       "- Confidence: " + cf.lv + "; " + cf.txt + ".", ""
     ].join("\n");
   }
-
   function nextLocalFile(slug) {
     var n = 0;
     (S.records || []).forEach(function (r) {
@@ -1287,7 +1219,6 @@
     while (n.length < 4) n = "0" + n;
     return n + "-" + slug + ".md";
   }
-
   function saveChoice(q, opt, mode, path) {
     var custom = !!(opt && opt.added);
     if (CTX.kind === "decide") {
@@ -1325,7 +1256,6 @@
     sesOutcomes()[q.id] = { choice: payload.choice, mode: mode, record: "docs/decisions/" + file };
     return Promise.resolve({ markdown: md2, record: "docs/decisions/" + file, mode: mode });
   }
-
   function sesOutcomes() {
     if (!S.session) S.session = {};
     if (!S.session.outcomes) S.session.outcomes = {};
@@ -1363,7 +1293,6 @@
     sesOutcomes()[q.id] = { choice: null, mode: "parked", record: "docs/decisions/" + file };
     return Promise.resolve({ markdown: md, record: "docs/decisions/" + file, mode: "parked" });
   }
-
   function saveAbandoned(q) {
     if (LIVE) {
       return post("/api/session/abandon", { id: q.id }).then(function (ses) { S.session = ses; return {}; });
@@ -1371,7 +1300,6 @@
     sesOutcomes()[q.id] = { choice: null, mode: "abandoned", record: "", note: "Sent back to chat." };
     return Promise.resolve({});
   }
-
   function fileDefaults() {
     var ses = S.session;
     var chain = Promise.resolve();
@@ -1402,35 +1330,32 @@
     "Add analytics to see where customers drop off during checkout"];
 
   function startHtml() {
-    var html = msgHtml("agent", "Tell me the task — I'll find every choice that's hard to undo, and we'll take each <strong>decision moment</strong> together.") +
-      '<div class="edu"><h2>What are we deciding?</h2>' +
-      '<p class="q-hint">Your agent reads the project and Muse Spark prepares each moment. Expand anything, hyper-dive anywhere, then pick.</p>' +
+    var badge = LIVE ? "" : '<a class="sample-badge" href="landing.html#install">Sample data</a>';
+    return '<div class="card"><h2>What are we deciding?' + badge + "</h2>" +
+      '<p class="hint">Tell me the task — I\'ll find every choice that\'s hard to undo, and we\'ll take each decision moment together. Muse Spark prepares each moment; Hoist checks every draft against its rules before you see it.</p>' +
       '<textarea class="task-input" id="taskIn" aria-label="Task">' + (LIVE ? "" : esc(EXAMPLES[0])) + "</textarea>" +
-      '<div class="ex-row">' + EXAMPLES.filter(function (e) { return LIVE || e !== EXAMPLES[0]; }).map(function (e) {
+      '<div class="escape-row">' + EXAMPLES.filter(function (e) { return LIVE || e !== EXAMPLES[0]; }).map(function (e) {
         return '<button type="button" class="escape-btn" data-action="ex" data-v="' + esc(e) + '">' + esc(e) + "</button>";
       }).join("") + "</div>" +
       '<div class="actions"><button type="button" class="btn" data-action="start">Start deciding together</button></div>' +
       (state.err ? '<p class="err">' + esc(state.err) + "</p>" : "") + "</div>";
-    return html;
   }
-
   function progressHtml(ses) {
     var total = ses.total || 0, n = (ses.drafted || []).length;
     var line = ses.status === "planning" ? "Reading your project and finding the decision moments…"
       : "Preparing moment " + Math.min(n + 1, total || 1) + " of " + (total || "?") + " — deciding starts with the first moment.";
-    return msgHtml("agent", "Working on <strong>" + esc(ses.task || "") + ".</strong>") +
-      '<div class="edu"><div class="researching">' + esc(line) + TYPING + "</div>" +
-      '<p class="q-hint">Muse Spark writes the questions and options; Hoist checks every draft against its rules before you see it.</p></div>';
+    var simNote = !LIVE ?
+      '<p class="hint">Sample run — this session is generated sample data, not live AI reasoning.</p>' : "";
+    return '<div class="card"><h2>Working on ' + esc(ses.task || "") + '</h2><div class="progress">' + esc(line) + TYPING + "</div>" + simNote +
+      '<p class="hint">Muse Spark writes the questions and options; Hoist checks every draft against its rules before you see it.</p></div>';
   }
-
   function errorHtml(ses) {
-    return msgHtml("agent", "Muse Spark <strong>couldn't finish</strong> preparing the decision moments.") +
-      '<div class="edu"><p class="q-hint">Try again picks up where it stopped and keeps what is already written. Your agent is still waiting.' +
+    return '<div class="card"><h2>Couldn\'t finish preparing</h2>' +
+      '<p class="hint">Muse Spark couldn\'t finish the decision moments. Try again picks up where it stopped and keeps what is already written. Your agent is still waiting.' +
       (ses.error ? " Details: " + esc(ses.error) : "") + "</p>" +
       '<div class="actions"><button type="button" class="btn" data-action="retry">Try again</button></div>' +
       (state.err ? '<p class="err">' + esc(state.err) + "</p>" : "") + "</div>";
   }
-
   function startSession(task, resume) {
     task = (task || "").trim();
     if (!task) { state.err = "Describe the task first."; render(); return; }
@@ -1458,7 +1383,7 @@
       if (!state.qid && PACKS.length) state.qid = PACKS[0].id;
       render();
       var chain = Promise.resolve();
-      ids.forEach(function (id, i) {
+      ids.forEach(function (id) {
         chain = chain.then(function () {
           return step(1200).then(function () {
             SIM.drafts[id] = base.drafts[id];
@@ -1482,8 +1407,8 @@
   }
 
   function engineHtml() {
-    var lede = CTX.kind === "decide" ? "One hard choice. Expand, compare, commit — one record at the end."
-      : "One moment per hard choice. Expand, compare, commit — one record at the end.";
+    var lede = CTX.kind === "decide" ? "One hard choice. Compare, commit — one record at the end."
+      : "One canvas per hard choice. Compare, commit — one record at the end.";
     var html = '<p class="lede">' + esc(lede) + "</p>" +
       '<div class="qtabs" role="group" aria-label="Question">' + tabsHtml() + "</div>";
     if (state.phase === "moment") html += momentHtml();
@@ -1493,7 +1418,6 @@
     else if (state.phase === "record") html += recordHtml();
     return html;
   }
-
   function sessionHtml() {
     var ses = S.session || SIM;
     if (!ses) return startHtml();
@@ -1512,34 +1436,34 @@
     }
     return engineHtml();
   }
-
   function homeHtml() {
     var open = (S.decisions || []).filter(function (d) { return d.status === "open"; });
     var ses = S.session;
-    var html = msgHtml("agent", "Hoist holds your <strong>decision moments</strong> — the choices that are hard to undo. Pick one up, or walk a whole task.") +
-      '<div class="edu"><h2>Open now</h2><p class="q-hint">Single interruptions land here; task sessions walk question by question.</p>';
-    if (!open.length && !ses) html += '<p class="q-hint">Nothing is waiting. Start a task session to try the walk-through.</p>';
+    var badge = LIVE ? "" : '<a class="sample-badge" href="landing.html#install">Sample data</a>';
+    var html = '<p class="lede">Hoist holds your <strong>decision moments</strong> — the choices that are hard to undo. Pick one up, or walk a whole task.</p>' +
+      '<div class="card"><h2>Open now' + badge + '</h2><p class="hint">Single interruptions land here; task sessions walk question by question.</p>';
+    if (!open.length && !ses) html += '<p class="hint">Nothing is waiting. Start a task session to try the walk-through.</p>';
     for (var i = 0; i < open.length; i++) {
-      html += '<a class="opt" href="#/decide/' + esc(open[i].id) + '"><b>' + esc(open[i].task || open[i].kind) + "</b><small>" +
+      html += '<a class="opt list-opt" href="#/decide/' + esc(open[i].id) + '"><b>' + esc(open[i].task || open[i].kind) + "</b><small>" +
         esc("Single decision · waiting on you") + "</small></a>";
     }
     if (ses && ses.plan) {
       var asks = ses.plan.decisions.filter(function (d) { return d.mode === "ask"; });
       var left = asks.filter(function (d) { return !(ses.outcomes || {})[d.id]; }).length;
-      html += '<a class="opt" href="#/session"><b>' + esc(ses.task || "Task session") + "</b><small>" +
+      html += '<a class="opt list-opt" href="#/session"><b>' + esc(ses.task || "Task session") + "</b><small>" +
         esc(ses.status === "ready" ? left + " of " + asks.length + " left to decide" : "Muse Spark is preparing it…") + "</small></a>";
     } else if (ses) {
-      html += '<a class="opt" href="#/session"><b>' + esc(ses.task || "Task session") + "</b><small>Muse Spark is preparing it…</small></a>";
+      html += '<a class="opt list-opt" href="#/session"><b>' + esc(ses.task || "Task session") + "</b><small>Muse Spark is preparing it…</small></a>";
     }
-    html += '<a class="opt" href="#/session"><b>Start a task session</b><small>Describe a task; decide its hard parts well.</small></a>';
+    html += '<a class="opt list-opt" href="#/session" style="border:2px solid var(--bk-signal)"><b>Start a task session</b><small>Describe a task; decide its hard parts well.</small></a>';
     html += "</div>";
     return html;
   }
-
   function recordsHtml() {
     var recs = (S.records || []).slice().reverse();
-    var html = '<p class="lede">Every saved decision, newest first.</p><div class="edu"><h2>Decision records</h2>';
-    if (!recs.length) html += '<p class="q-hint">No records yet. Finish a walk-through and they land here.</p>';
+    var badge = LIVE ? "" : '<a class="sample-badge" href="landing.html#install">Sample data</a>';
+    var html = '<p class="lede">Every saved decision, newest first.</p><div class="card"><h2>Decision records' + badge + "</h2>";
+    if (!recs.length) html += '<p class="hint">No records yet. Finish a walk-through and they land here.</p>';
     for (var i = 0; i < recs.length; i++) {
       var title = "Record";
       var m = /^#\s+(.+)$/m.exec(recs[i].markdown || "");
@@ -1549,20 +1473,52 @@
       if (dm) sub = dm[1] + " · " + sub;
       var om = />\s*\*\*Decision:\*\*\s*([^.*]+)/.exec(recs[i].markdown || "");
       if (om) sub += " — " + om[1].trim().slice(0, 80);
-      html += '<a class="opt" href="#/records/' + esc(recs[i].file) + '"><b>' + esc(title) + "</b><small>" + esc(sub) + "</small></a>";
+      html += '<a class="opt list-opt" href="#/records/' + esc(recs[i].file) + '"><b>' + esc(title) + "</b><small>" + esc(sub) + "</small></a>";
     }
     return html + "</div>";
   }
-
   function recordOneHtml(param) {
     var rec = null;
     (S.records || []).forEach(function (r) {
       if (r.file === param || (r.file || "").indexOf(param) === 0) rec = r;
     });
-    if (!rec) return msgHtml("agent", "No record by that name.") + '<div class="edu"><a class="opt" href="#/records"><b>All records</b></a></div>';
-    return msgHtml("agent", "Saved as <strong>" + esc(rec.file) + ".</strong>") +
-      '<div class="record-wrap"><pre class="record">' + esc(rec.markdown || "") + "</pre>" +
-      '<a class="opt" href="#/records"><b>All records</b></a></div>';
+    if (!rec) return '<div class="card"><h2>No record by that name.</h2><a class="opt list-opt" href="#/records"><b>All records</b></a></div>';
+    return '<p class="lede">Saved as <strong>' + esc(rec.file) + ".</strong></p>" +
+      recordViewHtml(rec, "bk-one") +
+      '<a class="opt list-opt" href="#/records" style="margin-top:12px"><b>All records</b></a>';
+  }
+
+  function mountInto(id, templateOrId, data) {
+    var el = $(id);
+    if (!el || typeof BentoKit === "undefined") return;
+    try { BentoKit.render(el, templateOrId, data); } catch (e) { el.innerHTML = '<p class="err">This canvas could not be drawn.</p>'; }
+  }
+  function mountCanvases() {
+    var q = Q();
+    var m = $("bk-moment");
+    if (m && q && state.phase === "hoist") {
+      var data = momentData(q, state.picked);
+      mountInto("bk-moment", data.metrics.length ? "moment" : "moment-plain", data);
+    }
+    document.querySelectorAll("[id^='bk-rec-']").forEach(function (el) {
+      var qid = el.id.slice(7);
+      var rec = state.records[qid];
+      if (rec && rec.markdown) mountInto(el.id, "madr-record", recordData({ file: (rec.record || "").split("/").pop(), markdown: rec.markdown }));
+    });
+    var one = $("bk-one");
+    if (one) {
+      var h = (typeof location !== "undefined" && location.hash) || "";
+      var param = decodeURIComponent(h.slice(10));
+      var rec2 = null;
+      (S.records || []).forEach(function (r) { if (r.file === param || (r.file || "").indexOf(param) === 0) rec2 = r; });
+      if (rec2) mountInto("bk-one", "madr-record", recordData(rec2));
+    }
+    var dive = $("bk-dive");
+    if (dive && state.hyper && optBy(state.hyper) && q) {
+      var o = optBy(state.hyper);
+      var dd = diveData(q, o);
+      mountInto("bk-dive", dd.attributes.length ? "option-dive" : "option-dive-plain", dd);
+    }
   }
 
   function render() {
@@ -1575,25 +1531,29 @@
       var id = h.slice(9);
       var dec = null;
       (S.decisions || []).forEach(function (x) { if (x.id === id) dec = x; });
-      if (!dec) { app.innerHTML = msgHtml("agent", "No decision by that name.") + '<div class="edu"><a class="opt" href="#/"><b>Open now</b></a></div>'; paintModal(); return; }
+      if (!dec) { app.innerHTML = '<div class="card"><h2>No decision by that name.</h2><a class="opt list-opt" href="#/"><b>Open now</b></a></div>'; paintModal(); return; }
       if (dec.status !== "open") {
         var rec = null;
         (S.records || []).forEach(function (r) { if (dec.record && (dec.record || "").indexOf(r.file) !== -1) rec = r; });
-        app.innerHTML = msgHtml("agent", "This one is <strong>decided.</strong>") + '<div class="record-wrap">' +
-          (rec ? '<pre class="record">' + esc(rec.markdown || "") + "</pre>" : '<p class="q-hint">Saved as ' + esc(dec.record || "") + ".</p>") +
-          '<a class="opt" href="#/"><b>Open now</b></a></div>';
+        app.innerHTML = '<p class="lede">This one is <strong>decided.</strong></p>' +
+          (rec ? recordViewHtml(rec, "bk-one") : '<p class="hint">Saved as ' + esc(dec.record || "") + ".</p>") +
+          conflictHtml(dec) +
+          '<a class="opt list-opt" href="#/" style="margin-top:12px"><b>Open now</b></a>';
+        mountCanvases();
         paintModal();
         return;
       }
       if (!CAT) { app.innerHTML = progressHtml({ task: "Loading the decision…", status: "planning", total: 1, drafted: [] }); paintModal(); return; }
       if (CTX.kind !== "decide" || CTX.id !== id || !PACKS.length) { CTX = { kind: "decide", id: id }; buildDecidePack(dec); resetState(); state.qid = PACKS[0].id; }
       app.innerHTML = engineHtml();
+      mountCanvases();
       paintModal();
       return;
     }
     if (h.indexOf("#/records/") === 0) {
       nav("nav-home", false); nav("nav-session", false); nav("nav-records", true);
       app.innerHTML = recordOneHtml(decodeURIComponent(h.slice(10)));
+      mountCanvases();
       paintModal();
       return;
     }
@@ -1607,6 +1567,7 @@
       nav("nav-home", false); nav("nav-session", true); nav("nav-records", false);
       if (CTX.kind !== "session") { CTX = { kind: "session" }; resetState(); buildSessionPacks(); restoreFromOutcomes(); }
       app.innerHTML = sessionHtml();
+      mountCanvases();
       paintModal();
       return;
     }
@@ -1617,8 +1578,9 @@
 
   function paintModal() {
     var mo = $("modal");
-    if (mo) mo.innerHTML = (state.hyper && optBy(state.hyper) && (state.phase === "hoist" || state.phase === "quick")) ? hyperHtml(optBy(state.hyper)) : "";
-    if (!state.hyper && mo) mo.innerHTML = "";
+    if (!mo) return;
+    mo.innerHTML = (state.hyper && optBy(state.hyper) && (state.phase === "hoist" || state.phase === "quick")) ? hyperHtml(optBy(state.hyper)) : "";
+    mountCanvases();
   }
 
   function onClick(ev) {
@@ -1652,6 +1614,7 @@
       closeHyper();
     }
     else if (action === "hyperpick") { if (optBy(v)) { state.hyper = null; state.picked = v; confirm("chosen"); } }
+    else if (action === "conflict") showConflict(v);
     else if (action === "ex") { var el = $("taskIn"); if (el) el.value = v; }
     else if (action === "start") { var ti = $("taskIn"); startSession(ti ? ti.value : "", false); }
     else if (action === "retry") startSession((S.session || {}).task || "", true);
@@ -1680,9 +1643,19 @@
     return ((typeof location !== "undefined" && location.hash) || "").indexOf("#/decide/") === 0 && !CAT;
   }
 
+  function loadingHtml() {
+    return '<div class="card"><h2>Opening Hoist</h2><p class="hint">Loading your decision moments.</p>' +
+      '<div class="skel" aria-hidden="true">' +
+      '<div class="skel-bar" style="width:42%"></div>' +
+      '<div class="skel-bar" style="width:88%"></div>' +
+      '<div class="skel-bar" style="width:71%"></div>' +
+      '<div class="skel-bar" style="width:95%"></div></div></div>';
+  }
   function boot() {
     state.theme = loadTheme();
     applyTheme();
+    var app = $("app");
+    if (app) app.innerHTML = loadingHtml();
     loadState().then(function () {
       if (!S) {
         $("app").innerHTML = '<p class="err">Couldn\'t load the decisions. Browsers block data files when this page is opened directly — serve it with <code>cd site && python3 -m http.server 8000</code> and open <code>http://localhost:8000/#/session</code>, or run <code>python3 hoist.py serve</code> for the live session.</p>';
@@ -1714,7 +1687,7 @@
     });
   }
 
-  window.__hoist = { state: state, boot: boot, render: render, packs: function () { return PACKS; }, chartName: chartName,
+  window.__hoist = { state: state, boot: boot, render: render, packs: function () { return PACKS; },
     switchQ: switchQ, choosePath: choosePath, pick: pick,
     confirm: confirm, propose: propose, startSession: startSession, ctx: function () { return CTX; } };
 

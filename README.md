@@ -23,7 +23,8 @@ Decision records use the [MADR](https://adr.github.io/madr/) format, with a one-
 Requires Python 3.9+ and [Muse Code](https://dev.meta.ai/resources/blog/build-with-muse-code). No other dependencies.
 
 ```bash
-git clone git@github.com:leadui/hoist-decisions.git
+git clone https://github.com/leadui/hoist-decisions.git
+# SSH works too: git@github.com:leadui/hoist-decisions.git
 python3 hoist-decisions/hoist.py install /path/to/your/project
 ```
 
