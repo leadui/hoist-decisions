@@ -156,6 +156,14 @@
   .demo .opt[aria-pressed="true"] .sel-stamp{display:inline-block}
   .demo .commitbar{display:flex;align-items:center;gap:10px;border-top:1px solid var(--dline);padding-top:12px;margin-top:12px}
   .demo .commitbar .cb-status{font-size:13px;color:var(--dink2)}
+  .demo #bk-live{margin-top:14px}
+  .strip{display:flex;gap:4px;align-items:center;margin:10px 0 4px;flex-wrap:wrap}
+  .strip .cell{width:26px;height:14px;border-radius:3px;border:1px solid var(--bk-line)}
+  .strip .cell.ok{background:var(--bk-frame)}
+  .strip .cell.miss{background:var(--bk-signal)}
+  .strip .lab{font-size:12.5px;color:var(--dim);margin-right:8px;font-weight:600}
+  .comp-chips{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}
+  .comp-chips span{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid var(--bk-line);border-radius:999px;padding:4px 10px;color:var(--dim)}
   .shot-cap{padding:0 22px 18px;color:var(--dim);font-size:12.5px}
   .madr-pills{display:flex;gap:10px;flex-wrap:wrap;margin:22px 0 14px}
   .madr-view{--macc:#e8bb4f;position:relative;border:1px solid rgba(232,187,79,.38);border-radius:22px;padding:26px 26px 30px;background:linear-gradient(180deg,rgba(232,187,79,.09),rgba(232,187,79,.02) 45%,transparent);box-shadow:0 0 80px rgba(232,187,79,.12),inset 0 1px 0 rgba(255,255,255,.06)}
@@ -255,6 +263,7 @@
     <a href="#problem">Problem</a>
     <a href="#moment">The moment</a>
     <a href="#records">Records</a>
+    <a href="#bentomadr">Bento MADR</a>
     <a href="#install">Install</a>
   </nav>
   <a class="btn pri small" href="index.html#/session">Try the demo <span class="arr">↗</span></a>
@@ -264,6 +273,7 @@
   <a href="#problem">Problem</a>
   <a href="#moment">The moment</a>
   <a href="#records">Records</a>
+  <a href="#bentomadr">Bento MADR</a>
   <a href="#install">Install</a>
   <a href="index.html#/session">Try the demo ↗</a>
 </div>
@@ -364,33 +374,24 @@
       </div></div>
     </div>
     <div class="shots">
-      <figure class="shot reveal" style="margin:0">
-        <div class="shot-bar" aria-hidden="true"><i></i><i></i><i></i><span class="shot-url">hoist · decision moment</span></div>
+      <figure class="shot reveal" style="margin:0;grid-column:1/-1">
+        <div class="shot-bar" aria-hidden="true"><i></i><i></i><i></i><span class="shot-url">hoist · the canvas — the real Bento kit, live</span></div>
         <div class="shot-body demo">
           <div class="qtabs" role="group" aria-label="Preview moments"><button type="button" class="qtab done" data-mtab="0" aria-pressed="false">✓ Persistence</button><button type="button" class="qtab" data-mtab="1" aria-pressed="true">Auth</button><button type="button" class="qtab" data-mtab="2" aria-pressed="false">Hosting</button></div>
           <div class="msg agent"><span class="who">H</span><span class="bubble">Decision moment <span class="js-mnum">2 of 3</span>: <b class="js-mshort">which auth fits?</b> Options are on the canvas — tap one to select it.</span></div>
           <div class="interrupt">
             <h2>Decision moment <span class="js-mnum">2 of 3</span></h2>
             <p class="moment-q js-mtitle">Which auth fits a 3-person team?</p>
-            <p>One hard choice — every option with its facts, steps and watch-outs, on one canvas. Tap a card to pick it.</p>
+            <p>One hard choice — options first, facts side by side, effort as bars, and the verdict the moment you pick. This is the actual canvas from the demo, rendered by the same kit — not a picture of it.</p>
           </div>
-        </div>
-        <figcaption class="shot-cap">One canvas per moment — options first, facts on the card. Try the tabs — this preview is alive.</figcaption>
-      </figure>
-      <figure class="shot reveal" style="--d:.1s;margin:0">
-        <div class="shot-bar" aria-hidden="true"><i></i><i></i><i></i><span class="shot-url">hoist · the canvas</span></div>
-        <div class="shot-body demo">
-          <div class="edu" id="mock-edu">
-            <h2>Which auth fits a 3-person team?</h2>
-            <p class="q-hint">One hard choice. Compare, select, commit — one record at the end.</p>
+          <div id="bk-live">
             <button type="button" class="opt rich" data-mopt="0" aria-pressed="false"><span class="opt-top"><b>Clerk</b><span class="sel-stamp">Selected</span></span><small>Hosted auth, fastest to ship; per-user pricing.</small><dl class="nums"><div class="num-row"><dt>Cost</dt><dd>$25+/mo</dd></div><div class="num-row"><dt>Time to login</dt><dd>~2 hours</dd></div></dl><span class="journey"><span class="jstep">Add SDK</span><span class="jstep">Style UI</span><span class="jstep">Ship login</span></span><span class="why">Drop-in SDK with prebuilt login UI. Live this afternoon — then a per-user bill that grows with you.</span><span class="micro"><small>Setup effort</small><span class="micro-track"><span class="micro-fill" style="width:20%"></span></span></span></button>
             <button type="button" class="opt rich" data-mopt="0" aria-pressed="true"><span class="opt-top"><b>Auth.js + Postgres</b><span class="sel-stamp">Selected</span></span><small>Self-hosted, free forever; you own the sessions table.</small><dl class="nums"><div class="num-row"><dt>Cost</dt><dd>$0/mo</dd></div><div class="num-row"><dt>Time to login</dt><dd>~1 day</dd></div></dl><span class="journey"><span class="jstep">Install adapter</span><span class="jstep">Wire providers</span><span class="jstep">Ship login</span></span><span class="why">Open standard with an adapter for your stack and magic links included. Costs about a day to wire up.</span><span class="micro"><small>Setup effort</small><span class="micro-track"><span class="micro-fill" style="width:65%"></span></span></span></button>
             <button type="button" class="opt rich" data-mopt="0" aria-pressed="false"><span class="opt-top"><b>Roll your own</b><span class="sel-stamp">Selected</span></span><small>Full control; you also own every breach.</small><dl class="nums"><div class="num-row"><dt>Cost</dt><dd>$0/mo</dd></div><div class="num-row"><dt>Time to login</dt><dd>~2 weeks</dd></div></dl><span class="journey"><span class="jstep">Design schema</span><span class="jstep">Build flows</span><span class="jstep">Audit everything</span></span><span class="why">Every flow exactly yours — plus every reset email, session bug, and 2am breach page.</span><span class="micro"><small>Setup effort</small><span class="micro-track"><span class="micro-fill" style="width:95%"></span></span></span></button>
-            <p class="expand-hint">Tap a card to select it — facts, steps and watch-outs are on the card.</p>
-            <div class="commitbar"><span class="cb-status">Selected: Auth.js + Postgres</span><span style="flex:1"></span><button type="button" class="btn" data-mcommit>Commit choice</button></div>
           </div>
+          <div class="commitbar"><span class="cb-status">Selected: Auth.js + Postgres</span><span style="flex:1"></span><button type="button" class="btn" data-mcommit>Commit choice</button></div>
         </div>
-        <figcaption class="shot-cap">The canvas: options first, facts on the card, tap to select.</figcaption>
+        <figcaption class="shot-cap">The canvas: options first, facts on the card, tap to select — the verdict stamps itself. Try the tabs.</figcaption>
       </figure>
     </div>
   </section>
@@ -451,10 +452,37 @@
 </div>
 
 <div class="wrap">
-  <section class="sec alt" id="install">
+  <section class="sec" id="bentomadr">
     <span class="sec-num" aria-hidden="true">05</span>
+    <div class="sec-head reveal">
+      <span class="eb"><i></i>05 · The Bento MADR kit</span>
+      <h2>One decision,<br>nineteen compartments.</h2>
+      <p>Every Hoist moment and record is drawn as a Bento MADR canvas — swappable compartments for the problem, the evidence, the verdict and the fallout. What a record still owes you stays visible at a glance.</p>
+    </div>
+    <div class="bento">
+      <div class="bezel c7 reveal"><div class="core">
+        <div class="step-n">COMPLETE AT A GLANCE</div>
+        <h3>Full or thin — readable from across the room</h3>
+        <p>Each compartment reports present or missing. Filled means the data is there; signal-yellow means the record still owes you that piece, and the compartment itself says exactly what to add.</p>
+        <div class="strip"><span class="lab">Complete record · 8 of 8</span><span class="cell ok"></span><span class="cell ok"></span><span class="cell ok"></span><span class="cell ok"></span><span class="cell ok"></span><span class="cell ok"></span><span class="cell ok"></span><span class="cell ok"></span></div>
+        <div class="strip"><span class="lab">Thin record · 2 of 8</span><span class="cell ok"></span><span class="cell ok"></span><span class="cell miss"></span><span class="cell miss"></span><span class="cell miss"></span><span class="cell miss"></span><span class="cell miss"></span><span class="cell miss"></span></div>
+      </div></div>
+      <div class="bezel c5 reveal" style="--d:.1s"><div class="core">
+        <div class="step-n">THE TOOLBOX</div>
+        <h3>19 compartments, 6 canvas shapes</h3>
+        <div class="comp-chips"><span>Problem</span><span>Option cards</span><span>Decision stamp</span><span>Comparison table</span><span>Metric bars</span><span>Trend line</span><span>2×2 quadrant</span><span>Weighted matrix</span><span>Risk heat map</span><span>Timeline with gates</span><span>Assumptions</span><span>Gains</span><span>Costs</span><span>Flip analysis</span><span>Success measures</span><span>Consequences</span><span>People</span><span>More information</span><span>Devil's advocate</span></div>
+        <p>The canvas above and every record on this page render with this kit. The showcase explains each compartment — when to use it, when not to — and lets you build your own.</p>
+        <p style="margin-top:14px"><a class="btn pri" href="bentomadr.html">Open the Bento MADR showcase <span class="arr">↗</span></a></p>
+      </div></div>
+    </div>
+  </section>
+</div>
+
+<div class="wrap">
+  <section class="sec alt" id="install">
+    <span class="sec-num" aria-hidden="true">06</span>
     <div class="sec-head center reveal">
-      <span class="eb"><i></i>05 · Install</span>
+      <span class="eb"><i></i>06 · Install</span>
       <h2 aria-label="One command between Muse and your next lasting decision.">One command between Muse and your next <span class="rot tick" id="rot" aria-hidden="true">database decision</span>.</h2>
       <p>Python 3.9+ and Muse, zero dependencies. The page serves from your machine — and today the hook blocks conflicting database installs automatically; the pause and the record cover every one-way door.</p>
     </div>
@@ -534,6 +562,35 @@
     areas: ["problem verdict verdict", "problem gains costs", "confirm people people", "shelf shelf shelf", "more more more"],
     md: { cols: "1fr 1fr", areas: ["problem problem", "verdict verdict", "gains costs", "confirm people", "shelf shelf", "more more"] },
     slots: [["problem", "problem"], ["verdict", "decision"], ["gains", "gains"], ["costs", "costs"], ["confirm", "confirm"], ["people", "people"], ["shelf", "proscons"], ["more", "more"]] };
+  BentoKit.components["optioncards"] = { id: "optioncards", name: "Option cards (full detail)", family: "options",
+    question: "What could we choose?", src: "Every option with its facts, path, gains and watch-outs",
+    empty: "List the options with their facts, steps, gains and watch-outs.",
+    needs: function (d) { return !!(d.optionsDetail && d.optionsDetail.length); },
+    render: function (d) {
+      var e = BentoKit.util.esc;
+      var html = '<div class="bk-opts rich">';
+      d.optionsDetail.forEach(function (o) {
+        html += '<article class="bk-opt' + (o.id === d.chosen ? " is-chosen" : "") + '"><div class="bk-opt-top"><h3>' + e(o.name) + "</h3>" +
+          (o.id === d.chosen ? '<span class="bk-stamp">Selected</span>' : "") + "</div>";
+        if (o.desc) html += '<p class="desc">' + e(o.desc) + "</p>";
+        if (o.numbers && o.numbers.length) {
+          html += '<dl class="bk-nums">';
+          o.numbers.forEach(function (n) { html += "<div><dt>" + e(n[0]) + "</dt><dd>" + e(n[1]) + "</dd></div>"; });
+          html += "</dl>";
+        }
+        if (o.journey && o.journey.length) {
+          html += '<div class="bk-steps">' + o.journey.map(function (st) { return "<span>" + e(st) + "</span>"; }).join("") + "</div>";
+        }
+        if (o.good && o.good.length) html += '<ul class="bk-pc">' + o.good.map(function (t) { return '<li class="good">' + e(t) + "</li>"; }).join("") + "</ul>";
+        if (o.bad && o.bad.length) html += '<ul class="bk-pc">' + o.bad.map(function (t) { return '<li class="bad">' + e(t) + "</li>"; }).join("") + "</ul>";
+        html += "</article>";
+      });
+      return html + "</div>";
+    } };
+  BentoKit.templates["landing-moment"] = { id: "landing-moment", name: "Decision moment", cols: "1fr 1fr",
+    areas: ["options options", "problem evidence", "facts verdict"],
+    md: { cols: "1fr", areas: ["options", "problem", "evidence", "facts", "verdict"] },
+    slots: [["options", "optioncards"], ["problem", "problem"], ["evidence", "bars"], ["facts", "compare"], ["verdict", "decision"]] };
   var BK_RECORDS = [
     { file: "accepted · 2026-10-27 · door: heavy · 0001-interrupt-muse-code-routing-question.md",
       data: { context: ["Muse Code asks lasting questions in its own questionnaire with expert labels. Hoist takes over that moment and brings the decision back into the flow."], question: "How should Hoist catch the pick?",
@@ -600,48 +657,27 @@
     }, 2400);
   }
   var MTABS = [
-    { n: "1 of 3", short: "which store fits?", title: "Where should user accounts and saved projects live?" },
-    { n: "2 of 3", short: "which auth fits?", title: "Which auth fits a 3-person team?" },
-    { n: "3 of 3", short: "where should it run?", title: "Where should the app run in production?" }
+    { n: "1 of 3", short: "which store fits?", title: "Where should user accounts and saved projects live?", ctx: "Users and saved projects must survive restarts and concurrent saves — and there is no ops team to babysit a database server." },
+    { n: "2 of 3", short: "which auth fits?", title: "Which auth fits a 3-person team?", ctx: "A 3-person team needs login this week; hosted auth pricing stings later, and rolling your own owns every breach." },
+    { n: "3 of 3", short: "where should it run?", title: "Where should the app run in production?", ctx: "The app needs a production home: deploys, disks and backups handled for you — or full control, and the pager that comes with it." }
   ];
   var RPANES = [
-    { hint: "One hard choice. Expand, compare, commit — one record at the end.", options: [
+    { hint: "One hard choice. Compare, select, commit — one record at the end.", options: [
       { name: "SQLite on the server", desc: "One file, zero ops; outgrow it and you migrate.", why: "Stays boring while the project grows — backups are a file copy, and it runs anywhere the disk persists.", micro: 30, journey: ["Add the file", "Wire queries", "Ship"], nums: [["Bill", "None — one file"], ["Backups", "Copy the file"]] },
       { name: "Managed Postgres", desc: "Hosted Postgres with backups; priced once you grow.", why: "Ordinary linked records with simple queries, and the provider handles backups and patches.", micro: 55, journey: ["Create database", "Connect the app", "Ship"], nums: [["Bill", "Free tier, then paid"], ["Backups", "Handled for you"]] },
       { name: "JSON files", desc: "No database at all; breaks on concurrent saves.", why: "The fastest start — and the first thing you rewrite when two users save at once.", micro: 15, journey: ["Write files", "Read files", "Migrate later"], nums: [["Bill", "None"], ["Backups", "Copy the folder"]] }
     ] },
-    { hint: "One hard choice. Expand, compare, commit — one record at the end.", options: [
+    { hint: "One hard choice. Compare, select, commit — one record at the end.", options: [
       { name: "Clerk", desc: "Hosted auth, fastest to ship; per-user pricing.", why: "Drop-in SDK with prebuilt login UI. Live this afternoon — then a per-user bill that grows with you.", micro: 20, journey: ["Add SDK", "Style UI", "Ship login"], nums: [["Cost", "$25+/mo"], ["Time to login", "~2 hours"]] },
       { name: "Auth.js + Postgres", desc: "Self-hosted, free forever; you own the sessions table.", why: "Open standard with an adapter for your stack and magic links included. Costs about a day to wire up.", micro: 65, journey: ["Install adapter", "Wire providers", "Ship login"], nums: [["Cost", "$0/mo"], ["Time to login", "~1 day"]] },
       { name: "Roll your own", desc: "Full control; you also own every breach.", why: "Every flow exactly yours — plus every reset email, session bug, and 2am breach page.", micro: 95, journey: ["Design schema", "Build flows", "Audit everything"], nums: [["Cost", "$0/mo"], ["Time to login", "~2 weeks"]] }
     ] },
-    { hint: "One hard choice. Expand, compare, commit — one record at the end.", options: [
+    { hint: "One hard choice. Compare, select, commit — one record at the end.", options: [
       { name: "A server you run", desc: "A VM you control; you patch and back it up.", why: "Full control and flat pricing — plus updates, backups, and the occasional 2am page.", micro: 70, journey: ["Provision the VM", "Deploy the app", "Stay patched"], nums: [["Bill", "Flat per-VM pricing"], ["Ops load", "You patch and back up"]] },
       { name: "Serverless hosting", desc: "Push to deploy; pay per request, files don't persist.", why: "Zero ops and instant deploys — but saved data needs a hosted store beside it.", micro: 25, journey: ["Connect the repo", "Push to deploy", "Add a store"], nums: [["Bill", "Pay per request"], ["Ops load", "None — push to deploy"]] },
       { name: "Managed platform", desc: "App + database on one platform; priced per service.", why: "Deploys, disks, and backups handled — one more vendor in your stack.", micro: 45, journey: ["Create services", "Deploy", "Scale up"], nums: [["Bill", "Per-service pricing"], ["Ops load", "Deploys handled"]] }
     ] }
   ];
-  function rpOptHtml(o, i) {
-    var j = "", n = "";
-    for (var k = 0; k < o.journey.length; k++) j += '<span class="jstep">' + o.journey[k] + "</span>";
-    for (var m = 0; m < o.nums.length; m++) n += '<div class="num-row"><dt>' + o.nums[m][0] + "</dt><dd>" + o.nums[m][1] + "</dd></div>";
-    return '<button type="button" class="opt rich" data-mopt="' + i + '" aria-pressed="false">' +
-      '<span class="opt-top"><b>' + o.name + '</b><span class="sel-stamp">Selected</span></span>' +
-      "<small>" + o.desc + '</small><dl class="nums">' + n + "</dl>" +
-      '<span class="journey">' + j + '</span><span class="why">' + o.why + "</span>" +
-      '<span class="micro"><small>Setup effort</small><span class="micro-track"><span class="micro-fill" style="width:' + o.micro + '%"></span></span></span></button>';
-  }
-  function renderRightPane(idx) {
-    var edu = document.getElementById("mock-edu");
-    if (!edu) return;
-    var t = MTABS[idx], p = RPANES[idx];
-    var html = "<h2>" + t.title + '</h2><p class="q-hint">' + p.hint + "</p>";
-    for (var i = 0; i < p.options.length; i++) html += rpOptHtml(p.options[i], i);
-    html += '<p class="expand-hint">Tap a card to select it — facts, steps and watch-outs are on the card.</p>' +
-      '<div class="commitbar"><span class="cb-status">Nothing selected yet</span><span style="flex:1"></span><button type="button" class="btn" data-mcommit>Commit choice</button></div>';
-    edu.innerHTML = html;
-    bindMockEdu(edu);
-  }
   function eachBtn(sel, fn) { var els = document.querySelectorAll(sel); for (var i = 0; i < els.length; i++) fn(els[i]); }
   eachBtn("[data-mtab]", function (btn) {
     btn.addEventListener("click", function () {
@@ -653,33 +689,58 @@
       for (var i = 0; i < nums.length; i++) nums[i].textContent = t.n;
       root.querySelector(".js-mshort").textContent = t.short;
       root.querySelector(".js-mtitle").textContent = t.title;
-      renderRightPane(idx);
+      renderLive(idx);
     });
   });
-  function bindMockEdu(scope) {
-    var mopts = scope.querySelectorAll("[data-mopt]");
-    for (var i = 0; i < mopts.length; i++) {
-      mopts[i].addEventListener("click", function () {
-        var was = this.getAttribute("aria-pressed") === "true";
-        var group = this.closest(".edu").querySelectorAll("[data-mopt]");
-        for (var g = 0; g < group.length; g++) group[g].setAttribute("aria-pressed", "false");
-        this.setAttribute("aria-pressed", was ? "false" : "true");
-        var edu = this.closest(".edu");
-        var status = edu ? edu.querySelector(".cb-status") : null;
-        if (status) status.textContent = was ? "Nothing selected yet" : "Selected: " + this.querySelector("b").textContent;
-      });
-    }
-    var mcoms = scope.querySelectorAll("[data-mcommit]");
-    for (var c = 0; c < mcoms.length; c++) {
-      mcoms[c].addEventListener("click", function () {
-        this.textContent = "✓ Committed — Muse resumes with your call";
-        this.setAttribute("disabled", "");
-        this.style.opacity = ".85";
-        this.style.cursor = "default";
-      });
-    }
+  var LIVE_PICKS = [0, 1, 1];
+  function paneData(idx) {
+    var pane = RPANES[idx], t = MTABS[idx];
+    var opts = pane.options.map(function (o, i) { return { id: "o" + i, name: o.name, desc: o.desc }; });
+    var detail = pane.options.map(function (o, i) {
+      return { id: "o" + i, name: o.name, desc: o.desc, numbers: o.nums || [], journey: o.journey || [], good: [], bad: [] };
+    });
+    var labels = [];
+    pane.options.forEach(function (o) { (o.nums || []).forEach(function (n) { if (labels.indexOf(n[0]) < 0) labels.push(n[0]); }); });
+    var attrs = labels.map(function (L) {
+      var v = {};
+      pane.options.forEach(function (o, i) { (o.nums || []).forEach(function (n) { if (n[0] === L) v["o" + i] = n[1]; }); });
+      return { name: L, values: v };
+    });
+    var vals = {};
+    pane.options.forEach(function (o, i) { vals["o" + i] = o.micro; });
+    var pick = LIVE_PICKS[idx] || 0;
+    return { title: t.title, question: t.title, context: [t.ctx],
+      options: opts, optionsDetail: detail, attributes: attrs,
+      metrics: [{ name: "Setup effort", better: "low", values: vals }],
+      chosen: "o" + pick, because: pane.options[pick].why };
   }
-  bindMockEdu(document);
+  function renderLive(idx) {
+    var board = document.getElementById("bk-live");
+    if (!board || typeof BentoKit === "undefined") return;
+    BentoKit.render(board, "landing-moment", paneData(idx));
+    var cards = board.querySelectorAll(".bk-opt");
+    cards.forEach(function (card, i) {
+      card.setAttribute("role", "button");
+      card.setAttribute("tabindex", "0");
+      card.style.cursor = "pointer";
+      card.title = "Pick " + RPANES[idx].options[i].name;
+      var go = function () { LIVE_PICKS[idx] = i; renderLive(idx); };
+      card.addEventListener("click", go);
+      card.addEventListener("keydown", function (ev) { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); go(); } });
+    });
+    var body = board.closest(".shot-body");
+    var st = body ? body.querySelector(".cb-status") : null;
+    if (st) st.textContent = "Selected: " + RPANES[idx].options[LIVE_PICKS[idx] || 0].name;
+  }
+  eachBtn("[data-mcommit]", function (btn) {
+    btn.addEventListener("click", function () {
+      btn.textContent = "✓ Committed — Muse resumes with your call";
+      btn.setAttribute("disabled", "");
+      btn.style.opacity = ".85";
+      btn.style.cursor = "default";
+    });
+  });
+  renderLive(1);
 })();
 </script>
 <script type="module">

@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "kinds": {
+    "database": {
+      "title": "Pick a database",
+      "door": 3,
+      "undo": "Switching databases later means moving every saved record.",
+      "record_title": "Use {tn} as the database",
+      "base": {"rel": 1, "ops": 1, "host": 2, "scale": 1, "cost": 1},
+      "factors": {"rel": "Linked records for sharing", "ops": "Nothing for you to run", "host": "Works on your host", "scale": "Room to grow", "cost": "Low cost at your size"},
+      "reasons": {"rel": "your users share data with each other", "ops": "nobody wants to run a database server", "host": "it runs on your host as is", "scale": "it leaves room to grow", "cost": "it stays cheap at your size"},
+      "questions": [
+        {"id": "share", "t": "Will people share things with each other in the app?", "why": "Shared data needs records that point at each other.",
+         "alt": ["data were shared between users", "data weren't shared between users"],
+         "a": [{"l": "Yes, people share and collaborate", "w": {"rel": 4}}, {"l": "No, each person keeps their own"}]},
+        {"id": "ops", "t": "Who will keep the database running?", "why": "Someone has to patch it, back it up, and watch it.",
+         "alt": ["nobody could run a server", "someone could run a server"],
+         "a": [{"l": "Nobody, ideally", "w": {"ops": 3}}, {"l": "Someone on the team can"}]},
+        {"id": "scale", "t": "How many users do you expect in the first year?", "why": "Sets how much cost and room to grow matter.",
+         "alt": ["you expected hundreds of users", "you expected thousands of users", "you expected millions of users"],
+         "a": [{"l": "Hundreds", "w": {"cost": 2}}, {"l": "Thousands", "w": {"scale": 1}}, {"l": "Millions", "w": {"scale": 4}}]},
+        {"id": "host", "fact": true, "t": "Where will the app run?", "why": "Some hosts don't keep files, which rules out a database file.",
+         "alt": ["hosting were serverless (like Vercel)", "hosting moved to a server you run"],
+         "a": [{"l": "A serverless host, like Vercel or Netlify"}, {"l": "A server you run, like a VM or container"}]}
+      ],
+      "options": {
+        "pg": {"n": "Managed Postgres", "tn": "managed Postgres", "sub": "Postgres hosted for you, for example on Neon", "slug": "postgres",
+          "s": {"rel": 10, "ops": 8, "host": 9, "scale": 8, "cost": 6}, "server": {"host": 6},
+          "use": "Install `pg` and connect with a DATABASE_URL from a managed Postgres provider such as Neon.",
+          "good": [["Now", "Sharing is ordinary linked records with simple queries."], ["Later", "The provider handles backups and patches."]],
+          "bad": [["Now", "Adds a vendor account, and local development needs a connection string."], ["Later", "A monthly bill once you pass the free tier."]]},
+        "turso": {"n": "Hosted SQLite", "tn": "hosted SQLite", "sub": "SQLite over the network, for example on Turso", "slug": "hosted-sqlite",
+          "s": {"rel": 8, "ops": 8, "host": 8, "scale": 6, "cost": 9}, "server": {"host": 7},
+          "use": "Install `@libsql/client` and connect with the hosted database URL and token.",
+          "good": [["Now", "The same SQLite engine locally and in production."], ["Later", "Low cost while you are small."]],
+          "bad": [["Now", "Fewer hosting integrations and tools support it."], ["Later", "A smaller ecosystem if you need extensions later."]]},
+        "mongo": {"n": "Managed MongoDB", "tn": "managed MongoDB", "sub": "MongoDB hosted for you, for example on Atlas", "slug": "mongodb",
+          "s": {"rel": 5, "ops": 8, "host": 8, "scale": 9, "cost": 5}, "server": {"host": 6},
+          "use": "Install `mongoose` and connect with a MongoDB Atlas connection string.",
+          "good": [["Now", "Record shapes can change without migrations."], ["Later", "Spreads across machines when collections get large."]],
+          "bad": [["Now", "Sharing between users needs manual references and extra queries."], ["Later", "Reports across users get harder to write."]]},
+        "sqlite": {"n": "SQLite file", "tn": "a SQLite file", "sub": "One database file next to the app", "slug": "sqlite-file",
+          "s": {"rel": 8, "ops": 10, "host": 10, "scale": 3, "cost": 10},
+          "ko": {"fact": "host", "equals": 0, "why": "Serverless hosts don't keep files between requests, so saved data would vanish."},
+          "use": "Install `better-sqlite3` and keep the database file on the server's disk.",
+          "good": [["Now", "Free, one file, nothing to sign up for."], ["Later", "Backups are a file copy."]],
+          "bad": [["Now", "Only works where the disk is kept."], ["Later", "One machine only; growing means a migration."]]}
+      },
+      "packages": {
+        "pg": ["pg", "postgres", "@neondatabase/serverless", "@vercel/postgres", "pg-promise"],
+        "turso": ["@libsql/client", "@tursodatabase/serverless"],
+        "mongo": ["mongodb", "mongoose"],
+        "sqlite": ["better-sqlite3", "sqlite3", "sqlite"]
+      }
+    }
+  }
+}

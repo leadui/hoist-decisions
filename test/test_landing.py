@@ -43,7 +43,14 @@ PRESENT = [
     ("https clone", "https://github.com/leadui/hoist-decisions.git"),
     ("hero dpr cap", "devicePixelRatio || 1, 1.5"),
     ("hero static fallback", "hero-static"),
-    ("right pane sync", "renderRightPane"),
+    ("live canvas render", "renderLive"),
+    ("live canvas mount", 'id="bk-live"'),
+    ("landing moment template", "landing-moment"),
+    ("bento section", 'id="bentomadr"'),
+    ("bento nav", 'href="#bentomadr"'),
+    ("showcase cta", "Open the Bento MADR showcase"),
+    ("completeness strips", "Thin record · 2 of 8"),
+    ("component chips", "Devil's advocate"),
     ("problem icon", "icons/idea.webp"),
     ("moment icon", "icons/chart.webp"),
     ("install icon", "icons/shield.webp"),
@@ -73,6 +80,8 @@ PRESENT = [
 ]
 
 ABSENT = [
+    ("hand-rolled mock", "mock-edu"),
+    ("old pane builder", "rpOptHtml"),
     ("no banned font Roboto", "Roboto"),
     ("no banned font Arial", "Arial"),
     ("no banned font Helvetica", "Helvetica"),

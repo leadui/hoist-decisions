@@ -167,7 +167,7 @@
   function doorWord(n) { return n === 3 ? "one-way" : n === 2 ? "heavy" : n === 1 ? "two-way" : "one-way"; }
   function stripTags(s) { return String(s == null ? "" : s).replace(/<[^>]*>/g, ""); }
 
-  var S = null, LIVE = false, CAT = null, PACKS = [], CTX = { kind: "session" }, SIM = null;
+  var S = null, LIVE = false, CAT = null, CATFAIL = false, PACKS = [], CTX = { kind: "session" }, SIM = null;
 
   var state = { qid: null, phase: "moment", path: null, picked: null,
     answers: {}, skipped: {}, abandoned: {}, added: {}, showCustom: false,
@@ -227,18 +227,6 @@
       });
       return html + "</div>";
     } };
-  BentoKit.templates["moment-open"] = { id: "moment-open", name: "Decision moment", cols: "1fr 1fr",
-    areas: ["options options", "problem evidence"],
-    md: { cols: "1fr", areas: ["options", "problem", "evidence"] },
-    slots: [["options", "optioncards"], ["problem", "problem"], ["evidence", "bars"]] };
-  BentoKit.templates["moment-open-plain"] = { id: "moment-open-plain", name: "Decision moment (no measures)", cols: "1fr 1fr",
-    areas: ["options options", "problem problem"],
-    md: { cols: "1fr", areas: ["options", "problem"] },
-    slots: [["options", "optioncards"], ["problem", "problem"]] };
-  BentoKit.templates["moment"] = { id: "moment", name: "Decision moment (picked)", cols: "1fr 1fr",
-    areas: ["options options", "problem verdict", "evidence evidence"],
-    md: { cols: "1fr", areas: ["options", "problem", "verdict", "evidence"] },
-    slots: [["options", "optioncards"], ["problem", "problem"], ["verdict", "decision"], ["evidence", "bars"]] };
   BentoKit.templates["madr-record"] = { id: "madr-record", name: "MADR record", cols: "1.2fr 1fr 1fr",
     areas: ["problem verdict verdict", "problem gains costs", "confirm people people", "shelf shelf shelf", "more more more"],
     md: { cols: "1fr 1fr", areas: ["problem problem", "verdict verdict", "gains costs", "confirm people", "shelf shelf", "more more"] },
@@ -274,13 +262,23 @@
     if (whyNow) context.push(whyNow);
     if (undo && undo !== whyNow) context.push("Cost to undo: " + undo);
     var picked = pickedId ? optBy(pickedId) : null;
+    var labels = [];
+    opts.forEach(function (o) { (o.numbers || []).forEach(function (n) { if (labels.indexOf(n[0]) < 0) labels.push(n[0]); }); });
+    var attributes = labels.map(function (L) {
+      var v = {};
+      opts.forEach(function (o) { (o.numbers || []).forEach(function (n) { if (n[0] === L) v[o.value] = n[1]; }); });
+      return { name: L, values: v };
+    }).filter(function (a) { return Object.keys(a.values).length > 1; });
     return {
       title: q.title, question: q.title, context: context,
       options: opts.map(function (o) { return { id: o.value, name: o.name, desc: o.desc }; }),
       optionsDetail: opts.map(detailOf),
       chosen: pickedId || null,
       because: picked ? (picked.why || picked.desc || "") : null,
-      metrics: metricsOf(q, opts)
+      metrics: metricsOf(q, opts),
+      attributes: attributes,
+      consequences: picked ? { good: (picked.unlocks || []).slice(), bad: (picked.watch || []).slice(), neutral: [] } : null,
+      timeline: picked && (picked.journey || []).length ? picked.journey.map(function (st, i) { return { when: "Step " + (i + 1), what: st }; }) : null
     };
   }
   function optionCardsWire(q) {
@@ -300,6 +298,53 @@
         if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); go(); }
       });
     });
+  }
+
+  /* Compose the moment canvas from what the data can actually fill, so no
+     compartment ever hatches empty mid-decision. Options always lead. */
+  function momentTemplate(d, pickedId) {
+    var picked = !!pickedId;
+    var slots = [["options", "optioncards"]];
+    var areas = ["options options"], md = ["options"];
+    var hasFacts = (d.attributes || []).length > 0;
+    var hasBars = (d.metrics || []).length > 0;
+    if (picked) {
+      areas.push("problem verdict"); md.push("problem"); md.push("verdict");
+      slots.push(["problem", "problem"]); slots.push(["verdict", "decision"]);
+      if (hasBars) { areas.push("evidence evidence"); md.push("evidence"); slots.push(["evidence", "bars"]); }
+      if (hasFacts) { areas.push("facts facts"); md.push("facts"); slots.push(["facts", "compare"]); }
+      var cons = d.consequences || {};
+      var g = (cons.good || []).length > 0, b = (cons.bad || []).length > 0;
+      if (g && b) { areas.push("gains costs"); md.push("gains"); md.push("costs"); slots.push(["gains", "gains"]); slots.push(["costs", "costs"]); }
+      else if (g) { areas.push("gains gains"); md.push("gains"); slots.push(["gains", "gains"]); }
+      else if (b) { areas.push("costs costs"); md.push("costs"); slots.push(["costs", "costs"]); }
+      if ((d.timeline || []).length) { areas.push("plan plan"); md.push("plan"); slots.push(["plan", "timeline"]); }
+    } else if (hasFacts && hasBars) {
+      areas.push("facts facts"); areas.push("problem evidence"); md.push("facts"); md.push("problem"); md.push("evidence");
+      slots.push(["facts", "compare"]); slots.push(["problem", "problem"]); slots.push(["evidence", "bars"]);
+    } else if (hasBars) {
+      areas.push("problem evidence"); md.push("problem"); md.push("evidence");
+      slots.push(["problem", "problem"]); slots.push(["evidence", "bars"]);
+    } else if (hasFacts) {
+      areas.push("facts facts"); areas.push("problem problem"); md.push("facts"); md.push("problem");
+      slots.push(["facts", "compare"]); slots.push(["problem", "problem"]);
+    } else {
+      areas.push("problem problem"); md.push("problem");
+      slots.push(["problem", "problem"]);
+    }
+    return { id: picked ? "moment" : "moment-open", name: "Decision moment", cols: "1fr 1fr",
+      areas: areas, md: { cols: "1fr", areas: md }, slots: slots };
+  }
+  function fallbackOptsHtml(q) {
+    var opts = allOptions();
+    var html = '<div class="bk-opts rich">';
+    opts.forEach(function (o) {
+      var d = detailOf(o);
+      html += '<article class="bk-opt' + (o.value === state.picked ? " is-chosen" : "") + '"><div class="bk-opt-top"><h3>' + esc(d.name) + "</h3>" +
+        (o.value === state.picked ? '<span class="bk-stamp">Selected</span>' : "") + "</div>" +
+        (d.desc ? '<p class="desc">' + esc(d.desc) + "</p>" : "") + "</article>";
+    });
+    return html + "</div>";
   }
 
   function tabsHtml() {
@@ -325,7 +370,22 @@
 
   function hoistHtml() {
     var q = Q();
+    if (!q) return '<div class="card"><h2>Nothing to decide yet.</h2><p class="hint">Decision moments appear here when your agent hits a hard choice.</p></div>';
     if (q.preparing) return preparingHtml(q);
+    if (!allOptions().length) {
+      var empty = '<div class="card"><h2>Decision moment ' + esc(momentNum()) + ": " + esc(q.shortTitle) + '?</h2>' +
+        '<p class="hint">No options on the table yet — this moment arrived without a researched set. Add your own, or send it back to chat and let the agent propose.</p>' +
+        '<div class="escape-row"><span>Now what?</span>' +
+        '<button type="button" class="escape-btn" data-action="escape" data-v="custom">Add your option</button>';
+      if (!q.noAbandon) empty += '<button type="button" class="escape-btn" data-action="escape" data-v="chat">Back to chat</button>';
+      empty += '<button type="button" class="escape-btn" data-action="escape" data-v="skip">' + (CTX.kind === "decide" ? "Decide later" : "Skip question") + "</button></div>";
+      if (state.showCustom) {
+        empty += '<div class="custom-row"><input id="custom-input" type="text" placeholder="e.g. Vercel…" aria-label="Your alternative">' +
+          '<button type="button" class="mini-btn" data-action="propose">Add it</button></div>';
+      }
+      if (state.err) empty += '<p class="err">' + esc(state.err) + "</p>";
+      return empty;
+    }
     var data = momentData(q, state.picked);
     var prev = state.answers[q.id];
     var html = (prev ? '<p class="hint">Earlier you selected <strong>' + esc(prev.name) + "</strong> — tap a card to change it, or commit to keep it.</p>" : "") +
@@ -789,7 +849,7 @@
     return fetch(url, { cache: "no-store" }).then(function (r) {
       if (!r.ok) throw new Error("no catalog");
       return r.json();
-    }).then(function (j) { CAT = j.kinds; return CAT; });
+    }).then(function (j) { CAT = j.kinds; return CAT; }).catch(function (e) { CATFAIL = true; throw e; });
   }
 
   function shortTab(title) {
@@ -1404,10 +1464,9 @@
   function mountCanvases() {
     var q = Q();
     var m = $("bk-moment");
-    if (m && q && state.phase === "hoist") {
-      var data = momentData(q, state.picked);
-      var tpl = state.picked ? "moment" : (data.metrics.length ? "moment-open" : "moment-open-plain");
-      mountInto("bk-moment", tpl, data);
+    if (m && q && (state.phase === "hoist" || state.phase === "moment")) {
+      if (window.__BK_MISSING) m.innerHTML = fallbackOptsHtml(q);
+      else { var data = momentData(q, state.picked); mountInto("bk-moment", momentTemplate(data, state.picked), data); }
       optionCardsWire(q);
     }
     document.querySelectorAll("[id^='bk-rec-']").forEach(function (el) {
@@ -1446,7 +1505,7 @@
         mountCanvases();
         return;
       }
-      if (!CAT) { app.innerHTML = progressHtml({ task: "Loading the decision…", status: "planning", total: 1, drafted: [] }); return; }
+      if (!CAT) { app.innerHTML = CATFAIL ? '<div class="card"><h2>This interruption needs the local app.</h2><p class="hint">The decision catalog ships with the Hoist install — run <code>python3 hoist.py serve</code> and open this page from there. Meanwhile the <a href="#/session">sample task session</a> works anywhere.</p></div>' : progressHtml({ task: "Loading the decision…", status: "planning", total: 1, drafted: [] }); return; }
       if (CTX.kind !== "decide" || CTX.id !== id || !PACKS.length) { CTX = { kind: "decide", id: id }; buildDecidePack(dec); resetState(); state.qid = PACKS[0].id; ensurePick(Q()); }
       app.innerHTML = engineHtml();
       mountCanvases();
