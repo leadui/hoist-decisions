@@ -33,6 +33,13 @@ PRESENT = [
     ("moment canvas", "bk-moment"),
     ("kit composes the moment", "BentoKit.compose"),
     ("demo opens on the Muse terminal", "sampleHomeHtml"),
+    ("sample records persist across loads", "restoreSample"),
+    ("sample records saved on every commit", "saveSample();"),
+    ("ids owned by decisions are never reused", "never reuse an id a decision owns"),
+    ("interruption replaces only its own record", "only this decision's own earlier record"),
+    ("deliberate reset of sample records", 'data-action="reset-sample"'),
+    ("chosen option read whole, commas and all", "a record with no option list (a Hoist default) still names its choice by label"),
+    ("canvas says when a kind reshapes the same decision", "Same decision, reshaped as a"),
     ("nav is Start and Records", 'id="nav-records"'),
     ("terminal routes to Hoist", 'data-action="intro" data-v="hoist"'),
     ("terminal shows the expert questionnaire", "This is the questionnaire Hoist replaces"),
@@ -86,6 +93,8 @@ PRESENT = [
     ("kit option shelf cards", "proscons"),
 ]
 ABSENT = [
+    # P0: the interruption must never wipe other records by id prefix
+    ("no prefix wipe of records", 'indexOf(dec.id + "-") !== 0'),
     # retired: Session tab and theme toggle in the nav
     ("no Session nav tab", 'id="nav-session"'),
     ("no theme toggle", "theme-toggle"),

@@ -23,11 +23,29 @@
     }
   });
 
+  /* The kit's empty-state text is guidance for whoever writes a record ("List the phases and…").
+     Visitors read Hoist's canvases, so an empty compartment just says nothing was recorded; the hatching shows the gap. */
+  var EMPTY = "Nothing recorded here for this decision.";
+
   /* The kit stamps the chosen option "Chosen". In Hoist the pick stays open until you commit, so it reads "Selected". */
   var render = BentoKit.render;
   BentoKit.render = function (el) {
     var out = render.apply(BentoKit, arguments);
     if (el && el.querySelectorAll) {
+      el.querySelectorAll(".bk-cmp.is-empty > .bk-prompt").forEach(function (p) { p.textContent = EMPTY; });
+      /* the BECAUSE badge is followed by a real space, so copied or read-aloud text isn't "BecauseInstall" */
+      el.querySelectorAll(".bk-because > b").forEach(function (b) {
+        var n = b.nextSibling;
+        if (n && n.nodeType === 3 && /^\s/.test(n.nodeValue)) return;
+        b.parentNode.insertBefore(document.createTextNode(" "), n);
+        b.style.marginRight = "4px";
+      });
+      /* "Decided · consulted · informed" names only the columns this record actually has */
+      el.querySelectorAll('[data-component="people"]').forEach(function (c) {
+        var src = c.querySelector(".bk-src"), cols = [];
+        c.querySelectorAll("dt").forEach(function (dt) { cols.push({ "Decided by": "decided", "Carries it out": "carries it out", "Consulted": "consulted", "Informed": "informed" }[dt.textContent] || dt.textContent.toLowerCase()); });
+        if (src && cols.length) src.textContent = cols.join(" · ");
+      });
       el.querySelectorAll(".bk-stamp").forEach(function (s) { if (s.textContent === "Chosen") s.textContent = "Selected"; });
       el.querySelectorAll(".bk-key").forEach(function (k) { if (k.lastChild && k.lastChild.nodeValue === "Chosen") k.lastChild.nodeValue = "Selected"; });
     }

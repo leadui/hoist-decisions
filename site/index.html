@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="vendor/bento-madr/bento-kit.css">
+<link rel="stylesheet" href="vendor/bento-madr/bento-kit.css?v=0.2.0">
 <style>
   :root{
     --ink:var(--bk-ink); --ink-2:var(--bk-muted); --line:var(--bk-line);
@@ -184,8 +184,8 @@
   <div class="offlinebar" id="offline"><strong>Lost contact with Hoist</strong> — showing the last saved state. Restart Hoist, then reload to pick up where you left off.</div>
   <div id="app" aria-live="polite"></div>
 </div>
-<script src="vendor/bento-madr/bento-kit.js"></script>
-<script src="hoist-bento.js"></script>
+<script src="vendor/bento-madr/bento-kit.js?v=0.2.0"></script>
+<script src="hoist-bento.js?v=3"></script>
 <script>
 (function () {
   "use strict";
@@ -557,7 +557,9 @@
     var why = BentoKit.templates[c.kind].for;
     var sw = Object.keys(c.swaps).map(function (a) { return BentoKit.components[c.swaps[a]].name; });
     if (sw.length) why += " Filled from this decision's data: " + sw.join(", ").toLowerCase() + ".";
-    html += '<p class="cb-why">' + esc(why) + "</p></div>";
+    html += '<p class="cb-why">' + esc(why) + "</p>";
+    if (c.kind !== own) html += '<p class="cb-why" style="color:var(--bk-ink)"><b>Same decision, reshaped as a ' + esc(BentoKit.templates[c.kind].name.toLowerCase()) + " canvas</b> — the options stay the same so you can compare layouts. ✦ marks the canvas Muse Spark chose.</p>";
+    html += "</div>";
     return html;
   }
   function criticHtml(q, data) {
@@ -691,15 +693,15 @@
     var ctxSec = secByName(r, "context");
     var context = [];
     var question = "";
-    if (ctxSec) ctxSec.blocks.forEach(function (b) { if (b.p) { if (!question) question = b.p; context.push(b.p); } });
+    if (ctxSec) ctxSec.blocks.forEach(function (b) { if (b.p) { if (!question) question = b.p; else context.push(b.p); } });
     var outSec = secByName(r, "decision outcome");
     var chosenName = "", because = quoteVal(r.quote, "Because");
     var good = [], bad = [];
     if (outSec) outSec.blocks.forEach(function (b) {
       if (b.p && /^Chosen:/i.test(b.p)) {
-        var m = /^Chosen:\s*([^,]+)/i.exec(b.p);
+        var m = /^Chosen:\s*(.+?)(?:,\s*(?:because|as a default)\b|\.\s*$|$)/i.exec(b.p);
         if (m) chosenName = m[1].trim();
-        if (!because) because = b.p.replace(/^Chosen:\s*[^,]+,?\s*(because\s*)?/i, "");
+        if (!because) { var bm = /,\s*because\s+(.+)$/i.exec(b.p); if (bm) because = bm[1]; }
       }
       if (b.li) { if (/^Bad, because/i.test(b.li)) bad.push(cleanCons(b.li)); else if (/^Good, because/i.test(b.li)) good.push(cleanCons(b.li)); }
     });
@@ -717,6 +719,8 @@
       var tm = /:\s*(.+)$/.exec(r.title || "");
       if (tm) chosenName = names.filter(function (n) { return tm[1].toLowerCase().indexOf(n.toLowerCase()) >= 0; })[0] || "";
     }
+    /* a record with no option list (a Hoist default) still names its choice by label, never by slug */
+    if (chosenName && !names.some(function (n) { return slugify(n) === slugify(chosenName); })) names.unshift(chosenName);
     var chosenId = slugify(chosenName);
     if (pcSec) {
       var curOpt = null;
@@ -1061,6 +1065,7 @@
       }
       return fetch("sample.json", { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (j) {
         S = j; LIVE = false;
+        restoreSample();
       }).catch(function () { S = null; LIVE = false; });
     });
   }
@@ -1400,13 +1405,44 @@
       "- Confidence: " + cf.lv + "; " + cf.txt + ".", ""
     ].join("\n");
   }
+  /* Sample mode keeps records in this browser, so a reload or a trip to the landing never wipes them.
+     Records only ever append; an entry point replaces nothing but its own earlier record. */
+  var SAMPLE_KEY = "hoist-sample-records-v1";
+  function saveSample() {
+    if (LIVE || !S) return;
+    var base = S.__base || [];
+    var mine = (S.records || []).filter(function (r) { return base.indexOf(r.file) < 0; });
+    var decided = (S.decisions || []).filter(function (d) { return d.status !== "open"; })
+      .map(function (d) { return { id: d.id, status: d.status, choice: d.choice, mode: d.mode, record: d.record }; });
+    try { localStorage.setItem(SAMPLE_KEY, JSON.stringify({ records: mine, decided: decided })); } catch (e) { /* private mode: in-memory only */ }
+  }
+  function restoreSample() {
+    S.__base = (S.records || []).map(function (r) { return r.file; });
+    var saved = null;
+    try { saved = JSON.parse(localStorage.getItem(SAMPLE_KEY) || "null"); } catch (e) { saved = null; }
+    if (!saved) return;
+    (saved.records || []).forEach(function (r) {
+      if (r && r.file && !S.records.some(function (x) { return x.file === r.file; })) S.records.push(r);
+    });
+    (saved.decided || []).forEach(function (d) {
+      (S.decisions || []).forEach(function (x) { if (x.id === d.id) { x.status = d.status; x.choice = d.choice; x.mode = d.mode; x.record = d.record; } });
+    });
+  }
+  function resetSample() {
+    try { localStorage.removeItem(SAMPLE_KEY); } catch (e) { /* nothing saved */ }
+    location.hash = "#/records";
+    location.reload();
+  }
   function nextLocalFile(slug) {
     var n = 0;
     (S.records || []).forEach(function (r) {
       var m = /^(\d{4})-/.exec(r.file || "");
       if (m && +m[1] > n) n = +m[1];
     });
-    n = String(n + 1);
+    var taken = (S.decisions || []).map(function (d) { return +d.id; });
+    n = n + 1;
+    while (taken.indexOf(n) >= 0) n++;  /* never reuse an id a decision owns */
+    n = String(n);
     while (n.length < 4) n = "0" + n;
     return n + "-" + slug + ".md";
   }
@@ -1427,9 +1463,11 @@
       }
       var dec = q.dec;
       dec.status = "accepted"; dec.choice = body.choice; dec.mode = mode;
+      var mine = dec.record ? dec.record.split("/").pop() : null;     /* only this decision's own earlier record */
+      if (mine) S.records = (S.records || []).filter(function (r) { return r.file !== mine; });
       dec.record = "docs/decisions/" + dec.id + "-" + slug + ".md";
-      S.records = (S.records || []).filter(function (r) { return (r.file || "").indexOf(dec.id + "-") !== 0; });
       S.records.push({ file: dec.id + "-" + slug + ".md", markdown: md });
+      saveSample();
       return Promise.resolve({ markdown: md, record: dec.record, mode: mode });
     }
     var md2 = madrSession(q, opt, mode, path);
@@ -1444,6 +1482,7 @@
     }
     var file = nextLocalFile(slug2);
     S.records.push({ file: file, markdown: md2 });
+    saveSample();
     sesOutcomes()[q.id] = { choice: payload.choice, mode: mode, record: "docs/decisions/" + file };
     return Promise.resolve({ markdown: md2, record: "docs/decisions/" + file, mode: mode });
   }
@@ -1466,9 +1505,12 @@
         });
       }
       var dec = q.dec;
+      var prev = dec.record ? dec.record.split("/").pop() : null;
+      if (prev) S.records = (S.records || []).filter(function (r) { return r.file !== prev; });
       dec.status = "parked"; dec.choice = null; dec.mode = "parked";
       dec.record = "docs/decisions/" + dec.id + "-decide-later.md";
       S.records.push({ file: dec.id + "-decide-later.md", markdown: md });
+      saveSample();
       return Promise.resolve({ markdown: md, record: dec.record, mode: "parked" });
     }
     var slug = slugify(q.plan.title + " later");
@@ -1481,6 +1523,7 @@
     }
     var file = nextLocalFile(slug);
     S.records.push({ file: file, markdown: md });
+    saveSample();
     sesOutcomes()[q.id] = { choice: null, mode: "parked", record: "docs/decisions/" + file };
     return Promise.resolve({ markdown: md, record: "docs/decisions/" + file, mode: "parked" });
   }
@@ -1509,6 +1552,7 @@
         }
         var file = nextLocalFile(slug);
         S.records.push({ file: file, markdown: md });
+        saveSample();
         sesOutcomes()[d.id] = { choice: d.default, mode: "default", record: "docs/decisions/" + file };
         return null;
       });
@@ -1716,6 +1760,9 @@
     var badge = LIVE ? "" : '<a class="sample-badge" href="landing.html#install">Sample data</a>';
     var html = '<p class="lede">Every saved decision, newest first.</p><div class="card"><h2>Decision records' + badge + "</h2>";
     if (!recs.length) html += '<p class="hint">No records yet. Finish a walk-through and they land here.</p>';
+    if (!LIVE && S.__base && recs.length > S.__base.length) {
+      html += '<p class="hint">Records you commit in the sample are kept in this browser. <button type="button" class="escape-btn" data-action="reset-sample" style="margin-left:6px">Reset sample records</button></p>';
+    }
     for (var i = 0; i < recs.length; i++) {
       var title = "Record";
       var m = /^#\s+(.+)$/m.exec(recs[i].markdown || "");
@@ -1848,6 +1895,7 @@
     else if (action === "kind") { var kq = Q(); if (kq) { state.kindView[kq.id] = v; render(); } }
     else if (action === "critic") askCritic(v);
     else if (action === "intro") introAct(v);
+    else if (action === "reset-sample") resetSample();
     else if (action === "restart") {
       if (CTX.kind === "decide") { location.hash = "#/"; return; }
       S.session = null; SIM = null;

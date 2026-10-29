@@ -38,6 +38,15 @@ def test_bento_split():
         check(page + " loads the pinned kit", "vendor/bento-madr/bento-kit.js" in src)
         check(page + " loads Hoist's extensions", "hoist-bento.js" in src)
         check(page + " does not redefine madr-record", 'templates["madr-record"] =' not in src)
+    check("empty compartments say nothing was recorded, not what to write", "Nothing recorded here for this decision." in ext and ".bk-cmp.is-empty > .bk-prompt" in ext)
+    check("people subtitle lists only filled columns", '[data-component="people"]' in ext)
+    check("Because badge is followed by a real space", "BecauseInstall" in ext and "createTextNode(\" \")" in ext)
+    import json as _json
+    ses = _json.loads((ROOT / "site" / "sample.json").read_text())["sample_session"]
+    for did, dr in ses["drafts"].items():
+        for o in dr["options"]:
+            if not o.get("ruled_out"):
+                check("critic baked for " + did + "/" + o["id"], bool((dr.get("advocate") or {}).get(o["id"])))
     check("old showcase URL forwards", "leadui.github.io/bento-madr" in (ROOT / "site" / "bentomadr.html").read_text())
 
 

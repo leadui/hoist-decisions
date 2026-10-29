@@ -653,6 +653,123 @@
        ],
        "persona": "maintainer"
       }
+     },
+     "file-json": {
+      "skeptic": {
+       "verdict": "You chose JSON files despite your own ratings marking it - for synced, indefinite storage, and your risks flagging L2 I4 corruption. The record argues against itself.",
+       "strength": "weak",
+       "challenges": [
+        {
+         "type": "risk",
+         "title": "JSON fails your own success measures",
+         "why": "Same user on second device triggers concurrent writes. You flagged L2 I4 corruption, breaks login from second device and persistence after restart."
+        },
+        {
+         "type": "hidden_cost",
+         "title": "Undo cost is rewrite you already fear",
+         "why": "Record says switching means export users/projects + rewrite data access. Choosing JSON now guarantees that rewrite in 6 months."
+        },
+        {
+         "type": "missing_criterion",
+         "title": "Criteria says JSON is worst for sync",
+         "why": "Personal tool synced (wt1) and Keep indefinitely (wt1): JSON -, SQLite +, Postgres +. You picked the only option failing both."
+        },
+        {
+         "type": "weak_evidence",
+         "title": "No evidence JSON handles private-only safely",
+         "why": "You rate JSON 0 for private to each user, SQLite +. No transactions means one user's save can corrupt all users.json."
+        }
+       ],
+       "persona": "skeptic"
+      },
+      "maintainer": {
+       "verdict": "If I inherit this in two years, I'm the one fixing the race conditions and manual disk cleanup you predicted, with no schema docs and a full rewrite to get to SQLite.",
+       "strength": "weak",
+       "challenges": [
+        {
+         "type": "risk",
+         "title": "Concurrent writes corrupt users.json and projects.json",
+         "why": "Record flags L2 I4 corruption when two devices save at once, breaks success measure of same account seeing projects on second device."
+        },
+        {
+         "type": "hidden_cost",
+         "title": "Undo cost is rewriting all data access",
+         "why": "Record says switching means exporting all users/projects and rewriting code; in 2 years I pay that plus reverse-engineering JSON schema."
+        },
+        {
+         "type": "missing_criterion",
+         "title": "No documentation or hiring for custom file locks",
+         "why": "Lens is maintainability: record has no docs for locks/cleanup, and file-lock expertise isn't hireable like SQLite/Postgres skills."
+        },
+        {
+         "type": "weak_evidence",
+         "title": "Chosen option rated minus on key criteria",
+         "why": "JSON rated - on synced personal tool and indefinite retention, SQLite rated + on both, but choice based on zero setup this week."
+        }
+       ],
+       "persona": "maintainer"
+      }
+     },
+     "managed-postgres": {
+      "skeptic": {
+       "verdict": "You chose the library cabinet for a personal binder job — your own scores show SQLite wins outright, and you pay team costs before you need teams.",
+       "strength": "weak",
+       "challenges": [
+        {
+         "type": "weak_evidence",
+         "title": "Your own ratings favor SQLite over Postgres",
+         "why": "On your 3 criteria SQLite scores + + + vs Postgres + + 0. You picked the lower-rated option by your math."
+        },
+        {
+         "type": "hidden_cost",
+         "title": "Managed Postgres adds cost for private-only use",
+         "why": "Stated reason: you pay and manage remote service while idle. Consequences confirm hosting/secrets before first save, for L2 I3 ops risk."
+        },
+        {
+         "type": "risk",
+         "title": "Early heavy choice violates undo-cost logic",
+         "why": "Cost to undo is rewrite + export. Postgres locks you into that rewrite now, not later, despite L2 I4 trust risk being solved by SQLite transactions."
+        },
+        {
+         "type": "missing_criterion",
+         "title": "No cost or complexity criterion weighted",
+         "why": "You weight sync (w1) and retention (w1) but not monthly cost, local dev speed, or ops overhead — where JSON and SQLite dominate Postgres."
+        }
+       ],
+       "persona": "skeptic"
+      },
+      "maintainer": {
+       "verdict": "You picked library-grade Postgres for what you wrote is a private binder app - I'm the one in two years paying idle cost, rotating secrets, and debugging network env vars to find a few users' projects.",
+       "strength": "weak",
+       "challenges": [
+        {
+         "type": "hidden_cost",
+         "title": "Managed Postgres cost and ops for private use",
+         "why": "Record admits ongoing cost when idle and secrets/network setup before first save, yet criteria weight private-only use weakly."
+        },
+        {
+         "type": "missing_criterion",
+         "title": "Hiring and skills to run hosted DB",
+         "why": "No rating for documentation, on-call, backups verification, or needing Postgres skills for a small personal tool."
+        },
+        {
+         "type": "missing_option",
+         "title": "SQLite with replication or object storage backup",
+         "why": "SQLite already rated '+' for personal sync and retention - add Litestream/S3 gives durability without managed service."
+        },
+        {
+         "type": "weak_evidence",
+         "title": "Assumptions drive choice opposite to needs",
+         "why": "All three criteria marked 'assumed' personal/private - still chose team-sharing option that scores 0 on private-only."
+        },
+        {
+         "type": "risk",
+         "title": "Lock-in makes undo pain you named",
+         "why": "You wrote undo means export users/projects and rewrite data access - as inheritor I inherit that rewrite cost plus hosted infra."
+        }
+       ],
+       "persona": "maintainer"
+      }
      }
     }
    },
@@ -1092,6 +1209,133 @@
        ],
        "persona": "maintainer"
       }
+     },
+     "magic-link-email": {
+      "skeptic": {
+       "verdict": "You chose the one option your own criteria rated worst for sync and long-term retention, and your success metric still expects hashed passwords.",
+       "strength": "weak",
+       "challenges": [
+        {
+         "type": "missing_criterion",
+         "title": "Personal tool synced across devices fails badly",
+         "why": "You rated magic link 0 vs + for password/OAuth on 'synced across devices', yet chose it for a personal multi-device tool."
+        },
+        {
+         "type": "weak_evidence",
+         "title": "Success measure contradicts the choice",
+         "why": "'Database shows only hashed passwords' proves nothing for magic link — you store zero passwords, so measure can't pass."
+        },
+        {
+         "type": "risk",
+         "title": "Email dependency becomes permanent single point of failure",
+         "why": "Consequence says needs working email service to log anyone in for years — L3 risk 'too annoying causes people to not save' now guaranteed."
+        },
+        {
+         "type": "hidden_cost",
+         "title": "Migrating away later is exactly what you wanted to avoid",
+         "why": "Cost to undo is resetting all users and updating every screen. Your 6-month note admits you will hit email delays and dependence."
+        },
+        {
+         "type": "missing_option",
+         "title": "No hybrid: password + optional magic link",
+         "why": "Classic pattern solves both storage risk with hashing and email delays, but was never rated."
+        }
+       ],
+       "persona": "skeptic"
+      },
+      "maintainer": {
+       "verdict": "You gave me a login system that stops working if email does, to protect indefinite projects, and your own success check looks for hashed passwords we don't store. I get to reset every user to undo it.",
+       "strength": "weak",
+       "challenges": [
+        {
+         "type": "hidden_cost",
+         "title": "Email is now permanent auth with no exit plan",
+         "why": "Bad consequence says email must work years later for indefinite projects. Undo cost is resetting all users per record."
+        },
+        {
+         "type": "risk",
+         "title": "Success measures point at the option you didn't pick",
+         "why": "Measure says 'Database shows only hashed passwords' but chosen magic link stores none – docs will fail future maintainer."
+        },
+        {
+         "type": "missing_criterion",
+         "title": "No criterion for email ops and on-call burden",
+         "why": "You depend on email delivery forever per stated reason, but no Ops/docs/hiring criteria rated for deliverability monitoring."
+        },
+        {
+         "type": "missing_option",
+         "title": "No hybrid password + magic link evaluated",
+         "why": "Classic + magic link would reduce lock-in to email vendor and ease migration, avoiding full reset."
+        },
+        {
+         "type": "weak_evidence",
+         "title": "Assumed multi-device need scored against choice",
+         "why": "Personal tool synced across devices (w1) rated + for password, 0 for magic link, yet you chose magic link despite annoyance noted."
+        }
+       ],
+       "persona": "maintainer"
+      }
+     },
+     "oauth-google": {
+      "skeptic": {
+       "verdict": "You picked Google OAuth for ease this week, but your own record shows users lose access to their private, indefinite projects if Google blocks you — that's the exact opposite of safe storage.",
+       "strength": "weak",
+       "challenges": [
+        {
+         "type": "risk",
+         "title": "Google outage locks users out of private projects",
+         "why": "You rated keep projects indefinitely until delete as 0 for OAuth vs + for password, and your own bad consequence says all users cannot get to private projects."
+        },
+        {
+         "type": "hidden_cost",
+         "title": "Success measure contradicts chosen option",
+         "why": "Measure says DB shows only hashed passwords, but OAuth stores no passwords — you cannot pass your own test for done."
+        },
+        {
+         "type": "missing_criterion",
+         "title": "No vendor lock-in or offline access criterion",
+         "why": "You ignore internet requirement and developer account setup in scoring, despite personal tool synced need."
+        },
+        {
+         "type": "weak_evidence",
+         "title": "All criteria are assumed, not validated",
+         "why": "Personal tool synced +, private to each user only 0, keep indefinitely 0 — all three are marked assumed with weight 1, no user proof."
+        }
+       ],
+       "persona": "skeptic"
+      },
+      "maintainer": {
+       "verdict": "In two years I'll be stuck explaining to users why they can't open their private projects because Google changed a rule — your own record says undo means resetting all users.",
+       "strength": "weak",
+       "challenges": [
+        {
+         "type": "missing_criterion",
+         "title": "No lock-in, complexity, hiring criterion scored",
+         "why": "You rated 'Personal tool synced' + but never scored complexity or vendor lock-in, despite consequence 'If provider blocks... all users cannot get to private projects'."
+        },
+        {
+         "type": "missing_option",
+         "title": "No hybrid OAuth + password fallback considered",
+         "why": "Record lists three pure options, but not email+password plus OAuth. That hybrid avoids hard undo: 'migrating passwords, resetting all users'."
+        },
+        {
+         "type": "weak_evidence",
+         "title": "All criteria marked assumed, ratings unsupported",
+         "why": "Three criteria weights are 1 and marked '(assumed)' with +/0/-, no data for how OAuth actually performs vs email+password hashing."
+        },
+        {
+         "type": "hidden_cost",
+         "title": "Google developer account and outage handling omitted",
+         "why": "Stated reason admits 'need handling for provider outage' and consequences list 'Requires internet and developer account' but cost not in ratings."
+        },
+        {
+         "type": "risk",
+         "title": "Success measure contradicts chosen OAuth option",
+         "why": "Measure 'Database shows only hashed passwords' expects passwords, but chosen 'Sign in with OAuth' stores no passwords — can't verify success."
+        }
+       ],
+       "persona": "maintainer"
+      }
      }
     }
    },
@@ -1512,6 +1756,128 @@
          "type": "weak_evidence",
          "title": "Success measures ignore predictable storage claim",
          "why": "You claim predictable storage as good consequence, but measures only check list-isolation and limit error, not disk usage."
+        }
+       ],
+       "persona": "maintainer"
+      }
+     },
+     "private-versioned": {
+      "skeptic": {
+       "verdict": "You picked history to enable restore, but your own risks say indefinite retention plus history guarantees storage blow-up, and every supporting criterion is an assumed guess - you're buying a future you admit you can't afford.",
+       "strength": "weak",
+       "challenges": [
+        {
+         "type": "hidden_cost",
+         "title": "History directly breaks indefinite retention goal",
+         "why": "You rated 'keep indefinitely' - for current-only, but not chosen. Risk L4 I3 unlimited history + success measure 'limit error' proves you expect cap collisions."
+        },
+        {
+         "type": "weak_evidence",
+         "title": "All three criteria are assumed, weight 1",
+         "why": "'Personal tool synced' and 'private only' are + and 0 for chosen - not data. No user evidence that restore beats simple last-write-wins."
+        },
+        {
+         "type": "missing_criterion",
+         "title": "No rating for write cost and sync conflicts",
+         "why": "Chosen doubles writes on every save and your good consequence is 'overwrite' fix, but you never scored latency, cost, or conflict resolution."
+        },
+        {
+         "type": "missing_option",
+         "title": "Soft-delete or N-versions + TTL not considered",
+         "why": "Recycle bin or 30-day last-5-versions gives restore without forever growth, avoids full history migration later."
+        },
+        {
+         "type": "risk",
+         "title": "Private-only now makes sharing later a breaking change",
+         "why": "You flagged L3 I4 adding sharing later breaks privacy expectations, yet you cemented private-only with history tables that sharing option would have to migrate anyway."
+        }
+       ],
+       "persona": "skeptic"
+      },
+      "maintainer": {
+       "verdict": "You gave me private-only which is simple to own, but you picked version history with no prune rule and no limit number — I'm the one who will get paged when storage explodes.",
+       "strength": "mixed",
+       "challenges": [
+        {
+         "type": "hidden_cost",
+         "title": "Version history has no pruning rule",
+         "why": "Bad says 'grows forever' with L4 I3 risk. No cap like 'last 20' or TTL defined."
+        },
+        {
+         "type": "missing_criterion",
+         "title": "Per-user limit value not documented",
+         "why": "Chosen option says 'with per-user limit' but no number. Success measure expects an error, but what N?"
+        },
+        {
+         "type": "risk",
+         "title": "Adding sharing later is expensive rewrite",
+         "why": "Context says migrating to shared needs rewriting access checks. No migration plan for owner+roles."
+        },
+        {
+         "type": "weak_evidence",
+         "title": "All criteria are assumed, not validated",
+         "why": "Three criteria rated 0 to + marked '(assumed)'. Hiring and complexity based on guesses."
+        }
+       ],
+       "persona": "maintainer"
+      }
+     },
+     "shared-collab": {
+      "skeptic": {
+       "verdict": "This record argues against itself: every stated criterion scores + for private-only and 0 or - for shared, yet you chose shared with the most code and privacy risk.",
+       "strength": "weak",
+       "challenges": [
+        {
+         "type": "missing_criterion",
+         "title": "Complexity and speed to ship ignored as criterion",
+         "why": "Chosen option admits 'Most code to write - role checks, invites, link tokens' but no criterion penalizes build cost or security bug surface."
+        },
+        {
+         "type": "weak_evidence",
+         "title": "Chosen option loses on all three scored criteria",
+         "why": "Scores: personal synced 0 vs +1 for history-only; keep indefinitely 0 vs +1 for current-only; private-only  -1 vs +1 for current-only."
+        },
+        {
+         "type": "risk",
+         "title": "Private projects become discoverable breaks trust",
+         "why": "You list bad consequence: 'Privacy risk if default changes' and known risk L3 I4 on breaking privacy expectations."
+        },
+        {
+         "type": "hidden_cost",
+         "title": "History plus sharing explodes storage with no cap",
+         "why": "Known risks L4 I3 and L3 I4: unlimited history grows storage when kept indefinitely, one account can fill disk."
+        },
+        {
+         "type": "question",
+         "title": "Does limit error work with shared projects?",
+         "why": "Success measure is limit error, but chosen option counts owner vs collaborators against per-user limit undefined - quota bypass risk."
+        }
+       ],
+       "persona": "skeptic"
+      },
+      "maintainer": {
+       "verdict": "You picked the most complex model to build and secure, but your own scored criteria favored private-only and your success measures don't prove sharing works safely. In two years I own all that role-check and history debt.",
+       "strength": "weak",
+       "challenges": [
+        {
+         "type": "hidden_cost",
+         "title": "Every request must check roles and audit logs",
+         "why": "Record says 'Most code to write - role checks, invites, link tokens' but weights 0 for complexity, hiring, ops. No estimate for reviewer load."
+        },
+        {
+         "type": "missing_criterion",
+         "title": "No criterion for complexity, security, or cost to run",
+         "why": "All three criteria assumed, weight 1, favor private. Chosen scores 0,0,- vs private +1,+1. No hiring or maintenance criterion."
+        },
+        {
+         "type": "risk",
+         "title": "L4 storage growth with indefinite retention plus full history",
+         "why": "Risk says unlimited history grows storage when keep indefinitely. Chosen is full history with indefinite keep, but no cap defined or measured."
+        },
+        {
+         "type": "weak_evidence",
+         "title": "Success measures don't test sharing safety",
+         "why": "Measures only check private listing and limit error. No test for viewer/editor enforcement or that private projects don't become discoverable."
         }
        ],
        "persona": "maintainer"
