@@ -89,11 +89,14 @@
   .sheet-top .sub{font-size:13.5px;color:var(--bk-muted);margin:2px 0 0}
   .x-btn{flex:none;font:inherit;font-size:13px;font-weight:650;cursor:pointer;border:1px solid var(--bk-line);border-radius:999px;padding:6px 14px;background:var(--bk-tile);color:var(--bk-ink);white-space:nowrap;min-height:36px}
   .x-btn:hover{border-color:var(--bk-accent);color:var(--bk-accent)}
-  #bk-moment .bk-opts{gap:8px}
-  #bk-moment .bk-opt{padding:11px 12px;gap:6px}
-  #bk-moment .bk-opt h3{font-size:15px}
-  #bk-moment .bk-opt .desc{font-size:12.5px}
-  #bk-moment .bk-pc{gap:3px;font-size:12.5px}
+  #bk-moment .bk-opts.rich{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+  #bk-moment .bk-opt.is-chosen{border:2px solid var(--bk-signal);padding:13px}
+  #bk-moment .bk-nums{display:grid;gap:0;margin:0}
+  #bk-moment .bk-nums div{display:flex;justify-content:space-between;gap:10px;border-top:1px dashed var(--bk-line);padding:3px 0;font-size:12.5px}
+  #bk-moment .bk-nums dt{color:var(--bk-muted)}
+  #bk-moment .bk-nums dd{margin:0;font-weight:600;text-align:right}
+  #bk-moment .bk-steps{display:flex;flex-wrap:wrap;gap:5px}
+  #bk-moment .bk-steps span{font-size:11.5px;font-weight:600;border:1px solid var(--bk-line);border-radius:999px;padding:2px 9px;color:var(--bk-muted)}
   .typing{display:inline-flex;gap:4px;margin-left:6px;vertical-align:2px}
   .typing i{width:6px;height:6px;border-radius:50%;background:var(--bk-muted);animation:tblink 1.2s ease-in-out infinite}
   .typing i:nth-child(2){animation-delay:.2s}.typing i:nth-child(3){animation-delay:.4s}
@@ -197,35 +200,53 @@
     /* Kit assets missing: keep working with controls instead of blanking. */
     window.__BK_MISSING = true;
   } else {
-  BentoKit.templates["moment-open"] = { id: "moment-open", name: "Decision moment", cols: "1.5fr 1fr",
-    areas: ["options problem", "options evidence"],
+  BentoKit.components["optioncards"] = { id: "optioncards", name: "Option cards (full detail)", family: "options",
+    question: "What could we choose?", src: "Every option with its facts, path, gains and watch-outs",
+    empty: "List the options with their facts, steps, gains and watch-outs.",
+    needs: function (d) { return !!(d.optionsDetail && d.optionsDetail.length); },
+    render: function (d) {
+      var e = BentoKit.util.esc;
+      var html = '<div class="bk-opts rich">';
+      d.optionsDetail.forEach(function (o) {
+        html += '<article class="bk-opt' + (o.id === d.chosen ? " is-chosen" : "") + '"><div class="bk-opt-top"><h3>' + e(o.name) + "</h3>" +
+          (o.id === d.chosen ? '<span class="bk-stamp">Chosen</span>' : "") + "</div>";
+        if (o.desc) html += '<p class="desc">' + e(o.desc) + "</p>";
+        if (o.numbers && o.numbers.length) {
+          html += '<dl class="bk-nums">';
+          o.numbers.forEach(function (n) { html += "<div><dt>" + e(n[0]) + "</dt><dd>" + e(n[1]) + "</dd></div>"; });
+          html += "</dl>";
+        }
+        if (o.journey && o.journey.length) {
+          html += '<div class="bk-steps">' + o.journey.map(function (s) { return "<span>" + e(s) + "</span>"; }).join("") + "</div>";
+        }
+        if (o.good && o.good.length) html += '<ul class="bk-pc">' + o.good.map(function (t) { return '<li class="good">' + e(t) + "</li>"; }).join("") + "</ul>";
+        if (o.bad && o.bad.length) html += '<ul class="bk-pc">' + o.bad.map(function (t) { return '<li class="bad">' + e(t) + "</li>"; }).join("") + "</ul>";
+        html += "</article>";
+      });
+      return html + "</div>";
+    } };
+  BentoKit.templates["moment-open"] = { id: "moment-open", name: "Decision moment", cols: "1fr 1fr",
+    areas: ["options options", "problem evidence"],
     md: { cols: "1fr", areas: ["options", "problem", "evidence"] },
-    slots: [["problem", "problem"], ["options", "proscons"], ["evidence", "bars"]] };
-  BentoKit.templates["moment-open-plain"] = { id: "moment-open-plain", name: "Decision moment (no measures)", cols: "1.5fr 1fr",
-    areas: ["options problem"],
+    slots: [["options", "optioncards"], ["problem", "problem"], ["evidence", "bars"]] };
+  BentoKit.templates["moment-open-plain"] = { id: "moment-open-plain", name: "Decision moment (no measures)", cols: "1fr 1fr",
+    areas: ["options options", "problem problem"],
     md: { cols: "1fr", areas: ["options", "problem"] },
-    slots: [["problem", "problem"], ["options", "proscons"]] };
-  BentoKit.templates["moment"] = { id: "moment", name: "Decision moment (picked)", cols: "1.5fr 1fr",
-    areas: ["options verdict", "options problem", "gains costs"],
-    md: { cols: "1fr", areas: ["options", "verdict", "problem", "gains", "costs"] },
-    slots: [["problem", "problem"], ["options", "proscons"], ["verdict", "decision"], ["gains", "gains"], ["costs", "costs"]] };
+    slots: [["options", "optioncards"], ["problem", "problem"]] };
+  BentoKit.templates["moment"] = { id: "moment", name: "Decision moment (picked)", cols: "1fr 1fr",
+    areas: ["options options", "problem verdict", "evidence evidence"],
+    md: { cols: "1fr", areas: ["options", "problem", "verdict", "evidence"] },
+    slots: [["options", "optioncards"], ["problem", "problem"], ["verdict", "decision"], ["evidence", "bars"]] };
   BentoKit.templates["madr-record"] = { id: "madr-record", name: "MADR record", cols: "1.2fr 1fr 1fr",
     areas: ["problem verdict verdict", "problem gains costs", "confirm people people", "shelf shelf shelf", "more more more"],
     md: { cols: "1fr 1fr", areas: ["problem problem", "verdict verdict", "gains costs", "confirm people", "shelf shelf", "more more"] },
     slots: [["problem", "problem"], ["verdict", "decision"], ["gains", "gains"], ["costs", "costs"], ["confirm", "confirm"], ["people", "people"], ["shelf", "proscons"], ["more", "more"]] };
   }
 
-  function prosConsOf(o) {
-    /* Pre-pick cards carry the top signals only; the full lists land
-       in the record and in the gains/costs compartments after a pick. */
-    var items = [];
-    (o.unlocks || []).slice(0, 2).forEach(function (t) { items.push({ kind: "good", text: t }); });
-    (o.watch || []).slice(0, 2).forEach(function (t) { items.push({ kind: "bad", text: t }); });
-    return items;
-  }
-  function cardDesc(o) {
-    var nums = (o.numbers || []).slice(0, 2).map(function (n) { return n[0] + " " + n[1]; });
-    return (o.desc || "") + (nums.length ? (o.desc ? " · " : "") + nums.join(" · ") : "");
+  function detailOf(o) {
+    return { id: o.value, name: o.name, desc: o.desc || "",
+      numbers: (o.numbers || []).slice(), journey: (o.journey || []).slice(),
+      good: (o.unlocks || []).slice(), bad: (o.watch || []).slice() };
   }
   function metricsOf(q, opts) {
     var out = [];
@@ -251,15 +272,13 @@
     if (whyNow) context.push(whyNow);
     if (undo && undo !== whyNow) context.push("Cost to undo: " + undo);
     var picked = pickedId ? optBy(pickedId) : null;
-    var pc = {};
-    opts.forEach(function (o) { pc[o.value] = prosConsOf(o); });
     return {
       title: q.title, question: q.title, context: context,
-      options: opts.map(function (o) { return { id: o.value, name: o.name, desc: cardDesc(o) }; }),
+      options: opts.map(function (o) { return { id: o.value, name: o.name, desc: o.desc }; }),
+      optionsDetail: opts.map(detailOf),
       chosen: pickedId || null,
       because: picked ? (picked.why || picked.desc || "") : null,
-      consequences: picked ? { good: (picked.unlocks || []).slice(), bad: (picked.watch || []).slice(), neutral: [] } : { good: [], bad: [], neutral: [] },
-      prosCons: pc, metrics: metricsOf(q, opts)
+      metrics: metricsOf(q, opts)
     };
   }
   function optionCardsWire(q) {

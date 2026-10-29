@@ -65,6 +65,7 @@ PRESENT = [
     ("conflict block", "Do not add"),
     ("commit verb", "Commit choice"),
     ("cards pick options", "optionCardsWire"),
+    ("rich option cards", "optioncards"),
 ]
 ABSENT = [
     # retired: agent-lean display
