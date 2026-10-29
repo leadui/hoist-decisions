@@ -350,7 +350,7 @@
       <div class="bezel c7 reveal"><div class="core">
         <div class="step-n"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"/><path d="m21 3-7 7"/><path d="m3 21 7-7"/><path d="M9 21H3v-6"/></svg>01 · ONE CANVAS</div>
         <h3>Every option, full detail, one screen</h3>
-        <p>No second screen to open: each card carries its facts, steps, gains and watch-outs inline. Numbers compare as bars; no invented scores.</p>
+        <p>No second screen to open: options compare side by side — facts in a table, effort as bars — every card carries its gains and watch-outs, and the picked path becomes a timeline. No invented scores.</p>
       </div></div>
       <div class="bezel c5 reveal" style="--d:.1s"><div class="core">
         <div class="step-n"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/></svg>02 · TAP TO PICK</div>
@@ -562,35 +562,18 @@
     areas: ["problem verdict verdict", "problem gains costs", "confirm people people", "shelf shelf shelf", "more more more"],
     md: { cols: "1fr 1fr", areas: ["problem problem", "verdict verdict", "gains costs", "confirm people", "shelf shelf", "more more"] },
     slots: [["problem", "problem"], ["verdict", "decision"], ["gains", "gains"], ["costs", "costs"], ["confirm", "confirm"], ["people", "people"], ["shelf", "proscons"], ["more", "more"]] };
-  BentoKit.components["optioncards"] = { id: "optioncards", name: "Option cards (full detail)", family: "options",
-    question: "What could we choose?", src: "Every option with its facts, path, gains and watch-outs",
-    empty: "List the options with their facts, steps, gains and watch-outs.",
-    needs: function (d) { return !!(d.optionsDetail && d.optionsDetail.length); },
-    render: function (d) {
-      var e = BentoKit.util.esc;
-      var html = '<div class="bk-opts rich">';
-      d.optionsDetail.forEach(function (o) {
-        html += '<article class="bk-opt' + (o.id === d.chosen ? " is-chosen" : "") + '"><div class="bk-opt-top"><h3>' + e(o.name) + "</h3>" +
-          (o.id === d.chosen ? '<span class="bk-stamp">Selected</span>' : "") + "</div>";
-        if (o.desc) html += '<p class="desc">' + e(o.desc) + "</p>";
-        if (o.numbers && o.numbers.length) {
-          html += '<dl class="bk-nums">';
-          o.numbers.forEach(function (n) { html += "<div><dt>" + e(n[0]) + "</dt><dd>" + e(n[1]) + "</dd></div>"; });
-          html += "</dl>";
-        }
-        if (o.journey && o.journey.length) {
-          html += '<div class="bk-steps">' + o.journey.map(function (st) { return "<span>" + e(st) + "</span>"; }).join("") + "</div>";
-        }
-        if (o.good && o.good.length) html += '<ul class="bk-pc">' + o.good.map(function (t) { return '<li class="good">' + e(t) + "</li>"; }).join("") + "</ul>";
-        if (o.bad && o.bad.length) html += '<ul class="bk-pc">' + o.bad.map(function (t) { return '<li class="bad">' + e(t) + "</li>"; }).join("") + "</ul>";
-        html += "</article>";
-      });
-      return html + "</div>";
-    } };
-  BentoKit.templates["landing-moment"] = { id: "landing-moment", name: "Decision moment", cols: "1fr 1fr",
-    areas: ["options options", "problem evidence", "facts verdict"],
-    md: { cols: "1fr", areas: ["options", "problem", "evidence", "facts", "verdict"] },
-    slots: [["options", "optioncards"], ["problem", "problem"], ["evidence", "bars"], ["facts", "compare"], ["verdict", "decision"]] };
+  BentoKit.templates["moment"] = { id: "moment", name: "Decision moment", cols: "1fr 1fr",
+    areas: ["options options", "problem verdict", "evidence evidence", "gains costs", "plan plan"],
+    md: { cols: "1fr", areas: ["options", "problem", "verdict", "evidence", "gains", "costs", "plan"] },
+    slots: [["options", "proscons"], ["problem", "problem"], ["verdict", "decision"], ["evidence", "compare"], ["gains", "gains"], ["costs", "costs"], ["plan", "timeline"]] };
+  BentoKit.templates["moment-evidence"] = { id: "moment-evidence", name: "Decision moment (no path yet)", cols: "1fr 1fr",
+    areas: ["options options", "problem verdict", "evidence evidence", "gains costs"],
+    md: { cols: "1fr", areas: ["options", "problem", "verdict", "evidence", "gains", "costs"] },
+    slots: [["options", "proscons"], ["problem", "problem"], ["verdict", "decision"], ["evidence", "compare"], ["gains", "gains"], ["costs", "costs"]] };
+  BentoKit.templates["moment-plain"] = { id: "moment-plain", name: "Decision moment (pros and cons)", cols: "1fr 1fr",
+    areas: ["options options", "problem verdict", "gains costs"],
+    md: { cols: "1fr", areas: ["options", "problem", "verdict", "gains", "costs"] },
+    slots: [["options", "proscons"], ["problem", "problem"], ["verdict", "decision"], ["gains", "gains"], ["costs", "costs"]] };
   var BK_RECORDS = [
     { file: "accepted · 2026-10-27 · door: heavy · 0001-interrupt-muse-code-routing-question.md",
       data: { context: ["Muse Code asks lasting questions in its own questionnaire with expert labels. Hoist takes over that moment and brings the decision back into the flow."], question: "How should Hoist catch the pick?",
@@ -663,19 +646,19 @@
   ];
   var RPANES = [
     { hint: "One hard choice. Compare, select, commit — one record at the end.", options: [
-      { name: "SQLite on the server", desc: "One file, zero ops; outgrow it and you migrate.", why: "Stays boring while the project grows — backups are a file copy, and it runs anywhere the disk persists.", micro: 30, journey: ["Add the file", "Wire queries", "Ship"], nums: [["Bill", "None — one file"], ["Backups", "Copy the file"]] },
-      { name: "Managed Postgres", desc: "Hosted Postgres with backups; priced once you grow.", why: "Ordinary linked records with simple queries, and the provider handles backups and patches.", micro: 55, journey: ["Create database", "Connect the app", "Ship"], nums: [["Bill", "Free tier, then paid"], ["Backups", "Handled for you"]] },
-      { name: "JSON files", desc: "No database at all; breaks on concurrent saves.", why: "The fastest start — and the first thing you rewrite when two users save at once.", micro: 15, journey: ["Write files", "Read files", "Migrate later"], nums: [["Bill", "None"], ["Backups", "Copy the folder"]] }
+      { name: "SQLite on the server", desc: "One file, zero ops; outgrow it and you migrate.", good: ["Zero ops — backups are a file copy", "Runs anywhere the disk persists"], bad: ["Single writer; outgrow it and you migrate"], why: "Stays boring while the project grows — backups are a file copy, and it runs anywhere the disk persists.", micro: 30, journey: ["Add the file", "Wire queries", "Ship"], nums: [["Bill", "None — one file"], ["Backups", "Copy the file"]] },
+      { name: "Managed Postgres", desc: "Hosted Postgres with backups; priced once you grow.", good: ["Backups and patches handled for you", "Ordinary linked records, simple queries"], bad: ["A bill once you grow past the free tier"], why: "Ordinary linked records with simple queries, and the provider handles backups and patches.", micro: 55, journey: ["Create database", "Connect the app", "Ship"], nums: [["Bill", "Free tier, then paid"], ["Backups", "Handled for you"]] },
+      { name: "JSON files", desc: "No database at all; breaks on concurrent saves.", good: ["Fastest possible start"], bad: ["Breaks on concurrent saves", "The first thing you rewrite"], why: "The fastest start — and the first thing you rewrite when two users save at once.", micro: 15, journey: ["Write files", "Read files", "Migrate later"], nums: [["Bill", "None"], ["Backups", "Copy the folder"]] }
     ] },
     { hint: "One hard choice. Compare, select, commit — one record at the end.", options: [
-      { name: "Clerk", desc: "Hosted auth, fastest to ship; per-user pricing.", why: "Drop-in SDK with prebuilt login UI. Live this afternoon — then a per-user bill that grows with you.", micro: 20, journey: ["Add SDK", "Style UI", "Ship login"], nums: [["Cost", "$25+/mo"], ["Time to login", "~2 hours"]] },
-      { name: "Auth.js + Postgres", desc: "Self-hosted, free forever; you own the sessions table.", why: "Open standard with an adapter for your stack and magic links included. Costs about a day to wire up.", micro: 65, journey: ["Install adapter", "Wire providers", "Ship login"], nums: [["Cost", "$0/mo"], ["Time to login", "~1 day"]] },
-      { name: "Roll your own", desc: "Full control; you also own every breach.", why: "Every flow exactly yours — plus every reset email, session bug, and 2am breach page.", micro: 95, journey: ["Design schema", "Build flows", "Audit everything"], nums: [["Cost", "$0/mo"], ["Time to login", "~2 weeks"]] }
+      { name: "Clerk", desc: "Hosted auth, fastest to ship; per-user pricing.", good: ["Live this afternoon — prebuilt login UI"], bad: ["Per-user bill that grows with you"], why: "Drop-in SDK with prebuilt login UI. Live this afternoon — then a per-user bill that grows with you.", micro: 20, journey: ["Add SDK", "Style UI", "Ship login"], nums: [["Cost", "$25+/mo"], ["Time to login", "~2 hours"]] },
+      { name: "Auth.js + Postgres", desc: "Self-hosted, free forever; you own the sessions table.", good: ["$0/mo, open standard", "Magic links included"], bad: ["About a day to wire up", "You own the sessions table"], why: "Open standard with an adapter for your stack and magic links included. Costs about a day to wire up.", micro: 65, journey: ["Install adapter", "Wire providers", "Ship login"], nums: [["Cost", "$0/mo"], ["Time to login", "~1 day"]] },
+      { name: "Roll your own", desc: "Full control; you also own every breach.", good: ["Every flow exactly yours"], bad: ["Every reset email, session bug and breach is yours too"], why: "Every flow exactly yours — plus every reset email, session bug, and 2am breach page.", micro: 95, journey: ["Design schema", "Build flows", "Audit everything"], nums: [["Cost", "$0/mo"], ["Time to login", "~2 weeks"]] }
     ] },
     { hint: "One hard choice. Compare, select, commit — one record at the end.", options: [
-      { name: "A server you run", desc: "A VM you control; you patch and back it up.", why: "Full control and flat pricing — plus updates, backups, and the occasional 2am page.", micro: 70, journey: ["Provision the VM", "Deploy the app", "Stay patched"], nums: [["Bill", "Flat per-VM pricing"], ["Ops load", "You patch and back up"]] },
-      { name: "Serverless hosting", desc: "Push to deploy; pay per request, files don't persist.", why: "Zero ops and instant deploys — but saved data needs a hosted store beside it.", micro: 25, journey: ["Connect the repo", "Push to deploy", "Add a store"], nums: [["Bill", "Pay per request"], ["Ops load", "None — push to deploy"]] },
-      { name: "Managed platform", desc: "App + database on one platform; priced per service.", why: "Deploys, disks, and backups handled — one more vendor in your stack.", micro: 45, journey: ["Create services", "Deploy", "Scale up"], nums: [["Bill", "Per-service pricing"], ["Ops load", "Deploys handled"]] }
+      { name: "A server you run", desc: "A VM you control; you patch and back it up.", good: ["Full control, flat pricing"], bad: ["You patch, back up, and take the 2am page"], why: "Full control and flat pricing — plus updates, backups, and the occasional 2am page.", micro: 70, journey: ["Provision the VM", "Deploy the app", "Stay patched"], nums: [["Bill", "Flat per-VM pricing"], ["Ops load", "You patch and back up"]] },
+      { name: "Serverless hosting", desc: "Push to deploy; pay per request, files don't persist.", good: ["Zero ops, instant deploys"], bad: ["Files don't persist — needs a hosted store beside it"], why: "Zero ops and instant deploys — but saved data needs a hosted store beside it.", micro: 25, journey: ["Connect the repo", "Push to deploy", "Add a store"], nums: [["Bill", "Pay per request"], ["Ops load", "None — push to deploy"]] },
+      { name: "Managed platform", desc: "App + database on one platform; priced per service.", good: ["Deploys, disks and backups handled"], bad: ["One more vendor in your stack", "Priced per service"], why: "Deploys, disks, and backups handled — one more vendor in your stack.", micro: 45, journey: ["Create services", "Deploy", "Scale up"], nums: [["Bill", "Per-service pricing"], ["Ops load", "Deploys handled"]] }
     ] }
   ];
   function eachBtn(sel, fn) { var els = document.querySelectorAll(sel); for (var i = 0; i < els.length; i++) fn(els[i]); }
@@ -696,9 +679,6 @@
   function paneData(idx) {
     var pane = RPANES[idx], t = MTABS[idx];
     var opts = pane.options.map(function (o, i) { return { id: "o" + i, name: o.name, desc: o.desc }; });
-    var detail = pane.options.map(function (o, i) {
-      return { id: "o" + i, name: o.name, desc: o.desc, numbers: o.nums || [], journey: o.journey || [], good: [], bad: [] };
-    });
     var labels = [];
     pane.options.forEach(function (o) { (o.nums || []).forEach(function (n) { if (labels.indexOf(n[0]) < 0) labels.push(n[0]); }); });
     var attrs = labels.map(function (L) {
@@ -708,16 +688,31 @@
     });
     var vals = {};
     pane.options.forEach(function (o, i) { vals["o" + i] = o.micro; });
+    var prosCons = {};
+    pane.options.forEach(function (o, i) {
+      var items = [];
+      (o.good || []).forEach(function (tx) { items.push({ kind: "good", text: tx }); });
+      (o.bad || []).forEach(function (tx) { items.push({ kind: "bad", text: tx }); });
+      prosCons["o" + i] = items;
+    });
     var pick = LIVE_PICKS[idx] || 0;
+    var chosenOpt = pane.options[pick];
     return { title: t.title, question: t.title, context: [t.ctx],
-      options: opts, optionsDetail: detail, attributes: attrs,
+      options: opts, attributes: attrs,
       metrics: [{ name: "Setup effort", better: "low", values: vals }],
-      chosen: "o" + pick, because: pane.options[pick].why };
+      chosen: "o" + pick, because: chosenOpt.why, prosCons: prosCons,
+      consequences: { good: (chosenOpt.good || []).slice(), bad: (chosenOpt.bad || []).slice(), neutral: [] },
+      timeline: (chosenOpt.journey || []).map(function (st, i) { return { when: "Step " + (i + 1), what: st }; }) };
   }
   function renderLive(idx) {
     var board = document.getElementById("bk-live");
     if (!board || typeof BentoKit === "undefined") return;
-    BentoKit.render(board, "landing-moment", paneData(idx));
+    var data = paneData(idx);
+    var ev = [];
+    if (data.attributes.length) ev.push("facts");
+    if (data.metrics.length) ev.push("numbers");
+    var tpl = !ev.length ? "moment-plain" : ((data.timeline || []).length ? "moment" : "moment-evidence");
+    BentoKit.render(board, tpl, data, { swap: BentoKit.recommend({ kind: "tech-choice", evidence: ev }).swaps });
     var cards = board.querySelectorAll(".bk-opt");
     cards.forEach(function (card, i) {
       card.setAttribute("role", "button");

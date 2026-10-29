@@ -202,42 +202,24 @@
     /* Kit assets missing: keep working with controls instead of blanking. */
     window.__BK_MISSING = true;
   } else {
-  BentoKit.components["optioncards"] = { id: "optioncards", name: "Option cards (full detail)", family: "options",
-    question: "What could we choose?", src: "Every option with its facts, path, gains and watch-outs",
-    empty: "List the options with their facts, steps, gains and watch-outs.",
-    needs: function (d) { return !!(d.optionsDetail && d.optionsDetail.length); },
-    render: function (d) {
-      var e = BentoKit.util.esc;
-      var html = '<div class="bk-opts rich">';
-      d.optionsDetail.forEach(function (o) {
-        html += '<article class="bk-opt' + (o.id === d.chosen ? " is-chosen" : "") + '"><div class="bk-opt-top"><h3>' + e(o.name) + "</h3>" +
-          (o.id === d.chosen ? '<span class="bk-stamp">Selected</span>' : "") + "</div>";
-        if (o.desc) html += '<p class="desc">' + e(o.desc) + "</p>";
-        if (o.numbers && o.numbers.length) {
-          html += '<dl class="bk-nums">';
-          o.numbers.forEach(function (n) { html += "<div><dt>" + e(n[0]) + "</dt><dd>" + e(n[1]) + "</dd></div>"; });
-          html += "</dl>";
-        }
-        if (o.journey && o.journey.length) {
-          html += '<div class="bk-steps">' + o.journey.map(function (s) { return "<span>" + e(s) + "</span>"; }).join("") + "</div>";
-        }
-        if (o.good && o.good.length) html += '<ul class="bk-pc">' + o.good.map(function (t) { return '<li class="good">' + e(t) + "</li>"; }).join("") + "</ul>";
-        if (o.bad && o.bad.length) html += '<ul class="bk-pc">' + o.bad.map(function (t) { return '<li class="bad">' + e(t) + "</li>"; }).join("") + "</ul>";
-        html += "</article>";
-      });
-      return html + "</div>";
-    } };
+  BentoKit.templates["moment"] = { id: "moment", name: "Decision moment", cols: "1fr 1fr",
+    areas: ["options options", "problem verdict", "evidence evidence", "gains costs", "plan plan"],
+    md: { cols: "1fr", areas: ["options", "problem", "verdict", "evidence", "gains", "costs", "plan"] },
+    slots: [["options", "proscons"], ["problem", "problem"], ["verdict", "decision"], ["evidence", "compare"], ["gains", "gains"], ["costs", "costs"], ["plan", "timeline"]] };
+  BentoKit.templates["moment-evidence"] = { id: "moment-evidence", name: "Decision moment (no path yet)", cols: "1fr 1fr",
+    areas: ["options options", "problem verdict", "evidence evidence", "gains costs"],
+    md: { cols: "1fr", areas: ["options", "problem", "verdict", "evidence", "gains", "costs"] },
+    slots: [["options", "proscons"], ["problem", "problem"], ["verdict", "decision"], ["evidence", "compare"], ["gains", "gains"], ["costs", "costs"]] };
+  BentoKit.templates["moment-plain"] = { id: "moment-plain", name: "Decision moment (pros and cons)", cols: "1fr 1fr",
+    areas: ["options options", "problem verdict", "gains costs"],
+    md: { cols: "1fr", areas: ["options", "problem", "verdict", "gains", "costs"] },
+    slots: [["options", "proscons"], ["problem", "problem"], ["verdict", "decision"], ["gains", "gains"], ["costs", "costs"]] };
   BentoKit.templates["madr-record"] = { id: "madr-record", name: "MADR record", cols: "1.2fr 1fr 1fr",
     areas: ["problem verdict verdict", "problem gains costs", "confirm people people", "shelf shelf shelf", "more more more"],
     md: { cols: "1fr 1fr", areas: ["problem problem", "verdict verdict", "gains costs", "confirm people", "shelf shelf", "more more"] },
     slots: [["problem", "problem"], ["verdict", "decision"], ["gains", "gains"], ["costs", "costs"], ["confirm", "confirm"], ["people", "people"], ["shelf", "proscons"], ["more", "more"]] };
   }
 
-  function detailOf(o) {
-    return { id: o.value, name: o.name, desc: o.desc || "",
-      numbers: (o.numbers || []).slice(), journey: (o.journey || []).slice(),
-      good: (o.unlocks || []).slice(), bad: (o.watch || []).slice() };
-  }
   function metricsOf(q, opts) {
     var out = [];
     if (q.growth) {
@@ -269,10 +251,17 @@
       opts.forEach(function (o) { (o.numbers || []).forEach(function (n) { if (n[0] === L) v[o.value] = n[1]; }); });
       return { name: L, values: v };
     }).filter(function (a) { return Object.keys(a.values).length > 1; });
+    var prosCons = {};
+    opts.forEach(function (o) {
+      var items = [];
+      (o.unlocks || []).forEach(function (t) { items.push({ kind: "good", text: t }); });
+      (o.watch || []).forEach(function (t) { items.push({ kind: "bad", text: t }); });
+      prosCons[o.value] = items;
+    });
     return {
       title: q.title, question: q.title, context: context,
       options: opts.map(function (o) { return { id: o.value, name: o.name, desc: o.desc }; }),
-      optionsDetail: opts.map(detailOf),
+      prosCons: prosCons,
       chosen: pickedId || null,
       because: picked ? (picked.why || picked.desc || "") : null,
       metrics: metricsOf(q, opts),
@@ -300,49 +289,13 @@
     });
   }
 
-  /* Compose the moment canvas from what the data can actually fill, so no
-     compartment ever hatches empty mid-decision. Options always lead. */
-  function momentTemplate(d, pickedId) {
-    var picked = !!pickedId;
-    var slots = [["options", "optioncards"]];
-    var areas = ["options options"], md = ["options"];
-    var hasFacts = (d.attributes || []).length > 0;
-    var hasBars = (d.metrics || []).length > 0;
-    if (picked) {
-      areas.push("problem verdict"); md.push("problem"); md.push("verdict");
-      slots.push(["problem", "problem"]); slots.push(["verdict", "decision"]);
-      if (hasBars) { areas.push("evidence evidence"); md.push("evidence"); slots.push(["evidence", "bars"]); }
-      if (hasFacts) { areas.push("facts facts"); md.push("facts"); slots.push(["facts", "compare"]); }
-      var cons = d.consequences || {};
-      var g = (cons.good || []).length > 0, b = (cons.bad || []).length > 0;
-      if (g && b) { areas.push("gains costs"); md.push("gains"); md.push("costs"); slots.push(["gains", "gains"]); slots.push(["costs", "costs"]); }
-      else if (g) { areas.push("gains gains"); md.push("gains"); slots.push(["gains", "gains"]); }
-      else if (b) { areas.push("costs costs"); md.push("costs"); slots.push(["costs", "costs"]); }
-      if ((d.timeline || []).length) { areas.push("plan plan"); md.push("plan"); slots.push(["plan", "timeline"]); }
-    } else if (hasFacts && hasBars) {
-      areas.push("facts facts"); areas.push("problem evidence"); md.push("facts"); md.push("problem"); md.push("evidence");
-      slots.push(["facts", "compare"]); slots.push(["problem", "problem"]); slots.push(["evidence", "bars"]);
-    } else if (hasBars) {
-      areas.push("problem evidence"); md.push("problem"); md.push("evidence");
-      slots.push(["problem", "problem"]); slots.push(["evidence", "bars"]);
-    } else if (hasFacts) {
-      areas.push("facts facts"); areas.push("problem problem"); md.push("facts"); md.push("problem");
-      slots.push(["facts", "compare"]); slots.push(["problem", "problem"]);
-    } else {
-      areas.push("problem problem"); md.push("problem");
-      slots.push(["problem", "problem"]);
-    }
-    return { id: picked ? "moment" : "moment-open", name: "Decision moment", cols: "1fr 1fr",
-      areas: areas, md: { cols: "1fr", areas: md }, slots: slots };
-  }
   function fallbackOptsHtml(q) {
     var opts = allOptions();
     var html = '<div class="bk-opts rich">';
     opts.forEach(function (o) {
-      var d = detailOf(o);
-      html += '<article class="bk-opt' + (o.value === state.picked ? " is-chosen" : "") + '"><div class="bk-opt-top"><h3>' + esc(d.name) + "</h3>" +
+      html += '<article class="bk-opt' + (o.value === state.picked ? " is-chosen" : "") + '"><div class="bk-opt-top"><h3>' + esc(o.name) + "</h3>" +
         (o.value === state.picked ? '<span class="bk-stamp">Selected</span>' : "") + "</div>" +
-        (d.desc ? '<p class="desc">' + esc(d.desc) + "</p>" : "") + "</article>";
+        (o.desc ? '<p class="desc">' + esc(o.desc) + "</p>" : "") + "</article>";
     });
     return html + "</div>";
   }
@@ -1456,17 +1409,24 @@
       '<a class="opt list-opt" href="#/records" style="margin-top:12px"><b>All records</b></a>';
   }
 
-  function mountInto(id, templateOrId, data) {
+  function mountInto(id, templateOrId, data, o) {
     var el = $(id);
     if (!el || typeof BentoKit === "undefined") return;
-    try { BentoKit.render(el, templateOrId, data); } catch (e) { el.innerHTML = '<p class="err">This canvas could not be drawn.</p>'; }
+    try { BentoKit.render(el, templateOrId, data, o); } catch (e) { el.innerHTML = '<p class="err">This canvas could not be drawn.</p>'; }
   }
   function mountCanvases() {
     var q = Q();
     var m = $("bk-moment");
     if (m && q && (state.phase === "hoist" || state.phase === "moment")) {
       if (window.__BK_MISSING) m.innerHTML = fallbackOptsHtml(q);
-      else { var data = momentData(q, state.picked); mountInto("bk-moment", momentTemplate(data, state.picked), data); }
+      else {
+        var data = momentData(q, state.picked);
+        var ev = [];
+        if (data.attributes.length) ev.push("facts");
+        if (data.metrics.length) ev.push("numbers");
+        var tpl = !ev.length ? "moment-plain" : ((data.timeline || []).length ? "moment" : "moment-evidence");
+        mountInto("bk-moment", tpl, data, { swap: BentoKit.recommend({ kind: "tech-choice", evidence: ev }).swaps });
+      }
       optionCardsWire(q);
     }
     document.querySelectorAll("[id^='bk-rec-']").forEach(function (el) {

@@ -31,8 +31,11 @@ PRESENT = [
     ("bento kit css", "bento-kit.css"),
     ("bento kit js", "bento-kit.js"),
     ("moment canvas", "bk-moment"),
-    ("dynamic moment template", "momentTemplate"),
-    ("facts compare slot", '"facts", "compare"'),
+    ("moment templates on kit", "moment-evidence"),
+    ("recommend evidence swap", "BentoKit.recommend"),
+    ("facts compare slot", '"evidence", "compare"'),
+    ("kit option shelf", '"options", "proscons"'),
+    ("pros and cons data", "prosCons"),
     ("gains slot", '"gains", "gains"'),
     ("costs slot", '"costs", "costs"'),
     ("timeline slot", '"plan", "timeline"'),
@@ -73,7 +76,7 @@ PRESENT = [
     ("sticky commit bar", "commitbar"),
     ("connected stepper", ".qtab + .qtab::before"),
     ("cards pick options", "optionCardsWire"),
-    ("rich option cards", "optioncards"),
+    ("kit option shelf cards", "proscons"),
 ]
 ABSENT = [
     # retired: agent-lean display
