@@ -123,17 +123,9 @@
   .demo .interrupt h2{font-size:16px;margin:0 0 4px;letter-spacing:0}
   .demo .interrupt .moment-q{font-size:16.5px;font-weight:650;color:var(--dink);margin:0 0 8px}
   .demo .interrupt p{font-size:14px;color:var(--dink2);margin:0 0 12px}
-  .demo .path-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .demo .path-btn{font:inherit;text-align:left;border:1px solid var(--dline);border-radius:10px;background:var(--dbg);color:var(--dink);padding:10px 14px}
-  .demo .path-btn strong{display:block;font-size:14.5px}
-  .demo .path-btn span{font-size:13px;color:var(--dink2)}
-  .demo .path-btn.primary{background:var(--dacc);border-color:var(--dacc);color:var(--dacci)}
-  .demo .path-btn.primary span{color:var(--dacci);opacity:.85}
   .demo .edu{border:1px solid var(--dline);border-radius:12px;padding:14px 16px}
   .demo .edu h2{font-size:17px;margin:0;letter-spacing:0}
   .demo .q-hint{font-size:13.5px;color:var(--dink2);margin:2px 0 12px}
-  .demo .optrow{display:flex;gap:8px;align-items:stretch;margin-bottom:8px}
-  .demo .optrow .opt{flex:1;margin-bottom:0;min-width:0}
   .demo .opt{display:block;width:100%;text-align:left;font:inherit;background:var(--dbg);color:var(--dink);border:1px solid var(--dline);border-radius:8px;padding:10px 12px;margin-bottom:8px}
   .demo .opt[aria-pressed="true"]{border-color:var(--dacc);background:var(--daccs)}
   .demo .onum{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;border-radius:50%;border:1px solid var(--dline);color:var(--dink2);font-size:12px;font-weight:700;margin-right:8px;vertical-align:1px}
@@ -157,12 +149,13 @@
   .demo .expand-hint{font-size:12.5px;color:var(--dink2);margin:10px 0 0}
   .demo .actions{display:flex;justify-content:flex-end;margin-top:12px}
   .demo .btn{font:inherit;font-weight:650;font-size:14px;border-radius:8px;padding:10px 20px;background:var(--dacc);border:1px solid var(--dacc);color:var(--dacci)}
-  .demo .hyper-btn{flex:none;width:46px;height:56px;align-self:flex-start;border:1px solid var(--dline);border-radius:8px;background:var(--dbg);color:var(--dink2);display:flex;align-items:center;justify-content:center;font-size:17px}
   .demo button{font:inherit;cursor:pointer}
-  .demo .opt .detail{display:none}
-  .demo .opt[aria-pressed="true"] .detail{display:block}
-  .demo .opt .chev{transition:transform .16s ease}
-  .demo .opt[aria-pressed="true"] .chev{transform:rotate(180deg)}
+  .demo .opt-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .demo .sel-stamp{display:none;font-size:11px;font-weight:700;background:#e8bb4f;color:#231a02;border-radius:999px;padding:2px 9px;white-space:nowrap}
+  .demo .opt[aria-pressed="true"]{border:2px solid #e8bb4f;padding:9px 11px}
+  .demo .opt[aria-pressed="true"] .sel-stamp{display:inline-block}
+  .demo .commitbar{display:flex;align-items:center;gap:10px;border-top:1px solid var(--dline);padding-top:12px;margin-top:12px}
+  .demo .commitbar .cb-status{font-size:13px;color:var(--dink2)}
   .shot-cap{padding:0 22px 18px;color:var(--dim);font-size:12.5px}
   .madr-pills{display:flex;gap:10px;flex-wrap:wrap;margin:22px 0 14px}
   .madr-view{--macc:#e8bb4f;position:relative;border:1px solid rgba(232,187,79,.38);border-radius:22px;padding:26px 26px 30px;background:linear-gradient(180deg,rgba(232,187,79,.09),rgba(232,187,79,.02) 45%,transparent);box-shadow:0 0 80px rgba(232,187,79,.12),inset 0 1px 0 rgba(255,255,255,.06)}
@@ -171,7 +164,7 @@
   .madr-pane{position:relative}
   .madr-view .step-n{color:var(--macc,#e8bb4f)}
   .anchor{position:relative}
-  .madr-icon,.sec-icon{position:absolute;top:-58px;right:20px;width:118px;height:auto;filter:drop-shadow(0 18px 26px rgba(0,0,0,.55));animation:floaty 5s ease-in-out infinite;pointer-events:none}
+  .madr-icon,.sec-icon{position:absolute;top:-72px;right:20px;width:172px;height:auto;z-index:60;filter:drop-shadow(0 18px 26px rgba(0,0,0,.55));animation:floaty 5s ease-in-out infinite;pointer-events:none}
   @keyframes floaty{50%{transform:translateY(-9px) rotate(-2deg)}}
   .madr-pane.enter,#bk-board.enter{animation:madrIn .38s cubic-bezier(.2,.7,.2,1)}
   @keyframes madrIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
@@ -224,7 +217,7 @@
     .demo .journey{flex-direction:column}
     .demo .jstep:not(:last-child){margin-right:0;margin-bottom:16px}
     .demo .jstep:not(:last-child)::after{content:"↓";right:auto;left:50%;top:auto;bottom:-17px;transform:translateX(-50%)}
-    .madr-icon,.sec-icon{width:80px;top:-42px;right:12px}
+    .madr-icon,.sec-icon{width:108px;top:-52px;right:12px}
     .madr-pills{margin-bottom:46px}
     .core{padding:24px}
   }
@@ -288,7 +281,7 @@
       <div class="hero-tag">
         <span class="eb"><i></i>Meta Global AI Developer Hackathon</span>
         <p class="tagline">Stop rolling the dice on <strong>AI decisions.</strong></p>
-        <p class="hero-sub">Your Muse session pauses at every one-way door. You decide in the browser while it waits — then it carries on with your call, on the record.</p>
+        <p class="hero-sub">Muse pauses at every one-way door. You decide in the browser; it carries on with your call, on the record.</p>
         <p class="hero-sub short">Your agent pauses. You decide. It carries on.</p>
       </div>
       <div class="cta-row">
@@ -375,7 +368,7 @@
         <div class="shot-bar" aria-hidden="true"><i></i><i></i><i></i><span class="shot-url">hoist · decision moment</span></div>
         <div class="shot-body demo">
           <div class="qtabs" role="group" aria-label="Preview moments"><button type="button" class="qtab done" data-mtab="0" aria-pressed="false">✓ Persistence</button><button type="button" class="qtab" data-mtab="1" aria-pressed="true">Auth</button><button type="button" class="qtab" data-mtab="2" aria-pressed="false">Hosting</button></div>
-          <div class="msg agent"><span class="who">H</span><span class="bubble">Decision moment <span class="js-mnum">2 of 3</span>: <b class="js-mshort">which auth fits?</b> Expand the options, then pick one.</span></div>
+          <div class="msg agent"><span class="who">H</span><span class="bubble">Decision moment <span class="js-mnum">2 of 3</span>: <b class="js-mshort">which auth fits?</b> Options are on the canvas — tap one to select it.</span></div>
           <div class="interrupt">
             <h2>Decision moment <span class="js-mnum">2 of 3</span></h2>
             <p class="moment-q js-mtitle">Which auth fits a 3-person team?</p>
@@ -389,15 +382,15 @@
         <div class="shot-body demo">
           <div class="edu" id="mock-edu">
             <h2>Which auth fits a 3-person team?</h2>
-            <p class="q-hint">One hard choice. Expand, compare, commit — one record at the end.</p>
-            <div class="optrow"><button type="button" class="opt" data-mopt="0" aria-pressed="false"><span class="onum">1</span><b>Clerk</b><span class="chev">▾</span><small>Hosted auth, fastest to ship; per-user pricing.</small><span class="detail"><span class="why">Drop-in SDK with prebuilt login UI. Live this afternoon — then a per-user bill that grows with you.</span><span class="micro"><small>Setup effort</small><span class="micro-track"><span class="micro-fill" style="width:20%"></span></span></span><span class="journey"><span class="jstep">Add SDK</span><span class="jstep">Style UI</span><span class="jstep">Ship login</span></span><dl class="nums"><div class="num-row"><dt>Cost</dt><dd>$25+/mo</dd></div><div class="num-row"><dt>Time to login</dt><dd>~2 hours</dd></div></dl></span></button></div>
-            <div class="optrow"><button type="button" class="opt" data-mopt="1" aria-pressed="true"><span class="onum">2</span><b>Auth.js + Postgres</b><span class="chev">▾</span><small>Self-hosted, free forever; you own the sessions table.</small><span class="detail"><span class="why">Open standard with an adapter for your stack and magic links included. Costs about a day to wire up.</span><span class="micro"><small>Setup effort</small><span class="micro-track"><span class="micro-fill" style="width:65%"></span></span></span><span class="journey"><span class="jstep">Install adapter</span><span class="jstep">Wire providers</span><span class="jstep">Ship login</span></span><dl class="nums"><div class="num-row"><dt>Cost</dt><dd>$0/mo</dd></div><div class="num-row"><dt>Time to login</dt><dd>~1 day</dd></div></dl></span></button></div>
-            <div class="optrow"><button type="button" class="opt" data-mopt="2" aria-pressed="false"><span class="onum">3</span><b>Roll your own</b><span class="chev">▾</span><small>Full control; you also own every breach.</small><span class="detail"><span class="why">Every flow exactly yours — plus every reset email, session bug, and 2am breach page.</span><span class="micro"><small>Setup effort</small><span class="micro-track"><span class="micro-fill" style="width:95%"></span></span></span><span class="journey"><span class="jstep">Design schema</span><span class="jstep">Build flows</span><span class="jstep">Audit everything</span></span><dl class="nums"><div class="num-row"><dt>Cost</dt><dd>$0/mo</dd></div><div class="num-row"><dt>Time to login</dt><dd>~2 weeks</dd></div></dl></span></button></div>
-            <p class="expand-hint">Tap an option for its full deep dive inline.</p>
-            <div class="actions"><button type="button" class="btn" data-mcommit>Commit &amp; send back to chat</button></div>
+            <p class="q-hint">One hard choice. Compare, select, commit — one record at the end.</p>
+            <button type="button" class="opt rich" data-mopt="0" aria-pressed="false"><span class="opt-top"><b>Clerk</b><span class="sel-stamp">Selected</span></span><small>Hosted auth, fastest to ship; per-user pricing.</small><dl class="nums"><div class="num-row"><dt>Cost</dt><dd>$25+/mo</dd></div><div class="num-row"><dt>Time to login</dt><dd>~2 hours</dd></div></dl><span class="journey"><span class="jstep">Add SDK</span><span class="jstep">Style UI</span><span class="jstep">Ship login</span></span><span class="why">Drop-in SDK with prebuilt login UI. Live this afternoon — then a per-user bill that grows with you.</span><span class="micro"><small>Setup effort</small><span class="micro-track"><span class="micro-fill" style="width:20%"></span></span></span></button>
+            <button type="button" class="opt rich" data-mopt="0" aria-pressed="true"><span class="opt-top"><b>Auth.js + Postgres</b><span class="sel-stamp">Selected</span></span><small>Self-hosted, free forever; you own the sessions table.</small><dl class="nums"><div class="num-row"><dt>Cost</dt><dd>$0/mo</dd></div><div class="num-row"><dt>Time to login</dt><dd>~1 day</dd></div></dl><span class="journey"><span class="jstep">Install adapter</span><span class="jstep">Wire providers</span><span class="jstep">Ship login</span></span><span class="why">Open standard with an adapter for your stack and magic links included. Costs about a day to wire up.</span><span class="micro"><small>Setup effort</small><span class="micro-track"><span class="micro-fill" style="width:65%"></span></span></span></button>
+            <button type="button" class="opt rich" data-mopt="0" aria-pressed="false"><span class="opt-top"><b>Roll your own</b><span class="sel-stamp">Selected</span></span><small>Full control; you also own every breach.</small><dl class="nums"><div class="num-row"><dt>Cost</dt><dd>$0/mo</dd></div><div class="num-row"><dt>Time to login</dt><dd>~2 weeks</dd></div></dl><span class="journey"><span class="jstep">Design schema</span><span class="jstep">Build flows</span><span class="jstep">Audit everything</span></span><span class="why">Every flow exactly yours — plus every reset email, session bug, and 2am breach page.</span><span class="micro"><small>Setup effort</small><span class="micro-track"><span class="micro-fill" style="width:95%"></span></span></span></button>
+            <p class="expand-hint">Tap a card to select it — facts, steps and watch-outs are on the card.</p>
+            <div class="commitbar"><span class="cb-status">Selected: Auth.js + Postgres</span><span style="flex:1"></span><button type="button" class="btn" data-mcommit>Commit choice</button></div>
           </div>
         </div>
-        <figcaption class="shot-cap">The walk: expand, compare, commit. Tap any option.</figcaption>
+        <figcaption class="shot-cap">The canvas: options first, facts on the card, tap to select.</figcaption>
       </figure>
     </div>
   </section>
@@ -462,8 +455,8 @@
     <span class="sec-num" aria-hidden="true">05</span>
     <div class="sec-head center reveal">
       <span class="eb"><i></i>05 · Install</span>
-      <h2>Your database decision, guarded in one command.</h2>
-      <p>Python 3.9+, Muse Code, zero dependencies. The page serves from your machine while Muse drafts every moment over the API.</p>
+      <h2 aria-label="One command between Muse and your next lasting decision.">One command between Muse and your next <span class="rot tick" id="rot" aria-hidden="true">database decision</span>.</h2>
+      <p>Python 3.9+ and Muse, zero dependencies. The page serves from your machine — and today the hook blocks conflicting database installs automatically; the pause and the record cover every one-way door.</p>
     </div>
     <div class="bezel c12 reveal anchor"><div class="core">
       <img class="sec-icon" src="icons/shield.webp" width="350" height="350" alt="" aria-hidden="true" loading="lazy">
@@ -594,6 +587,18 @@
       btn.addEventListener("click", function () { madrShow(btn.getAttribute("data-madr")); });
     })(mpills[m]);
   }
+  var rotEl = document.getElementById("rot");
+  if (rotEl && !(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches)) {
+    var rotWords = ["database decision", "cloud provider decision", "auth decision", "hosting decision", "employee credit-card decision"];
+    var rotI = 0;
+    setInterval(function () {
+      rotI = (rotI + 1) % rotWords.length;
+      rotEl.textContent = rotWords[rotI];
+      rotEl.classList.remove("tick");
+      void rotEl.offsetWidth;
+      rotEl.classList.add("tick");
+    }, 2400);
+  }
   var MTABS = [
     { n: "1 of 3", short: "which store fits?", title: "Where should user accounts and saved projects live?" },
     { n: "2 of 3", short: "which auth fits?", title: "Which auth fits a 3-person team?" },
@@ -620,11 +625,11 @@
     var j = "", n = "";
     for (var k = 0; k < o.journey.length; k++) j += '<span class="jstep">' + o.journey[k] + "</span>";
     for (var m = 0; m < o.nums.length; m++) n += '<div class="num-row"><dt>' + o.nums[m][0] + "</dt><dd>" + o.nums[m][1] + "</dd></div>";
-    return '<div class="optrow"><button type="button" class="opt" data-mopt="' + i + '" aria-pressed="false">' +
-      '<span class="onum">' + (i + 1) + "</span><b>" + o.name + '</b><span class="chev">▾</span>' +
-      "<small>" + o.desc + '</small><span class="detail"><span class="why">' + o.why + "</span>" +
-      '<span class="micro"><small>Setup effort</small><span class="micro-track"><span class="micro-fill" style="width:' + o.micro + '%"></span></span></span>' +
-      '<span class="journey">' + j + '</span><dl class="nums">' + n + "</dl></span></button></div>";
+    return '<button type="button" class="opt rich" data-mopt="' + i + '" aria-pressed="false">' +
+      '<span class="opt-top"><b>' + o.name + '</b><span class="sel-stamp">Selected</span></span>' +
+      "<small>" + o.desc + '</small><dl class="nums">' + n + "</dl>" +
+      '<span class="journey">' + j + '</span><span class="why">' + o.why + "</span>" +
+      '<span class="micro"><small>Setup effort</small><span class="micro-track"><span class="micro-fill" style="width:' + o.micro + '%"></span></span></span></button>';
   }
   function renderRightPane(idx) {
     var edu = document.getElementById("mock-edu");
@@ -632,8 +637,8 @@
     var t = MTABS[idx], p = RPANES[idx];
     var html = "<h2>" + t.title + '</h2><p class="q-hint">' + p.hint + "</p>";
     for (var i = 0; i < p.options.length; i++) html += rpOptHtml(p.options[i], i);
-    html += '<p class="expand-hint">Tap an option for its full deep dive inline.</p>' +
-      '<div class="actions"><button type="button" class="btn" data-mcommit>Commit &amp; send back to chat</button></div>';
+    html += '<p class="expand-hint">Tap a card to select it — facts, steps and watch-outs are on the card.</p>' +
+      '<div class="commitbar"><span class="cb-status">Nothing selected yet</span><span style="flex:1"></span><button type="button" class="btn" data-mcommit>Commit choice</button></div>';
     edu.innerHTML = html;
     bindMockEdu(edu);
   }
@@ -659,6 +664,9 @@
         var group = this.closest(".edu").querySelectorAll("[data-mopt]");
         for (var g = 0; g < group.length; g++) group[g].setAttribute("aria-pressed", "false");
         this.setAttribute("aria-pressed", was ? "false" : "true");
+        var edu = this.closest(".edu");
+        var status = edu ? edu.querySelector(".cb-status") : null;
+        if (status) status.textContent = was ? "Nothing selected yet" : "Selected: " + this.querySelector("b").textContent;
       });
     }
     var mcoms = scope.querySelectorAll("[data-mcommit]");
