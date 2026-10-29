@@ -87,7 +87,10 @@
   @keyframes momentIn{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:none}}
   @media (prefers-reduced-motion: reduce){.captured,.cap-check,.moment-enter{animation:none}}
   .canvas-bar{margin:0 0 10px;display:grid;gap:6px}
-  .cb-head{display:flex;align-items:center;gap:12px}
+  .cb-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .list-opt.rec-row{display:flex;align-items:center;justify-content:space-between;gap:14px}
+  .rec-row .cb-map{width:52px}
+  .rec-row small.fill{display:block;margin-top:2px}
   .cb-map{display:grid;gap:3px;width:64px;flex:none;padding:4px;border:2.5px solid var(--bk-ink);border-radius:10px;grid-auto-rows:7px;background:var(--bk-ink)}
   .cb-map span{border-radius:2px;background:var(--bk-tile, #fff)}
   .cb-map span.ok{background:var(--bk-tile, #fff)}
@@ -505,23 +508,29 @@
     c.template.cols = c.template.md.cols; c.template.areas = c.template.md.areas;
     return c;
   }
-  function canvasBarHtml(q, data) {
-    var c = composeMoment(q, data);
-    if (!c) return "";
-    var own = (q.draft && q.draft.kind) || "tech-choice";
-    var slots = c.template.slots, filled = 0, missing = [];
-    var cells = slots.map(function (sl) {
+  /* A small Bento in the kit icon's style: the template's real grid, white = filled, yellow = missing. */
+  function bentoMap(t, data) {
+    var filled = 0, missing = [];
+    var cells = t.slots.map(function (sl) {
       var comp = BentoKit.components[sl[1]], ok = false;
       try { ok = !!comp.needs(data); } catch (e) { ok = false; }
       if (ok) filled++; else missing.push(comp.name);
       return '<span class="' + (ok ? "ok" : "miss") + '" style="grid-area:' + sl[0] + '" title="' + esc(comp.name + (ok ? " — filled" : " — missing")) + '"></span>';
     }).join("");
-    var areas = c.wide.areas.map(function (r) { return '"' + r + '"'; }).join(" ");
-    var html = '<div class="canvas-bar"><div class="cb-head"><span class="cb-map" role="img" aria-label="' + filled + " of " + slots.length +
-      ' compartments filled" style=\'grid-template-columns:' + c.wide.cols + ";grid-template-areas:" + areas + '\'>' + cells + "</span>" +
+    var areas = t.areas.map(function (r) { return '"' + r + '"'; }).join(" ");
+    return { filled: filled, total: t.slots.length, missing: missing,
+      html: '<span class="cb-map" role="img" aria-label="' + filled + " of " + t.slots.length + ' compartments filled" style=\'grid-template-columns:' +
+        t.cols + ";grid-template-areas:" + areas + "\'>" + cells + "</span>" };
+  }
+  function canvasBarHtml(q, data) {
+    var c = composeMoment(q, data);
+    if (!c) return "";
+    var own = (q.draft && q.draft.kind) || "tech-choice";
+    var mp = bentoMap({ slots: c.template.slots, cols: c.wide.cols, areas: c.wide.areas }, data);
+    var html = '<div class="canvas-bar"><div class="cb-head">' +
       '<div><b class="cb-title">Bento Kit · ' + esc(BentoKit.templates[c.kind].name) + "</b>" +
-      '<span class="cb-count">' + filled + " of " + slots.length + " compartments filled" +
-      (missing.length ? " · missing: " + esc(missing.join(", ").toLowerCase()) : "") + "</span></div></div>" +
+      '<span class="cb-count">' + mp.filled + " of " + mp.total + " compartments filled" +
+      (mp.missing.length ? " · missing: " + esc(mp.missing.join(", ").toLowerCase()) : "") + "</span></div>" + mp.html + "</div>" +
       '<div class="cb-kinds" role="group" aria-label="Canvas for this kind of decision">';
     KIND_IDS.forEach(function (k) {
       html += '<button type="button" class="cb-kind" data-action="kind" data-v="' + k + '" aria-pressed="' + (c.kind === k ? "true" : "false") + '"' +
@@ -865,6 +874,8 @@
     var opt = optBy(a.value);
     mode = mode || "chosen";
     if (state.saving) return;
+    /* Every pick is made on the canvas with all options in view; the old quick path is gone. */
+    state.path = "hoist";
     state.err = null; state.saving = true;
     render();
     saveChoice(q, opt, mode, state.path).then(function (rec) {
@@ -1475,10 +1486,11 @@
     var badge = LIVE ? "" : '<a class="sample-badge" href="landing.html#install">Sample data</a>';
     return '<div class="card"><h2>What are we deciding?' + badge + "</h2>" +
       '<p class="hint">Tell me the task — I\'ll find every choice that\'s hard to undo, and we\'ll take each decision moment together. Muse Spark prepares each moment; Hoist checks every draft against its rules before you see it.</p>' +
-      '<textarea class="task-input" id="taskIn" aria-label="Task">' + (LIVE ? "" : esc(EXAMPLES[0])) + "</textarea>" +
-      '<div class="escape-row">' + EXAMPLES.filter(function (e) { return LIVE || e !== EXAMPLES[0]; }).map(function (e) {
+      '<textarea class="task-input" id="taskIn" aria-label="Task"' + (LIVE ? "" : " readonly") + ">" + (LIVE ? "" : esc(EXAMPLES[0])) + "</textarea>" +
+      (LIVE ? '<div class="escape-row">' + EXAMPLES.map(function (e) {
         return '<button type="button" class="escape-btn" data-action="ex" data-v="' + esc(e) + '">' + esc(e) + "</button>";
-      }).join("") + "</div>" +
+      }).join("") + "</div>"
+        : '<p class="hint">This page plays back one recorded task: the plan and drafts are real Muse Spark output, replayed without an API key. Install Hoist to run your own tasks.</p>') +
       '<div class="actions"><button type="button" class="btn" data-action="start">Start deciding together</button></div>' +
       (state.err ? '<p class="err">' + esc(state.err) + "</p>" : "") + "</div>";
   }
@@ -1581,12 +1593,13 @@
     var open = (S.decisions || []).filter(function (d) { return d.status === "open"; });
     var ses = S.session;
     var badge = LIVE ? "" : '<a class="sample-badge" href="landing.html#install">Sample data</a>';
-    var html = '<p class="lede">Hoist holds your <strong>decision moments</strong> — the choices that are hard to undo. Pick one up, or walk a whole task.</p>' +
-      '<div class="card"><h2>Open now' + badge + '</h2><p class="hint">Single interruptions land here; task sessions walk question by question.</p>';
+    var html = '<p class="lede">When your agent reaches a choice that is hard to undo, Hoist pauses it and opens a <strong>decision moment</strong> here. You decide on a Bento canvas; the record goes back to the agent.</p>' +
+      '<div class="card"><h2>Open now' + badge + '</h2><p class="hint">Interruptions from your agent wait here. A task walk-through finds every hard choice in a task up front.</p>';
     if (!open.length && !ses) html += '<p class="hint">Nothing is waiting. Start a task session to try the walk-through.</p>';
     for (var i = 0; i < open.length; i++) {
+      var pkg = open[i].trigger && open[i].trigger.package;
       html += '<a class="opt list-opt" href="#/decide/' + esc(open[i].id) + '"><b>' + esc(open[i].task || open[i].kind) + "</b><small>" +
-        esc("Single decision · waiting on you") + "</small></a>";
+        esc("Interruption · " + (open[i].agent || "Your agent") + (pkg ? " was about to add " + pkg : " hit a hard choice") + " · waiting on you") + "</small></a>";
     }
     if (ses && ses.plan) {
       var asks = ses.plan.decisions.filter(function (d) { return d.mode === "ask"; });
@@ -1596,7 +1609,8 @@
     } else if (ses) {
       html += '<a class="opt list-opt" href="#/session"><b>' + esc(ses.task || "Task session") + "</b><small>Muse Spark is preparing it…</small></a>";
     }
-    html += '<a class="opt list-opt" href="#/session" style="border:2px solid var(--bk-signal)"><b>Start a task session</b><small>Describe a task; decide its hard parts well.</small></a>';
+    html += '<a class="opt list-opt" href="#/session" style="border:2px solid var(--bk-signal)"><b>' + (LIVE ? "Walk a task" : "Walk the sample task") + "</b><small>" +
+      esc(LIVE ? "Describe a task; Muse Spark finds every hard-to-undo choice in it." : "Add user accounts with saved projects · three moments drafted by Muse Spark") + "</small></a>";
     html += "</div>";
     return html;
   }
@@ -1614,7 +1628,13 @@
       if (dm) sub = dm[1] + " · " + sub;
       var om = />\s*\*\*Decision:\*\*\s*([^.*]+)/.exec(recs[i].markdown || "");
       if (om) sub += " — " + om[1].trim().slice(0, 80);
-      html += '<a class="opt list-opt" href="#/records/' + esc(recs[i].file) + '"><b>' + esc(title) + "</b><small>" + esc(sub) + "</small></a>";
+      var mp = null;
+      if (typeof BentoKit !== "undefined" && BentoKit.templates["madr-record"]) {
+        try { mp = bentoMap(BentoKit.templates["madr-record"], recordData(recs[i])); } catch (e) { mp = null; }
+      }
+      html += '<a class="opt list-opt rec-row" href="#/records/' + esc(recs[i].file) + '"><span><b>' + esc(title) + "</b><small>" + esc(sub) + "</small>" +
+        (mp ? '<small class="fill">' + mp.filled + " of " + mp.total + " compartments" + (mp.missing.length ? " · missing " + esc(mp.missing.join(", ").toLowerCase()) : " · complete") + "</small>" : "") +
+        "</span>" + (mp ? mp.html : "") + "</a>";
     }
     return html + "</div>";
   }

@@ -349,8 +349,8 @@
     <div class="bento" style="margin-top:20px">
       <div class="bezel c7 reveal"><div class="core">
         <div class="step-n"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"/><path d="m21 3-7 7"/><path d="m3 21 7-7"/><path d="M9 21H3v-6"/></svg>01 · ONE CANVAS</div>
-        <h3>Every option, full detail, one screen</h3>
-        <p>No second screen to open: options compare side by side — facts in a table, effort as bars — every card carries its gains and watch-outs, and the picked path becomes a timeline. No invented scores.</p>
+        <h3>One canvas, shaped by the decision</h3>
+        <p>Bento Kit picks the canvas from the kind of decision and fills it from what Muse Spark found: your answers become a matrix that shows what would flip the pick, next to risks, assumptions and a critic you can call in. Every mark traces back to your answers.</p>
       </div></div>
       <div class="bezel c5 reveal" style="--d:.1s"><div class="core">
         <div class="step-n"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/></svg>02 · TAP TO PICK</div>
@@ -457,7 +457,7 @@
     <div class="sec-head reveal">
       <span class="eb"><i></i>05 · The Bento MADR kit</span>
       <h2>One decision,<br>nineteen compartments.</h2>
-      <p>Every Hoist moment and record is drawn as a Bento MADR canvas — swappable compartments for the problem, the evidence, the verdict and the fallout. What a record still owes you stays visible at a glance.</p>
+      <p>Every Hoist moment and record is drawn as a Bento MADR canvas — swappable compartments for the problem, the evidence, the verdict and the fallout. Hoist picks the canvas from the kind of decision and fills each compartment from the data; what a record still owes you stays visible at a glance.</p>
     </div>
     <div class="bento">
       <div class="bezel c7 reveal"><div class="core">
@@ -708,11 +708,18 @@
     var board = document.getElementById("bk-live");
     if (!board || typeof BentoKit === "undefined") return;
     var data = paneData(idx);
-    var ev = [];
-    if (data.attributes.length) ev.push("facts");
-    if (data.metrics.length) ev.push("numbers");
-    var tpl = !ev.length ? "moment-plain" : ((data.timeline || []).length ? "moment" : "moment-evidence");
-    BentoKit.render(board, tpl, data, { swap: BentoKit.recommend({ kind: "tech-choice", evidence: ev }).swaps });
+    if (BentoKit.compose) {
+      /* Same call the demo makes: the kit picks compartments from the data, options lead. */
+      var comp = BentoKit.compose(data, { kind: "tech-choice", lead: "proscons", skip: ["proscons"], hideEmpty: true });
+      comp.template.cols = comp.template.md.cols; comp.template.areas = comp.template.md.areas;
+      BentoKit.render(board, comp.template, data, { questions: { lead: "Your options — tap one to pick it" } });
+    } else {
+      var ev = [];
+      if (data.attributes.length) ev.push("facts");
+      if (data.metrics.length) ev.push("numbers");
+      var tpl = !ev.length ? "moment-plain" : ((data.timeline || []).length ? "moment" : "moment-evidence");
+      BentoKit.render(board, tpl, data, { swap: BentoKit.recommend({ kind: "tech-choice", evidence: ev }).swaps });
+    }
     var cards = board.querySelectorAll(".bk-opt");
     cards.forEach(function (card, i) {
       card.setAttribute("role", "button");
