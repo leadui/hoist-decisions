@@ -164,7 +164,7 @@
         + `<text class="lbl${chosen ? ' strong' : ''}" x="${x + dx}" y="${y + 4}" text-anchor="${anchor}">${esc(it.name)}</text>`;
     }).join('');
     return `<svg class="bk-svg" viewBox="0 0 ${S} ${S}" style="max-width:520px" role="img" aria-label="${esc(q.y.name)} against ${esc(q.x.name)}">${quads}${axes}${pts}</svg>
-      <p class="bk-legend"><span class="bk-key"><i style="background:var(--bk-signal);height:8px;width:8px;border-radius:50%"></i>Chosen</span><span class="bk-key"><i style="background:var(--bk-accent);height:8px;width:8px;border-radius:50%"></i>Considered option</span><span class="bk-key"><i style="background:var(--bk-muted);height:8px;width:8px;border-radius:50%"></i>Other candidate</span></p>`;
+      <p class="bk-legend"><span class="bk-key"><i style="background:var(--bk-signal);height:8px;width:8px;border-radius:50%"></i>Selected</span><span class="bk-key"><i style="background:var(--bk-accent);height:8px;width:8px;border-radius:50%"></i>Considered option</span><span class="bk-key"><i style="background:var(--bk-muted);height:8px;width:8px;border-radius:50%"></i>Other candidate</span></p>`;
   }
 
   function heat(d){
@@ -213,7 +213,7 @@
     empty:'List the criteria that matter and rate each option against them.',
     render: d => {
       const os = d.options, cs = d.criteria, W = weights(d), sc = scores(d), best = Math.max(...sc.map(t => t.sum)), rated = sc.some(t => t.n);
-      return `<div class="bk-scroll"><table class="bk-mx" style="--cols:${os.length}"><thead><tr><th></th>${os.map(o => `<th scope="col" class="bk-oh${o.id === d.chosen ? ' is-chosen' : ''}">${esc(o.name)}${o.id === d.chosen ? '<span class="bk-stamp">Chosen</span>' : ''}</th>`).join('')}</tr></thead>
+      return `<div class="bk-scroll"><table class="bk-mx" style="--cols:${os.length}"><thead><tr><th></th>${os.map(o => `<th scope="col" class="bk-oh${o.id === d.chosen ? ' is-chosen' : ''}">${esc(o.name)}${o.id === d.chosen ? '<span class="bk-stamp">Selected</span>' : ''}</th>`).join('')}</tr></thead>
         <tbody>${cs.map((c, k) => `<tr><th scope="row" class="bk-drv"><span class="bk-wt" role="img" aria-label="Weight: ${WNAME[W[k]]}">${dots(W[k])}</span><span class="bk-dn">C${k + 1}</span>${md(c.name)}</th>${os.map(o => {
           const v = d.ratings?.[c.id]?.[o.id]; const cls = v == null ? 'bk-vn' : v < 0 ? 'bk-vm' + (-v) : 'bk-v' + v;
           return `<td${o.id === d.chosen ? ' class="is-chosen"' : ''}><span class="bk-c ${cls}" role="img" aria-label="${esc(o.name)}: ${v == null ? 'not rated' : WORD[v]}">${sym(v) || '·'}</span></td>`; }).join('')}</tr>`).join('')}</tbody>
@@ -322,7 +322,7 @@
     empty:'Each considered option gets a card here with its pros and cons.',
     render: d => `<div class="bk-opts">${d.options.map(o => {
       const items = d.prosCons?.[o.id] || [], n = {good:0, neutral:0, bad:0}; items.forEach(i => n[i.kind]++);
-      return `<article class="bk-opt${o.id === d.chosen ? ' is-chosen' : ''}"><div class="bk-opt-top"><h3>${esc(o.name)}</h3>${o.id === d.chosen ? '<span class="bk-stamp">Chosen</span>' : ''}</div>${o.desc ? `<p class="desc">${md(o.desc)}</p>` : ''}
+      return `<article class="bk-opt${o.id === d.chosen ? ' is-chosen' : ''}"><div class="bk-opt-top"><h3>${esc(o.name)}</h3>${o.id === d.chosen ? '<span class="bk-stamp">Selected</span>' : ''}</div>${o.desc ? `<p class="desc">${md(o.desc)}</p>` : ''}
         ${items.length ? `<div class="bk-tally" role="img" aria-label="${n.good} good, ${n.neutral} neutral, ${n.bad} bad">${['good','neutral','bad'].map(k => n[k] ? `<span class="${k[0]}" style="flex:${n[k]}"></span>` : '').join('')}</div><ul class="bk-pc">${items.map(i => `<li class="${i.kind}"><span>${md(i.text)}</span></li>`).join('')}</ul>` : prompt('No pros or cons recorded.')}</article>`; }).join('')}</div>`});
 
   def('people', {core:true, name:'People', family:'context', question:'Who decided, who heard?', src:'Decided · consulted · informed',

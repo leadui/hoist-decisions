@@ -48,9 +48,9 @@
   [data-theme="dark"] .mini-btn{color:#0c1712}
   .actions{display:flex;justify-content:flex-end;gap:10px;margin-top:14px;flex-wrap:wrap;align-items:center}
   .actions .spacer{flex:1}
-  .qtabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center;position:relative}
-  .qtabs::before{content:"";position:absolute;left:16px;right:16px;top:50%;height:2px;background:var(--bk-line)}
+  .qtabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
   .qtab{position:relative;font:inherit;font-size:13px;font-weight:650;cursor:pointer;background:var(--bk-tile);color:var(--bk-muted);border:1px solid var(--bk-line);border-radius:999px;padding:6px 14px;min-height:36px}
+  .qtab + .qtab::before{content:"";position:absolute;left:-9px;top:50%;width:8px;height:2px;background:var(--bk-line)}
   .commitbar{position:sticky;bottom:12px;z-index:5;background:var(--bk-tile);border:1px solid var(--bk-line);border-radius:12px;padding:10px 12px;box-shadow:0 10px 28px rgba(20,30,25,.16)}
   .qtab[aria-pressed="true"]{color:var(--bk-accent);border-color:var(--bk-accent);background:var(--bk-well)}
   .qtab[data-empty="1"]{opacity:.55}
@@ -211,7 +211,7 @@
       var html = '<div class="bk-opts rich">';
       d.optionsDetail.forEach(function (o) {
         html += '<article class="bk-opt' + (o.id === d.chosen ? " is-chosen" : "") + '"><div class="bk-opt-top"><h3>' + e(o.name) + "</h3>" +
-          (o.id === d.chosen ? '<span class="bk-stamp">Chosen</span>' : "") + "</div>";
+          (o.id === d.chosen ? '<span class="bk-stamp">Selected</span>' : "") + "</div>";
         if (o.desc) html += '<p class="desc">' + e(o.desc) + "</p>";
         if (o.numbers && o.numbers.length) {
           html += '<dl class="bk-nums">';
@@ -328,13 +328,13 @@
     if (q.preparing) return preparingHtml(q);
     var data = momentData(q, state.picked);
     var prev = state.answers[q.id];
-    var html = (prev ? '<p class="hint">Earlier you chose <strong>' + esc(prev.name) + "</strong> — tap a card to change it, or commit to keep it.</p>" : "") +
+    var html = (prev ? '<p class="hint">Earlier you selected <strong>' + esc(prev.name) + "</strong> — tap a card to change it, or commit to keep it.</p>" : "") +
       '<div id="bk-moment"></div>';
     html += '<p class="hint">' + (state.picked ? "Tap another card to change your pick." : "Tap a card to pick it — why it wins and what to watch is on the card.") + "</p>";
     if (data.metrics.length) html += '<p class="hint">Bars are relative within this option set, not absolute costs.</p>';
     var po = optBy(state.picked);
     html += '<div class="actions commitbar"><span class="hint" style="margin:0">' +
-      (po ? "Picked: <strong>" + esc(po.name) + "</strong>" : "Pick a card above — committing needs a pick first.") +
+      (po ? "Selected: <strong>" + esc(po.name) + "</strong>" : "Pick a card above — committing needs a pick first.") +
       '</span><span class="spacer"></span><button type="button" class="btn" data-action="confirm"' +
       (state.picked ? "" : " disabled") + ">Commit choice</button></div>";
     if (state.err) html += '<p class="err">' + esc(state.err) + "</p>";
@@ -596,9 +596,16 @@
     state.phase = "hoist";
     state.path = "hoist";
     state.picked = state.answers[id] ? state.answers[id].value : null;
+    ensurePick(Q());
     state.showCustom = false;
         state.err = null;
     render();
+  }
+  function ensurePick(q) {
+    if (!q || q.preparing || state.picked) return;
+    var opts = allOptions();
+    if (!opts.length) return;
+    state.picked = (q.agentPick && optBy(q.agentPick)) ? q.agentPick : opts[0].value;
   }
   function pick(v) {
     var q = Q();
@@ -621,7 +628,7 @@
   function advance() {
     var next = nextUnanswered();
     state.picked = null; state.showCustom = false; state.err = null;
-    if (next) { state.qid = next; state.phase = "hoist"; state.path = "hoist"; }
+    if (next) { state.qid = next; state.phase = "hoist"; state.path = "hoist"; ensurePick(Q()); }
     else state.phase = "review";
     render();
   }
@@ -723,7 +730,9 @@
     for (var i = 0; i < PACKS.length; i++) if (PACKS[i].id === id) ok = true;
     if (!ok) return;
     var a = state.answers[id];
-    state.qid = id; state.phase = "hoist"; state.path = "hoist";     state.picked = a ? a.value : null;
+    state.qid = id; state.phase = "hoist"; state.path = "hoist";
+    state.picked = a ? a.value : null;
+    ensurePick(Q());
     state.showCustom = false;
     state.err = null;
     render();
@@ -1332,6 +1341,7 @@
       }
       state.qid = first || any || PACKS[0].id;
     }
+    ensurePick(Q());
     return engineHtml();
   }
   function homeHtml() {
@@ -1437,7 +1447,7 @@
         return;
       }
       if (!CAT) { app.innerHTML = progressHtml({ task: "Loading the decision…", status: "planning", total: 1, drafted: [] }); return; }
-      if (CTX.kind !== "decide" || CTX.id !== id || !PACKS.length) { CTX = { kind: "decide", id: id }; buildDecidePack(dec); resetState(); state.qid = PACKS[0].id; }
+      if (CTX.kind !== "decide" || CTX.id !== id || !PACKS.length) { CTX = { kind: "decide", id: id }; buildDecidePack(dec); resetState(); state.qid = PACKS[0].id; ensurePick(Q()); }
       app.innerHTML = engineHtml();
       mountCanvases();
       return;

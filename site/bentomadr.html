@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<!-- Bento MADR showcase: what the system is, its compartments, and a
+     build-your-own canvas. Renders live with the same kit the demo
+     and the record view use (site/bento-kit.js). -->
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bento MADR — one decision, one canvas</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="bento-kit.css">
+<style>
+  body{margin:0;background:var(--bk-paper);color:var(--bk-ink);font-family:var(--bk-body);font-size:15px;line-height:1.55}
+  .page{max-width:1060px;margin:0 auto;padding:28px 20px 72px}
+  .topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px}
+  .topbar h1{font-family:var(--bk-display);font-size:26px;margin:0;font-weight:780}
+  .topbar h1 i{display:inline-block;width:11px;height:11px;border-radius:50%;background:var(--bk-accent);margin-right:9px}
+  .topbar nav{display:flex;gap:8px;flex-wrap:wrap}
+  .topbar a,.tbtn{font:inherit;font-size:13px;font-weight:600;color:var(--bk-muted);text-decoration:none;border:1px solid var(--bk-line);border-radius:999px;padding:8px 16px;background:var(--bk-tile);cursor:pointer;min-height:40px;display:inline-flex;align-items:center}
+  .topbar a:hover,.tbtn:hover{color:var(--bk-accent);border-color:var(--bk-accent)}
+  h2.sec{font-family:var(--bk-display);font-size:24px;margin:38px 0 6px;font-weight:740}
+  .lede{color:var(--bk-muted);max-width:66ch;margin:4px 0 14px}
+  .strip{display:flex;gap:4px;align-items:center;margin:8px 0 4px;flex-wrap:wrap}
+  .strip .cell{width:26px;height:14px;border-radius:3px;border:1px solid var(--bk-line)}
+  .strip .cell.ok{background:var(--bk-frame)}
+  .strip .cell.miss{background:var(--bk-signal)}
+  .strip .lab{font-size:12.5px;color:var(--bk-muted);margin-right:8px;font-weight:600}
+  .checks{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 14px}
+  .checks label{font-size:13px;font-weight:600;border:1px solid var(--bk-line);border-radius:999px;padding:7px 13px;background:var(--bk-tile);cursor:pointer;display:inline-flex;gap:7px;align-items:center;min-height:38px}
+  .checks input{accent-color:var(--bk-accent);width:16px;height:16px}
+  .meter{font-size:13.5px;color:var(--bk-muted);margin:6px 0 12px}
+  .meter b{color:var(--bk-ink)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;margin-top:12px}
+  .comp{background:var(--bk-tile);border:1px solid var(--bk-line);border-radius:12px;padding:12px 14px}
+  .comp h3{font-family:var(--bk-display);font-size:15px;margin:0 0 2px}
+  .comp .q{font-size:13px;font-weight:600}
+  .comp .s{font-size:12px;color:var(--bk-muted)}
+  .comp .a{font-size:12px;color:var(--bk-bad);margin-top:6px}
+  .card{background:var(--bk-tile);border:1px solid var(--bk-line);border-radius:16px;padding:16px 18px;margin-bottom:14px}
+  @media (max-width:560px){.page{padding:20px 14px 48px}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="topbar">
+    <h1><i></i>Bento MADR</h1>
+    <nav>
+      <a href="landing.html">Hoist</a>
+      <a href="index.html#/records">Sample records</a>
+      <a href="index.html#/session">Live demo</a>
+      <button class="tbtn" id="theme-toggle" type="button">Theme: Light</button>
+    </nav>
+  </div>
+  <p class="lede">One decision, one canvas. A Bento MADR record is a grid of compartments — context, options, the verdict, what it costs, what could change it — drawn from the same data as the markdown record. Nothing is invented to fill a box: a compartment with no data hatches and tells you exactly what to add.</p>
+
+  <h2 class="sec">Complete at a glance</h2>
+  <p class="lede">Every compartment reports present or missing. Grey means the data is there; yellow means the record still owes you something — readable from across the room, before you open a single section.</p>
+  <div id="strips"></div>
+
+  <h2 class="sec">A record, drawn</h2>
+  <p class="lede">The same canvas the demo files when a moment is committed. The second record is deliberately thin — watch what the empty compartments ask for.</p>
+  <div id="full"></div>
+  <div id="sparse" style="margin-top:14px"></div>
+
+  <h2 class="sec">Build your own</h2>
+  <p class="lede">Pick the compartments your decision needs. The canvas re-draws live from one sample decision; the meter counts how many compartments the data actually fills.</p>
+  <div class="checks" id="checks"></div>
+  <p class="meter" id="meter"></p>
+  <div id="builder"></div>
+
+  <h2 class="sec">The compartments</h2>
+  <p class="lede">Nineteen compartments ship with the kit. Each answers one question and names where its data comes from — and when <em>not</em> to use it.</p>
+  <div class="grid" id="index"></div>
+
+  <p class="lede" style="margin-top:36px">Bento MADR is the record format inside <a href="landing.html">Hoist</a> — the canvas above is the same code the demo renders with. <a href="landing.html">Back to Hoist</a> · <a href="index.html#/session">Try the demo</a></p>
+</div>
+<script src="bento-kit.js"></script>
+<script>
+(function () {
+  "use strict";
+  function $(id) { return document.getElementById(id); }
+
+  BentoKit.templates["madr-record"] = { id: "madr-record", name: "MADR record", cols: "1.2fr 1fr 1fr",
+    areas: ["problem verdict verdict", "problem gains costs", "confirm people people", "shelf shelf shelf", "more more more"],
+    md: { cols: "1fr 1fr", areas: ["problem problem", "verdict verdict", "gains costs", "confirm people", "shelf shelf", "more more"] },
+    slots: [["problem", "problem"], ["verdict", "decision"], ["gains", "gains"], ["costs", "costs"], ["confirm", "confirm"], ["people", "people"], ["shelf", "proscons"], ["more", "more"]] };
+
+  var FULL = {
+    title: "Choose persistence for users and projects", question: "Where should user accounts and saved projects live?",
+    context: ["Users and saved projects must survive restarts and concurrent saves, and there is no ops team to babysit a database server."],
+    options: [{ id: "sqlite", name: "SQLite on the server", desc: "One file, zero ops; outgrow it and you migrate." },
+              { id: "pg", name: "Managed Postgres", desc: "Hosted Postgres with backups; priced once you grow." },
+              { id: "files", name: "JSON files", desc: "No database at all; breaks on concurrent saves." }],
+    chosen: "sqlite", because: "it stays boring while the project grows",
+    criteria: [{ id: "ops", name: "Ops load", better: "low" }, { id: "scale", name: "Room to grow", better: "high" }],
+    criteriaWeights: { ops: 5, scale: 3 },
+    ratings: { sqlite: { ops: 9, scale: 4 }, pg: { ops: 5, scale: 9 }, files: { ops: 8, scale: 2 } },
+    attributes: [{ name: "Bill", values: { sqlite: "None — one file", pg: "Free tier, then paid", files: "None" } },
+                 { name: "Backups", values: { sqlite: "Copy the file", pg: "Handled for you", files: "Copy the folder" } }],
+    metrics: [{ name: "Estimated cost", better: "low", values: { sqlite: 2, pg: 6, files: 1 } }],
+    consequences: { good: ["Zero ops, one file to back up", "Fast enough until proven otherwise"], bad: ["Single writer, one machine", "Migration day comes eventually"], neutral: [] },
+    prosCons: { sqlite: [{ kind: "good", text: "Zero ops, one file to back up" }, { kind: "bad", text: "Migration day comes eventually" }],
+                pg: [{ kind: "good", text: "Backups and patches handled" }, { kind: "bad", text: "A bill once you grow" }] },
+    confirmation: ["Hosting disk persists across deploys", "Hoist flags later database changes that conflict with this record"],
+    people: { decided: ["Project owner"], consulted: ["Muse Spark"] },
+    more: ["Confidence: medium; revisit if the team outgrows one machine."]
+  };
+  var SPARSE = {
+    title: "Pick a cache", question: "What should cache the catalog?",
+    context: ["The catalog endpoint is slow under load."],
+    options: [{ id: "memory", name: "In-memory cache", desc: "" }, { id: "redis", name: "Redis", desc: "" }],
+    chosen: "memory", because: "it ships today"
+  };
+
+  function completeness(d, tpl) {
+    return tpl.slots.map(function (pair) {
+      var comp = BentoKit.components[pair[1]];
+      var ok = false;
+      try { ok = !!comp.needs(d); } catch (e) { ok = false; }
+      return { name: comp.name, ok: ok };
+    });
+  }
+  function stripHtml(label, d, tpl) {
+    var cells = completeness(d, tpl).map(function (c) {
+      return '<span class="cell ' + (c.ok ? "ok" : "miss") + '" title="' + c.name + (c.ok ? " — present" : " — missing") + '"></span>';
+    }).join("");
+    return '<div class="strip"><span class="lab">' + label + "</span>" + cells + "</div>";
+  }
+  $("strips").innerHTML =
+    '<p class="meter"><span class="lab" style="font-weight:600">Legend:</span> <span class="cell ok" style="display:inline-block;width:26px;height:14px;border-radius:3px;background:var(--bk-frame);vertical-align:-2px"></span> present · <span class="cell miss" style="display:inline-block;width:26px;height:14px;border-radius:3px;background:var(--bk-signal);vertical-align:-2px"></span> missing</p>' +
+    stripHtml("Complete record", FULL, BentoKit.templates["madr-record"]) +
+    stripHtml("Thin record", SPARSE, BentoKit.templates["madr-record"]);
+
+  BentoKit.render($("full"), "madr-record", FULL);
+  BentoKit.render($("sparse"), "madr-record", SPARSE);
+
+  var CHOICES = [
+    ["problem", "The problem", true], ["proscons", "Option cards", true], ["compare", "Side-by-side facts", false],
+    ["bars", "Metric bars", true], ["matrix", "Criteria matrix", false], ["decision", "The verdict", true],
+    ["gains", "What we gain", true], ["costs", "Accepted costs", true], ["confirm", "Checks that bite back", false],
+    ["people", "Who decided", false], ["more", "More information", false]
+  ];
+  var checksEl = $("checks");
+  checksEl.innerHTML = CHOICES.map(function (c) {
+    return '<label><input type="checkbox" data-comp="' + c[0] + '"' + (c[2] ? " checked" : "") + "> " + c[1] + "</label>";
+  }).join("");
+  function build() {
+    var picked = [];
+    checksEl.querySelectorAll("input:checked").forEach(function (el) { picked.push(el.getAttribute("data-comp")); });
+    if (!picked.length) picked = ["problem"];
+    var slots = picked.map(function (cid, idx) { return ["s" + idx, cid]; });
+    var filled = 0;
+    slots.forEach(function (pair) { try { if (BentoKit.components[pair[1]].needs(FULL)) filled++; } catch (e) {} });
+    $("meter").innerHTML = "This data fills <b>" + filled + " of " + slots.length + "</b> compartments.";
+    BentoKit.render($("builder"), { id: "custom", name: "Custom canvas", cols: "1fr 1fr",
+      areas: pairAreas(slots),
+      md: { cols: "1fr", areas: slots.map(function (p) { return p[0]; }) }, slots: slots }, FULL);
+  }
+  function pairAreas(slots) {
+    var rows = [];
+    for (var i = 0; i < slots.length; i += 2) {
+      rows.push(slots[i + 1] ? (slots[i][0] + " " + slots[i + 1][0]) : (slots[i][0] + " " + slots[i][0]));
+    }
+    return rows;
+  }
+  checksEl.addEventListener("change", build);
+  build();
+
+  var idx = $("index");
+  idx.innerHTML = Object.keys(BentoKit.components).map(function (id) {
+    var c = BentoKit.components[id];
+    return '<div class="comp"><h3>' + c.name + '</h3><div class="q">' + c.question + '</div><div class="s">Data: ' + c.src + "</div>" +
+      (c.avoid ? '<div class="a">Avoid: ' + c.avoid + "</div>" : "") + "</div>";
+  }).join("");
+
+  var theme = "light";
+  try { theme = window.localStorage.getItem("hoist-theme") || "light"; } catch (e) { theme = "light"; }
+  function applyTheme() {
+    document.documentElement.setAttribute("data-theme", theme);
+    $("theme-toggle").textContent = "Theme: " + (theme === "dark" ? "Dark" : "Light");
+    try { window.localStorage.setItem("hoist-theme", theme); } catch (e) { /* private mode */ }
+  }
+  $("theme-toggle").addEventListener("click", function () { theme = theme === "dark" ? "light" : "dark"; applyTheme(); });
+  applyTheme();
+})();
+</script>
+</body>
+</html>

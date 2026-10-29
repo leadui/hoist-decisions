@@ -63,7 +63,7 @@ PRESENT = [
     ("conflict block", "Do not add"),
     ("commit verb", "Commit choice"),
     ("sticky commit bar", "commitbar"),
-    ("connected stepper", ".qtabs::before"),
+    ("connected stepper", ".qtab + .qtab::before"),
     ("cards pick options", "optionCardsWire"),
     ("rich option cards", "optioncards"),
 ]
