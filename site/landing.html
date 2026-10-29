@@ -6,11 +6,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Hoist — every decision moment, together</title>
-<meta name="description" content="Hoist pauses your coding agent at every one-way door, opens a decision moment, commits the record, and sends your agent back to work.">
+<meta name="description" content="It's okay to stop and ask. Hoist pauses your coding agent at choices that are hard to undo, explains them in plain words, records what you decide, and sends the agent back to work — or runs on autopilot and writes every call down.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="bento-kit.css">
+<link rel="stylesheet" href="vendor/bento-madr/bento-kit.css">
 <style>
   :root{
     --bg:#0f1412; --panel:#18201c; --ink:#e3e9e5; --mut:#93a29a; --dim:#75857c;
@@ -290,9 +290,9 @@
       </div>
       <div class="hero-tag">
         <span class="eb"><i></i>Meta Global AI Developer Hackathon</span>
-        <p class="tagline">Stop rolling the dice on <strong>AI decisions.</strong></p>
-        <p class="hero-sub">Muse pauses at every one-way door. You decide in the browser; it carries on with your call, on the record.</p>
-        <p class="hero-sub short">Your agent pauses. You decide. It carries on.</p>
+        <p class="tagline">It's okay to stop and <strong>ask.</strong></p>
+        <p class="hero-sub">Muse pauses at choices that are hard to undo, explains them in plain words, and waits while you think. In a hurry? Autopilot lets it decide — and writes every call down for you.</p>
+        <p class="hero-sub short">Your agent pauses. You take your time. Every call goes on the record.</p>
       </div>
       <div class="cta-row">
         <a class="btn pri" href="index.html#/session">Try the live demo <span class="arr">↗</span></a>
@@ -321,6 +321,32 @@
         <div class="step-n">WITH HOIST</div>
         <h3>The agent pauses, you decide</h3>
         <p>Muse asks instead: answer here, or decide with Hoist. The session pauses, you walk the options, one commit sends Muse back with your choice.</p>
+      </div></div>
+    </div>
+    <div class="sec-head reveal" style="margin-top:48px">
+      <span class="eb"><i></i>What we believe</span>
+      <h2>Fast is good.<br>Blind yes is not.</h2>
+    </div>
+    <div class="bento">
+      <div class="bezel c6 reveal"><div class="core">
+        <div class="step-n">IT'S OKAY TO INTERRUPT</div>
+        <h3>A pause costs a minute</h3>
+        <p>A wrong database costs weeks. Hoist stops the agent only at the doors that are hard to walk back through, and lets it run everywhere else.</p>
+      </div></div>
+      <div class="bezel c6 reveal" style="--d:.08s"><div class="core">
+        <div class="step-n">IT'S OKAY TO ASK DUMB QUESTIONS</div>
+        <h3>No question is too basic</h3>
+        <p>Every option comes with an everyday analogy, what living with it is like now and in six months, and the words a newcomer would not know. Ask a critic to argue against your pick.</p>
+      </div></div>
+      <div class="bezel c6 reveal" style="--d:.16s"><div class="core">
+        <div class="step-n">IT'S OKAY TO TAKE YOUR TIME</div>
+        <h3>Some calls can't be made yet</h3>
+        <p>Decide later, send it back to chat, or pick for now. The record says why you chose, so changing it later is a plan, not a regret.</p>
+      </div></div>
+      <div class="bezel c6 reveal" style="--d:.24s"><div class="core">
+        <div class="step-n">IT'S NOT OKAY TO SAY YES TO EVERYTHING</div>
+        <h3>Autopilot, never silent</h3>
+        <p>When speed matters, put Hoist on autopilot: the agent makes the call and Hoist writes it down as a Bento MADR record, marked low confidence until you review it.</p>
       </div></div>
     </div>
   </section>
@@ -455,9 +481,9 @@
   <section class="sec" id="bentomadr">
     <span class="sec-num" aria-hidden="true">05</span>
     <div class="sec-head reveal">
-      <span class="eb"><i></i>05 · The Bento MADR kit</span>
-      <h2>One decision,<br>nineteen compartments.</h2>
-      <p>Every Hoist moment and record is drawn as a Bento MADR canvas — swappable compartments for the problem, the evidence, the verdict and the fallout. Hoist picks the canvas from the kind of decision and fills each compartment from the data; what a record still owes you stays visible at a glance.</p>
+      <span class="eb"><i></i>05 · Supports Bento MADR</span>
+      <h2>Built on<br>Bento MADR.</h2>
+      <p><a href="https://leadui.github.io/bento-madr/">Bento MADR</a> is an open library that draws decision records as bento canvases — swappable compartments for the problem, the evidence, the verdict and the fallout. Hoist draws every moment and record with it, picks the canvas from the kind of decision, and adds its own compartments through the kit's <code>define()</code>. Any agent that writes decision data can use it.</p>
     </div>
     <div class="bento">
       <div class="bezel c7 reveal"><div class="core">
@@ -471,8 +497,8 @@
         <div class="step-n">THE TOOLBOX</div>
         <h3>19 compartments, 6 canvas shapes</h3>
         <div class="comp-chips"><span>Problem</span><span>Option cards</span><span>Decision stamp</span><span>Comparison table</span><span>Metric bars</span><span>Trend line</span><span>2×2 quadrant</span><span>Weighted matrix</span><span>Risk heat map</span><span>Timeline with gates</span><span>Assumptions</span><span>Gains</span><span>Costs</span><span>Flip analysis</span><span>Success measures</span><span>Consequences</span><span>People</span><span>More information</span><span>Devil's advocate</span></div>
-        <p>The canvas above and every record on this page render with this kit. The showcase explains each compartment — when to use it, when not to — and lets you build your own.</p>
-        <p style="margin-top:14px"><a class="btn pri" href="bentomadr.html">Open the Bento MADR showcase <span class="arr">↗</span></a></p>
+        <p>The canvas above and every record on this page render with Bento MADR v0.2.0. Its catalog explains each compartment — when to use it, when not to — and how to add your own.</p>
+        <p style="margin-top:14px"><a class="btn pri" href="https://leadui.github.io/bento-madr/">Open the Bento MADR catalog <span class="arr">↗</span></a> <a class="btn" style="padding:8px 22px;border-color:currentColor" href="https://github.com/leadui/bento-madr">GitHub</a></p>
       </div></div>
     </div>
   </section>
@@ -484,13 +510,14 @@
     <div class="sec-head center reveal">
       <span class="eb"><i></i>06 · Install</span>
       <h2 aria-label="One command between Muse and your next lasting decision.">One command between Muse and your next <span class="rot tick" id="rot" aria-hidden="true">database decision</span>.</h2>
-      <p>Python 3.9+ and Muse, zero dependencies. The page serves from your machine — and today the hook blocks conflicting database installs automatically; the pause and the record cover every one-way door.</p>
+      <p>Python 3.9+ and Muse, zero dependencies. The page serves from your machine. Today the hook catches database installs on its own; the pause, autopilot and the record cover every hard-to-undo call.</p>
     </div>
     <div class="bezel c12 reveal anchor"><div class="core">
       <img class="sec-icon" src="icons/shield.webp" width="350" height="350" alt="" aria-hidden="true" loading="lazy">
 <pre class="code"><div class="term-line"><span class="p">$</span><span>git clone https://github.com/leadui/hoist-decisions.git <span class="cm"># or: git@github.com:leadui/hoist-decisions.git</span></span></div>
 <div class="term-line"><span class="p">$</span><span>python3 hoist-decisions/hoist.py install /path/to/your/project</span></div>
-<div class="term-line"><span class="p">$</span><span>python3 hoist.py serve   <span class="cm"># browse moments at http://127.0.0.1:7317</span></span></div></pre>
+<div class="term-line"><span class="p">$</span><span>python3 hoist.py serve   <span class="cm"># browse moments at http://127.0.0.1:7317</span></span></div>
+<div class="term-line"><span class="p">$</span><span>python3 hoist.py mode autopilot   <span class="cm"># optional: the agent decides, every call is recorded</span></span></div></pre>
     </div></div>
     <div class="ctas reveal">
       <a class="btn pri" href="index.html#/session">Try the live demo first <span class="arr">↗</span></a>
@@ -507,7 +534,7 @@
       <nav aria-label="Footer">
         <a href="index.html#/session">Live demo</a>
         <a href="index.html#/records">Sample records</a>
-        <a href="bentomadr.html">Bento MADR</a>
+        <a href="https://github.com/leadui/bento-madr">Bento MADR</a>
         <a href="https://github.com/leadui/hoist-decisions">GitHub</a>
         <a href="https://adr.github.io/madr/">MADR</a>
       </nav>
@@ -516,7 +543,8 @@
 </div>
 </main>
 
-<script src="bento-kit.js"></script>
+<script src="vendor/bento-madr/bento-kit.js"></script>
+<script src="hoist-bento.js"></script>
 <script>
 (function () {
   "use strict";
@@ -558,22 +586,7 @@
       if (l) l.classList.add("done");
     }
   }, 8000);
-  BentoKit.templates["madr-record"] = { id: "madr-record", name: "MADR record", cols: "1.2fr 1fr 1fr",
-    areas: ["problem verdict verdict", "problem gains costs", "confirm people people", "shelf shelf shelf", "more more more"],
-    md: { cols: "1fr 1fr", areas: ["problem problem", "verdict verdict", "gains costs", "confirm people", "shelf shelf", "more more"] },
-    slots: [["problem", "problem"], ["verdict", "decision"], ["gains", "gains"], ["costs", "costs"], ["confirm", "confirm"], ["people", "people"], ["shelf", "proscons"], ["more", "more"]] };
-  BentoKit.templates["moment"] = { id: "moment", name: "Decision moment", cols: "1fr 1fr",
-    areas: ["options options", "problem verdict", "evidence evidence", "gains costs", "plan plan"],
-    md: { cols: "1fr", areas: ["options", "problem", "verdict", "evidence", "gains", "costs", "plan"] },
-    slots: [["options", "proscons"], ["problem", "problem"], ["verdict", "decision"], ["evidence", "compare"], ["gains", "gains"], ["costs", "costs"], ["plan", "timeline"]] };
-  BentoKit.templates["moment-evidence"] = { id: "moment-evidence", name: "Decision moment (no path yet)", cols: "1fr 1fr",
-    areas: ["options options", "problem verdict", "evidence evidence", "gains costs"],
-    md: { cols: "1fr", areas: ["options", "problem", "verdict", "evidence", "gains", "costs"] },
-    slots: [["options", "proscons"], ["problem", "problem"], ["verdict", "decision"], ["evidence", "compare"], ["gains", "gains"], ["costs", "costs"]] };
-  BentoKit.templates["moment-plain"] = { id: "moment-plain", name: "Decision moment (pros and cons)", cols: "1fr 1fr",
-    areas: ["options options", "problem verdict", "gains costs"],
-    md: { cols: "1fr", areas: ["options", "problem", "verdict", "gains", "costs"] },
-    slots: [["options", "proscons"], ["problem", "problem"], ["verdict", "decision"], ["gains", "gains"], ["costs", "costs"]] };
+  /* madr-record ships with Bento MADR since v0.2.0. */
   var BK_RECORDS = [
     { file: "accepted · 2026-10-27 · door: heavy · 0001-interrupt-muse-code-routing-question.md",
       data: { context: ["Muse Code asks lasting questions in its own questionnaire with expert labels. Hoist takes over that moment and brings the decision back into the flow."], question: "How should Hoist catch the pick?",
@@ -708,18 +721,10 @@
     var board = document.getElementById("bk-live");
     if (!board || typeof BentoKit === "undefined") return;
     var data = paneData(idx);
-    if (BentoKit.compose) {
-      /* Same call the demo makes: the kit picks compartments from the data, options lead. */
-      var comp = BentoKit.compose(data, { kind: "tech-choice", lead: "proscons", skip: ["proscons"], hideEmpty: true });
-      comp.template.cols = comp.template.md.cols; comp.template.areas = comp.template.md.areas;
-      BentoKit.render(board, comp.template, data, { questions: { lead: "Your options — tap one to pick it" } });
-    } else {
-      var ev = [];
-      if (data.attributes.length) ev.push("facts");
-      if (data.metrics.length) ev.push("numbers");
-      var tpl = !ev.length ? "moment-plain" : ((data.timeline || []).length ? "moment" : "moment-evidence");
-      BentoKit.render(board, tpl, data, { swap: BentoKit.recommend({ kind: "tech-choice", evidence: ev }).swaps });
-    }
+    /* Same call the demo makes: the kit picks compartments from the data, options lead. */
+    var comp = BentoKit.compose(data, { kind: "tech-choice", lead: "proscons", skip: ["proscons"], hideEmpty: true });
+    comp.template.cols = comp.template.md.cols; comp.template.areas = comp.template.md.areas;
+    BentoKit.render(board, comp.template, data, { questions: { lead: "Your options — tap one to pick it" } });
     var cards = board.querySelectorAll(".bk-opt");
     cards.forEach(function (card, i) {
       card.setAttribute("role", "button");

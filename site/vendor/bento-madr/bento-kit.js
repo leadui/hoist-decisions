@@ -1,4 +1,4 @@
-/*! Bento Kit v0.1 — decision canvases built from swappable compartments.
+/*! Bento MADR v0.2 — decision canvases built from swappable compartments.
  *  No dependencies. Load bento-kit.css, then this file; it defines a global `BentoKit`
  *  (and `module.exports` under CommonJS bundlers).
  *
@@ -7,6 +7,7 @@
  *    BentoKit.recommend({kind, evidence: [...]})   → {template, swaps, reasons}
  *    BentoKit.compose(decision, {kind, lead, skip, extras, hideEmpty}) → {template, evidence, swaps, extra, empty, reasons}
  *    BentoKit.advocate.prompt(decision, personaIds) → string for any LLM; .render(result) → html
+ *    BentoKit.define(id, spec) / BentoKit.defineTemplate(id, spec) → add your own compartments and templates
  */
 (function (root) {
   'use strict';
@@ -376,6 +377,11 @@
     md:{cols:'1fr 1fr', areas:['problem problem','facts facts','people people','verdict verdict','beliefs beliefs','gains costs','measure measure']},
     slots:[['problem','problem'],['facts','compare'],['people','people'],['verdict','decision'],['beliefs','assumptions'],['gains','gains'],['costs','costs'],['measure','confirm']]});
 
+  tpl('madr-record', {name:'MADR record', for:'A committed decision as a MADR record: the problem, the verdict, what follows, how to check it, who decided, and why the other options lost.',
+    cols:'1.2fr 1fr 1fr', areas:['problem verdict verdict','problem gains costs','confirm people people','shelf shelf shelf','more more more'],
+    md:{cols:'1fr 1fr', areas:['problem problem','verdict verdict','gains costs','confirm people','shelf shelf','more more']},
+    slots:[['problem','problem'],['verdict','decision'],['gains','gains'],['costs','costs'],['confirm','confirm'],['people','people'],['shelf','proscons'],['more','more']]});
+
   /* ───────── selection guide ───────── */
   const GUIDE = [
     {evidence:'judgements', if:'You are judging options against named criteria and can defend a ++ to −− rating', use:'matrix', instead:'Inventing numbers to fill a scoring sheet'},
@@ -529,10 +535,29 @@ ${lines.join('\n')}`;
     return fit(el, d);
   }
 
+  /* ───────── extending the library ─────────
+     Other projects add compartments and templates here instead of editing the kit. */
+  const FAMILIES = ['context', 'evidence', 'verdict', 'effects', 'plan'];
+  function define(id, spec = {}){
+    if(!/^[a-z][a-z0-9-]*$/.test(id || '')) throw new Error('Component id must be lower-case kebab-case: ' + id);
+    if(!FAMILIES.includes(spec.family)) throw new Error(`Component ${id} needs a family: ${FAMILIES.join(', ')}`);
+    if(typeof spec.needs !== 'function' || typeof spec.render !== 'function') throw new Error(`Component ${id} needs needs(d) and render(d) functions`);
+    def(id, {name: id, question: '', src: '', when: '', avoid: '', shape: '', empty: 'Nothing here yet.', ...spec});
+    return C[id];
+  }
+  function defineTemplate(id, spec = {}){
+    if(!/^[a-z][a-z0-9-]*$/.test(id || '')) throw new Error('Template id must be lower-case kebab-case: ' + id);
+    const ok = spec.cols && Array.isArray(spec.areas) && spec.md && spec.md.cols && Array.isArray(spec.md.areas) && Array.isArray(spec.slots);
+    if(!ok) throw new Error(`Template ${id} needs cols, areas, md {cols, areas} and slots`);
+    spec.slots.forEach(([area, cid]) => { if(!C[cid]) throw new Error(`Template ${id}: unknown component ${cid} in slot ${area}`); });
+    tpl(id, {name: id, for: '', ...spec});
+    return T[id];
+  }
+
   const BentoKit = {
-    version: '0.1.0',
+    version: '0.2.0',
     components: C, templates: T, guide: GUIDE, kinds: KINDS,
-    render, renderComponent, toHTML, recommend, compose,
+    render, renderComponent, toHTML, recommend, compose, define, defineTemplate,
     analyze: {scores, robustness, crossover},
     advocate: {personas: PERSONAS, types: TYPES, prompt: advocatePrompt, render: renderNotes},
     util: {esc, md}

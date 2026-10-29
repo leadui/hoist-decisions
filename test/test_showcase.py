@@ -1,17 +1,16 @@
-"""Static checks for the Bento MADR showcase page (stdlib only, no server).
+"""Static checks for how Hoist uses Bento MADR (stdlib only, no server).
 
 Run: python3 test/test_showcase.py — 0 means every check passed.
-Locks: the page loads the real kit, registers the record template,
-renders live canvases, and the landing page links to it.
+Locks: Bento MADR lives in its own repo; Hoist loads a pinned copy from
+site/vendor/bento-madr, adds its own compartments in site/hoist-bento.js,
+and the old showcase URL forwards to the Bento MADR catalog.
 """
 import sys
 from pathlib import Path
 
 FAILURES = []
 ROOT = Path(__file__).resolve().parent.parent
-PAGE = ROOT / "site" / "bentomadr.html"
-SRC = PAGE.read_text()
-LANDING = (ROOT / "site" / "landing.html").read_text()
+VENDOR = ROOT / "site" / "vendor" / "bento-madr"
 
 
 def check(name, cond, detail=""):
@@ -20,35 +19,30 @@ def check(name, cond, detail=""):
         FAILURES.append(name + (" — " + detail if detail else ""))
 
 
-PRESENT = [
-    ("kit css", "bento-kit.css"),
-    ("kit js", "bento-kit.js"),
-    ("record template", "madr-record"),
-    ("completeness strip", "completeness"),
-    ("swappable templates", "Swap a compartment"),
-    ("component library", "renderComponent"),
-    ("chooser", "K.recommend"),
-    ("critic over the API", "/api/advocate"),
-    ("component index", "K.components"),
-    ("live render", "K.render("),
-    ("theme toggle", "theme-toggle"),
-]
-ABSENT = [
-    ("no invented scores in copy", "99.9%"),
-    ("no external images", "unsplash"),
-]
-
-
-def test_showcase_shape():
-    for name, needle in PRESENT:
-        check("showcase has " + name, needle in SRC, repr(needle))
-    for name, needle in ABSENT:
-        check("showcase: " + name, needle not in SRC, repr(needle))
-    check("landing links to showcase", "bentomadr.html" in LANDING)
+def test_bento_split():
+    for f in ("bento-kit.js", "bento-kit.css", "LICENSE", "VERSION"):
+        check("pinned kit has " + f, (VENDOR / f).exists())
+    version = (VENDOR / "VERSION").read_text() if (VENDOR / "VERSION").exists() else ""
+    kit = (VENDOR / "bento-kit.js").read_text() if (VENDOR / "bento-kit.js").exists() else ""
+    check("VERSION names the tag", "Bento MADR v" in version)
+    check("kit version matches VERSION", "version: '" + version.split()[2].lstrip("v") + "'" in kit if version else False)
+    check("kit has define()", "function define(" in kit)
+    check("kit ships madr-record", "tpl('madr-record'" in kit)
+    check("no kit copy left in the repo root", not (ROOT / "bentomadr").exists())
+    check("no stray kit copy in site/", not (ROOT / "site" / "bento-kit.js").exists())
+    ext = (ROOT / "site" / "hoist-bento.js").read_text()
+    check("Hoist extends the kit with define", "BentoKit.define(" in ext)
+    check("update script pins a tag", "raw.githubusercontent.com/leadui/bento-madr" in (ROOT / "scripts" / "update-bento.sh").read_text())
+    for page in ("index.html", "landing.html"):
+        src = (ROOT / "site" / page).read_text()
+        check(page + " loads the pinned kit", "vendor/bento-madr/bento-kit.js" in src)
+        check(page + " loads Hoist's extensions", "hoist-bento.js" in src)
+        check(page + " does not redefine madr-record", 'templates["madr-record"] =' not in src)
+    check("old showcase URL forwards", "leadui.github.io/bento-madr" in (ROOT / "site" / "bentomadr.html").read_text())
 
 
 if __name__ == "__main__":
-    test_showcase_shape()
+    test_bento_split()
     print(f"\n{len(FAILURES)} failure(s)")
     for f in FAILURES:
         print("FAILED:", f)

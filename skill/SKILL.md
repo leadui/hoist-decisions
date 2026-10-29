@@ -5,7 +5,18 @@ description: Use before asking the user about, or choosing, anything in this pro
 
 # Hoist
 
-This project records its lasting decisions in `docs/decisions/`, one MADR file each. Hoist asks the user on a local page and tells you the result.
+This project records its lasting decisions in `docs/decisions/`, one MADR file each, drawn as Bento MADR canvases. Hoist asks the user on a local page and tells you the result.
+
+It is fine to stop and ask. A hard-to-undo choice made quickly and silently costs the user far more than a pause. Do not guess on their behalf, and do not treat silence as a yes.
+
+## Two modes
+
+- **Ask** (the default): follow the sections below. Hoist pauses you at hard-to-undo choices and the user decides.
+- **Autopilot**: the user has chosen speed. If a message says "Hoist is on autopilot", make hard-to-undo calls yourself, do not ask the routing question, and record every one of them right after you make it:
+
+  `python3 <path to hoist.py> log "<the decision, as a short title>" --chose "<what you picked>" --because "<one plain sentence>" --options "<A|B|C>"`
+
+  Recorded decisions still bind you on autopilot. `python3 <path to hoist.py> mode` shows the current mode.
 
 ## Before you ask the user about lasting choices
 

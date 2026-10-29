@@ -6,6 +6,8 @@ Commands:
   python3 hoist.py serve [project]     run the decision page on http://127.0.0.1:7317
   python3 hoist.py gate                Muse Code hook entry point (reads the hook payload on stdin)
   python3 hoist.py wait ID [project]   wait until decision ID is made, then print the outcome
+  python3 hoist.py mode [ask|autopilot] [project]   ask before hard-to-undo choices (default), or let the agent decide and record it
+  python3 hoist.py log QUESTION --chose X --because Y [--options "A|B|C"]   record a decision the agent made (autopilot)
 
 Standard library only. The page and its server listen on 127.0.0.1 and never call an API.
 """
@@ -45,6 +47,75 @@ def next_id(root):
     nums = [int(m.group(1)) for p in records_dir(root).glob("*.md") if (m := re.match(r"(\d{4})-", p.name))]
     nums += [int(d["id"]) for d in load_decisions(root)]
     return f"{max(nums, default=0) + 1:04d}"
+
+
+# ---------- modes: ask (pause and decide together) or autopilot (the agent decides, Hoist records) ----------
+MODES = ("ask", "autopilot")
+
+
+def config_file(root):
+    return Path(root) / ".hoist" / "config.json"
+
+
+def get_mode(root):
+    env = os.environ.get("HOIST_MODE", "").strip().lower()
+    if env in MODES:
+        return env
+    try:
+        m = json.loads(config_file(root).read_text()).get("mode")
+    except (OSError, ValueError):
+        m = None
+    return m if m in MODES else "ask"
+
+
+def set_mode(root, m):
+    f = config_file(root)
+    f.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        cfg = json.loads(f.read_text())
+    except (OSError, ValueError):
+        cfg = {}
+    cfg["mode"] = m
+    f.write_text(json.dumps(cfg, indent=2) + "\n")
+
+
+def slugify(text):
+    return re.sub(r"[^a-z0-9]+", "-", str(text).lower()).strip("-")[:60] or "decision"
+
+
+def autopilot_record(root, title, chose, because, options=(), agent="Your agent", task="", door=2, good=(), bad=(), undo="", trigger="", rid=None):
+    """Write a MADR record for a call the agent made on autopilot. Honest about who decided: confidence is low until a person reviews it."""
+    others = [o for o in options if o and o != chose]
+    lines = ["---", "status: accepted", "date: " + time.strftime("%Y-%m-%d"), "door: " + DOOR_WORDS.get(door, DOOR_WORDS[2]).split()[0],
+             "proposed-by: " + agent + (f" ({task})" if task else ""), "deciders: " + agent + " on autopilot; the project owner can review it",
+             "confidence: low", "mode: autopilot", "---",
+             f"# {title}: {chose}", "",
+             f"> **Decision:** {chose}. **Because** {because.rstrip('.')}. **Revisit** before building on it: nobody chose this on purpose yet.", "",
+             "## Context and Problem Statement",
+             (f"{agent} {trigger} " if trigger else "") + (f'While working on "{task}". ' if task else "") + (undo or "This is hard to change later."), "",
+             "## Considered Options", "\n".join(f"{i + 1}. {o}" for i, o in enumerate([chose] + others)), "",
+             "## Decision Outcome", f"Chosen: {chose}, because {because.rstrip('.')}. Decided on autopilot, without asking.", ""]
+    if good or bad:
+        lines += ["### Consequences"] + [f"- Good, because {g[0].lower() + g[1:]}" for g in good] + [f"- Bad, because {b[0].lower() + b[1:]}" for b in bad] + [""]
+    lines += ["## More Information", "- Confidence: low; the agent decided on autopilot. Review it in Hoist's records and change it before more is built on it.", ""]
+    name = f"{rid or next_id(root)}-{slugify(title + ' ' + chose)}.md"
+    records_dir(root).mkdir(parents=True, exist_ok=True)
+    (records_dir(root) / name).write_text("\n".join(lines))
+    return f"docs/decisions/{name}"
+
+
+def log_decision(title, chose, because, options, project):
+    root = Path(project).resolve()
+    task_file = root / ".hoist" / "last_task.txt"
+    rec = autopilot_record(root, title, chose, because, [o.strip() for o in options.split("|")] if options else (),
+                           agent="Your agent", task=task_file.read_text().strip() if task_file.exists() else "")
+    print(f"Hoist recorded it: {rec} (autopilot, low confidence until someone reviews it). Carry on with {chose}.")
+
+
+AUTOPILOT_NOTE = ("Hoist is on autopilot in this project. When you reach a choice that is hard to undo, make the call yourself, "
+                  "then record it: python3 {hoist} log \"<the decision, as a short title>\" --chose \"<what you picked>\" "
+                  "--because \"<one plain sentence>\" --options \"<A|B|C>\". Do not ask the routing question. "
+                  "Recorded decisions in docs/decisions/ still bind you.")
 
 
 # ---------- what did the agent just add? ----------
@@ -106,8 +177,11 @@ def outcome_message(dec, k, pkg):
     if dec["status"] == "parked":
         return (f"Hoist: the user parked this decision ({rec}). Do not add `{pkg}` or any other database package. "
                 "Keep saved data in memory behind a small repository interface for now, then continue the task.")
-    who = "chose" if dec.get("mode") == "chosen" else "let Hoist pick"
     skip = f"Do not add `{pkg}`. " if pkg not in k["packages"].get(dec.get("choice"), []) else ""
+    if dec.get("mode") == "autopilot":
+        return (f"Hoist: this was already decided on autopilot: {opt.get('tn', dec.get('choice'))} (record: {rec}). {skip}"
+                f"{opt.get('use', '')} If it should change, ask the user to review the record first. Then continue the original task.")
+    who = "chose" if dec.get("mode") == "chosen" else "let Hoist pick"
     return (f"Hoist: the user {who} {opt.get('tn', dec.get('choice'))} for this decision (record: {rec}). "
             f"{skip}{opt.get('use', '')} Then continue the original task.")
 
@@ -122,6 +196,8 @@ def gate():
     if event == "UserPromptSubmit":
         (root / ".hoist").mkdir(exist_ok=True)
         (root / ".hoist" / "last_task.txt").write_text(payload.get("prompt", ""))
+        if get_mode(root) == "autopilot":
+            print(AUTOPILOT_NOTE.format(hoist=shlex.quote(str(HOME / "hoist.py"))))
         return 0
     if event == "PostToolBatch":
         return questionnaire_handoff(payload, root)
@@ -135,6 +211,22 @@ def gate():
     dec = next((d for d in reversed(load_decisions(root)) if d["kind"] == kind), None)
     if dec and dec["status"] != "open":
         return 0 if dec["status"] == "accepted" and opt == dec.get("choice") else block(outcome_message(dec, k, pkg))
+    if not dec and get_mode(root) == "autopilot":
+        # The agent decides; Hoist writes it down so the person can review and change it later.
+        o = k["options"][opt]
+        task_file = root / ".hoist" / "last_task.txt"
+        task = task_file.read_text().strip() if task_file.exists() else ""
+        rid = next_id(root)
+        because = f"the agent reached for `{pkg}`" + (f": {o['sub']}" if o.get("sub") else "")
+        rec = autopilot_record(root, k["title"], o["n"], because,
+                               [x["n"] for x in k["options"].values()], agent="Muse Code", task=task, door=k.get("door", 2),
+                               good=[g[1] for g in o.get("good", [])], bad=[b[1] for b in o.get("bad", [])], undo=k.get("undo", ""),
+                               trigger=f"was about to add `{pkg}`.", rid=rid)
+        save_decision(root, {"id": rid, "kind": kind, "status": "accepted", "created": time.strftime("%Y-%m-%d %H:%M"),
+                             "agent": "Muse Code", "task": task, "agent_pick": opt, "choice": opt, "mode": "autopilot",
+                             "trigger": {"package": pkg, "tool": payload.get("tool_name")}, "record": rec})
+        print(f"Hoist (autopilot): recorded {k['title'].lower()} as {o['n']} in {rec}. Carry on.")
+        return 0
     if not dec:
         facts, sources = known_facts(root)
         task_file = root / ".hoist" / "last_task.txt"
@@ -286,14 +378,8 @@ def make_handler(root):
                 return self.send(200, (HOME / "site" / "index.html").read_bytes(), "text/html")
             if path == "/catalog.json":
                 return self.send(200, (HOME / "catalog.json").read_bytes())
-            if path == "/bento-kit.css":
-                return self.send(200, (HOME / "site" / "bento-kit.css").read_bytes(), "text/css")
-            if path == "/bento-kit.js":
-                return self.send(200, (HOME / "site" / "bento-kit.js").read_bytes(), "text/javascript")
-            if path == "/bentomadr.html":
-                return self.send(200, (HOME / "site" / "bentomadr.html").read_bytes(), "text/html")
-            if path == "/samples.js":
-                return self.send(200, (HOME / "site" / "samples.js").read_bytes(), "text/javascript")
+            if path in ("/vendor/bento-madr/bento-kit.css", "/vendor/bento-madr/bento-kit.js", "/hoist-bento.js"):
+                return self.send(200, (HOME / "site" / path.lstrip("/")).read_bytes(), "text/css" if path.endswith(".css") else "text/javascript")
             if path == "/api/state":
                 records = [{"file": p.name, "markdown": p.read_text()} for p in sorted(records_dir(root).glob("[0-9][0-9][0-9][0-9]-*.md"))]
                 return self.send(200, {"project": root.name, "root": str(root), "live": True, "build": build_stamp(),
@@ -1090,6 +1176,12 @@ def main():
     pl.add_argument("task"); pl.add_argument("project", nargs="?", default=".")
     dr = sub.add_parser("draft", help="Muse Spark: write one decision for the person to make")
     dr.add_argument("title", help="Decision id from the plan, or a title"); dr.add_argument("--task", default=""); dr.add_argument("project", nargs="?", default=".")
+    md_ = sub.add_parser("mode", help="Show or set how Hoist handles hard choices: ask (default) or autopilot")
+    md_.add_argument("args", nargs="*", metavar="[ask|autopilot] [project]")
+    lg = sub.add_parser("log", help="Record a decision the agent made on autopilot")
+    lg.add_argument("title", help="The decision, as a short title"); lg.add_argument("--chose", required=True)
+    lg.add_argument("--because", required=True); lg.add_argument("--options", default="", help='Other options considered, "A|B|C"')
+    lg.add_argument("--project", default=".")
     args = ap.parse_args()
     if args.cmd == "install":
         install(args.project)
@@ -1103,6 +1195,19 @@ def main():
         draft(args.title, args.task, args.project)
     elif args.cmd == "gate":
         sys.exit(gate())
+    elif args.cmd == "mode":
+        want = next((a for a in args.args if a in MODES), None)
+        rest = [a for a in args.args if a not in MODES]
+        if len(rest) > 1:
+            sys.exit("usage: hoist.py mode [ask|autopilot] [project]")
+        root = Path(rest[0] if rest else ".").resolve()
+        if want:
+            set_mode(root, want)
+        m = get_mode(root)
+        print(f"Hoist mode for {root.name}: {m}. " + ("Your agent makes hard-to-undo calls itself and Hoist records each one for you to review."
+              if m == "autopilot" else "Hoist pauses your agent at hard-to-undo calls so you can decide."))
+    elif args.cmd == "log":
+        log_decision(args.title, args.chose, args.because, args.options, args.project)
     else:
         wait(args.id, args.project)
 

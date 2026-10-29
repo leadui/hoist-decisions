@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Hoist live demo, rebuilt on the Bento MADR kit (bentomadr/).
+<!-- Hoist live demo, drawn with Bento MADR (site/vendor/bento-madr, pinned by scripts/update-bento.sh).
      Every decision moment is a bento canvas — tap a card to pick;
      a created MADR record opens as a canvas by default (raw
      markdown behind a toggle). Data layer unchanged:
@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="bento-kit.css">
+<link rel="stylesheet" href="vendor/bento-madr/bento-kit.css">
 <style>
   :root{
     --ink:var(--bk-ink); --ink-2:var(--bk-muted); --line:var(--bk-line);
@@ -172,7 +172,8 @@
   <div class="offlinebar" id="offline"><strong>Lost contact with Hoist</strong> — showing the last saved state. Restart Hoist, then reload to pick up where you left off.</div>
   <div id="app" aria-live="polite"></div>
 </div>
-<script src="bento-kit.js"></script>
+<script src="vendor/bento-madr/bento-kit.js"></script>
+<script src="hoist-bento.js"></script>
 <script>
 (function () {
   "use strict";
@@ -232,10 +233,7 @@
     /* Kit assets missing: keep working with controls instead of blanking. */
     window.__BK_MISSING = true;
   } else {
-  BentoKit.templates["madr-record"] = { id: "madr-record", name: "MADR record", cols: "1.2fr 1fr 1fr",
-    areas: ["problem verdict verdict", "problem gains costs", "confirm people people", "shelf shelf shelf", "more more more"],
-    md: { cols: "1fr 1fr", areas: ["problem problem", "verdict verdict", "gains costs", "confirm people", "shelf shelf", "more more"] },
-    slots: [["problem", "problem"], ["verdict", "decision"], ["gains", "gains"], ["costs", "costs"], ["confirm", "confirm"], ["people", "people"], ["shelf", "proscons"], ["more", "more"]] };
+  /* madr-record ships with Bento MADR since v0.2.0. */
   }
 
   function metricsOf(q, opts) {
@@ -293,7 +291,8 @@
       confirmation: (dr && dr.confirm) || [],
       people: peopleOf(q),
       more: moreOf(q, opts),
-      advocate: pickedId ? criticFor(q, pickedId) : null
+      advocate: pickedId ? criticFor(q, pickedId) : null,
+      lean: leanOf(q)
     };
   }
 
@@ -377,6 +376,12 @@
     (q.links || []).forEach(function (l) { out.push("[" + l.t + "](" + l.u + ")"); });
     opts.forEach(function (o) { if (o.check) out.push("Check before relying on " + o.name + ": " + o.check); });
     return out.slice(0, 8);
+  }
+  function leanOf(q) {
+    var o = q.agentPick ? optBy(q.agentPick) : null;
+    if (!o) return null;
+    var l = (q.draft && q.draft.lean) || {};
+    return { name: o.name, why: l.why || o.desc || "", flips: (l.flips || []).map(function (f) { return f.replace(/^if\s+/i, ""); }) };
   }
   var PERSONAS = ["skeptic", "maintainer", "oncall", "cfo", "security"];
   function criticFor(q, optionId) {
@@ -502,7 +507,7 @@
 
   function composeMoment(q, data) {
     if (typeof BentoKit === "undefined" || !BentoKit.compose) return null;
-    var c = BentoKit.compose(data, { kind: kindOf(q), lead: "proscons", skip: ["proscons"], extras: ["advocate"] });
+    var c = BentoKit.compose(data, { kind: kindOf(q), lead: "proscons", skip: ["proscons"], extras: ["agent-lean", "advocate"] });
     /* The page column is narrow, so the template's two-column layout is the desktop layout here. */
     c.wide = { cols: c.template.cols, areas: c.template.areas };
     c.template.cols = c.template.md.cols; c.template.areas = c.template.md.areas;
@@ -1593,7 +1598,7 @@
     var open = (S.decisions || []).filter(function (d) { return d.status === "open"; });
     var ses = S.session;
     var badge = LIVE ? "" : '<a class="sample-badge" href="landing.html#install">Sample data</a>';
-    var html = '<p class="lede">When your agent reaches a choice that is hard to undo, Hoist pauses it and opens a <strong>decision moment</strong> here. You decide on a Bento canvas; the record goes back to the agent.</p>' +
+    var html = '<p class="lede">When your agent reaches a choice that is hard to undo, Hoist pauses it and opens a <strong>decision moment</strong> here. Take your time and ask anything — you decide on a Bento canvas, and the record goes back to the agent.</p>' +
       '<div class="card"><h2>Open now' + badge + '</h2><p class="hint">Interruptions from your agent wait here. A task walk-through finds every hard choice in a task up front.</p>';
     if (!open.length && !ses) html += '<p class="hint">Nothing is waiting. Start a task session to try the walk-through.</p>';
     for (var i = 0; i < open.length; i++) {
