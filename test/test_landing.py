@@ -39,6 +39,7 @@ PRESENT = [
     ("madr viewer", 'data-madr="2"'),
     ("muse terminal", "hoist.py wait"),
     ("madr switch", "madrShow"),
+    ("madr icon", "icons/clipboard.webp"),
     ("live mocks", "data-mopt"),
     ("cube arrows", 'id="prev"'),
     ("moment numeral", ">01<"),

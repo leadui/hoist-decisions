@@ -170,14 +170,13 @@
   .shot-sheet .sub{font-size:13px;color:var(--dink2);margin:0}
   .shot-cap{padding:0 22px 18px;color:var(--dim);font-size:12.5px}
   .madr-pills{display:flex;gap:10px;flex-wrap:wrap;margin:22px 0 14px}
-  .madr-view{--macc:#f5a524;position:relative;border:1px solid rgba(245,165,36,.38);border-radius:22px;padding:26px 26px 34px;background:linear-gradient(180deg,rgba(245,165,36,.09),rgba(245,165,36,.02) 45%,transparent);box-shadow:0 0 80px rgba(245,165,36,.12),inset 0 1px 0 rgba(255,255,255,.06);perspective:1400px}
+  .madr-view{--macc:#f5a524;position:relative;border:1px solid rgba(245,165,36,.38);border-radius:22px;padding:26px 26px 30px;background:linear-gradient(180deg,rgba(245,165,36,.09),rgba(245,165,36,.02) 45%,transparent);box-shadow:0 0 80px rgba(245,165,36,.12),inset 0 1px 0 rgba(255,255,255,.06)}
   .madr-view .bento{gap:14px}
   .madr-view .core{padding:20px}
-  .madr-pane{position:relative;transform-style:preserve-3d}
-  .madr-pane .bento{transform:rotateX(14deg);transform-style:preserve-3d}
-  .madr-view .bezel{box-shadow:0 34px 70px rgba(0,0,0,.6)}
-  .madr-view .bezel:nth-child(odd){transform:translateZ(38px)}
+  .madr-pane{position:relative}
   .madr-view .step-n{color:var(--macc,#f5a524)}
+  .madr-icon{position:absolute;top:-58px;right:20px;width:118px;height:auto;filter:drop-shadow(0 18px 26px rgba(0,0,0,.55));animation:floaty 5s ease-in-out infinite;pointer-events:none}
+  @keyframes floaty{50%{transform:translateY(-9px) rotate(-2deg)}}
   .madr-pane.enter{animation:madrIn .38s cubic-bezier(.2,.7,.2,1)}
   @keyframes madrIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
   .madr-pill{font:inherit;font-size:13px;font-weight:600;cursor:pointer;background:transparent;color:var(--mut);border:1px solid var(--line);border-radius:999px;padding:8px 18px;transition:border-color .3s var(--ease),color .3s var(--ease),background .3s var(--ease)}
@@ -229,6 +228,8 @@
     .demo .journey{flex-direction:column}
     .demo .jstep:not(:last-child){margin-right:0;margin-bottom:16px}
     .demo .jstep:not(:last-child)::after{content:"↓";right:auto;left:50%;top:auto;bottom:-17px;transform:translateX(-50%)}
+    .madr-icon{width:80px;top:-42px;right:12px}
+    .madr-pills{margin-bottom:46px}
     .core{padding:24px}
   }
   @media (max-width:900px),(max-aspect-ratio:1/1){
@@ -446,6 +447,7 @@
       <button class="madr-pill" data-madr="2" aria-pressed="false">0003 · Auth.js sessions</button>
     </div>
     <div class="madr-view reveal">
+      <img class="madr-icon" src="icons/clipboard.webp" width="480" height="480" alt="" aria-hidden="true" loading="lazy">
       <div class="madr-pane" data-pane="0"><div class="bento">
         <div class="bezel c12"><div class="core">
           <div class="madr-file"><b>accepted</b> · 2026-10-27 · door: heavy · 0001-interrupt-muse-code-routing-question.md</div>
