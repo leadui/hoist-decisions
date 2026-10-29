@@ -37,7 +37,7 @@ PRESENT = [
     # decision-moment flow
     ("moment box", "Decision moment"),
     ("tabs switch questions", 'data-action="q"'),
-    ("moment names its question", "Earlier you chose"),
+    ("moment names its question", "Earlier you selected"),
     ("mobile rules", "@media (max-width: 560px)"),
     ("answered pills turn green", "qtab.done"),
     ("typing indicator", 'class="typing"'),
