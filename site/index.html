@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <!-- Hoist live demo, rebuilt on the Bento MADR kit (bentomadr/).
-     Every decision moment is a bento canvas; the hyper dive is a
-     per-option canvas; a created MADR record opens as a canvas by
-     default (raw markdown behind a toggle). Data layer unchanged:
+     Every decision moment is a bento canvas — tap a card to pick;
+     a created MADR record opens as a canvas by default (raw
+     markdown behind a toggle). Data layer unchanged:
      live Muse Spark drafts in, MADR records out, via hoist.py. -->
 <html lang="en" data-theme="light">
 <head>
@@ -70,8 +70,6 @@
   .opt small{display:block;font-size:13px;color:var(--bk-muted);margin-top:1px}
   .opt[aria-pressed="true"]{border:2px solid var(--bk-signal);padding:11px 13px}
   .opt[aria-pressed="true"] .onum{border-color:var(--bk-signal);color:var(--bk-ink)}
-  .hyper-btn{flex:none;width:46px;cursor:pointer;border:1px solid var(--bk-line);border-radius:12px;background:var(--bk-tile);color:var(--bk-muted);font-size:17px}
-  .hyper-btn:hover{border-color:var(--bk-accent);color:var(--bk-accent)}
   .escape-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--bk-line);font-size:13px;color:var(--bk-muted)}
   .escape-btn{font:inherit;font-size:13px;font-weight:600;cursor:pointer;background:transparent;color:var(--bk-ink);border:1px solid var(--bk-line);border-radius:999px;padding:5px 13px;min-height:36px}
   .escape-btn:hover{border-color:var(--bk-accent);color:var(--bk-accent)}
@@ -91,6 +89,11 @@
   .sheet-top .sub{font-size:13.5px;color:var(--bk-muted);margin:2px 0 0}
   .x-btn{flex:none;font:inherit;font-size:13px;font-weight:650;cursor:pointer;border:1px solid var(--bk-line);border-radius:999px;padding:6px 14px;background:var(--bk-tile);color:var(--bk-ink);white-space:nowrap;min-height:36px}
   .x-btn:hover{border-color:var(--bk-accent);color:var(--bk-accent)}
+  #bk-moment .bk-opts{gap:8px}
+  #bk-moment .bk-opt{padding:11px 12px;gap:6px}
+  #bk-moment .bk-opt h3{font-size:15px}
+  #bk-moment .bk-opt .desc{font-size:12.5px}
+  #bk-moment .bk-pc{gap:3px;font-size:12.5px}
   .typing{display:inline-flex;gap:4px;margin-left:6px;vertical-align:2px}
   .typing i{width:6px;height:6px;border-radius:50%;background:var(--bk-muted);animation:tblink 1.2s ease-in-out infinite}
   .typing i:nth-child(2){animation-delay:.2s}.typing i:nth-child(3){animation-delay:.4s}
@@ -134,7 +137,6 @@
   </div>
   <div class="offlinebar" id="offline"><strong>Lost contact with Hoist</strong> — showing the last saved state. Restart Hoist, then reload to pick up where you left off.</div>
   <div id="app" aria-live="polite"></div>
-  <div id="modal"></div>
 </div>
 <script src="bento-kit.js"></script>
 <script>
@@ -164,14 +166,12 @@
 
   var state = { qid: null, phase: "moment", path: null, picked: null,
     answers: {}, skipped: {}, abandoned: {}, added: {}, showCustom: false,
-    hyper: null, records: {}, err: null, theme: "light",
-    deepLoading: {}, deepErr: {}, deepTried: {} };
+    records: {}, err: null, theme: "light" };
 
   function resetState() {
     state.qid = null; state.phase = "moment"; state.path = null; state.picked = null;
     state.answers = {}; state.skipped = {}; state.abandoned = {};
-    state.added = {}; state.showCustom = false; state.hyper = null; state.records = {}; state.err = null;
-    state.deepLoading = {}; state.deepErr = {}; state.deepTried = {};
+    state.added = {}; state.showCustom = false; state.records = {}; state.err = null;
   }
 
   function Q() {
@@ -197,22 +197,18 @@
     /* Kit assets missing: keep working with controls instead of blanking. */
     window.__BK_MISSING = true;
   } else {
-  BentoKit.templates["moment"] = { id: "moment", name: "Decision moment", cols: "1fr 1.5fr",
-    areas: ["problem options", "verdict options", "evidence options"],
-    md: { cols: "1fr", areas: ["problem", "options", "verdict", "evidence"] },
-    slots: [["problem", "problem"], ["options", "proscons"], ["verdict", "decision"], ["evidence", "bars"]] };
-  BentoKit.templates["moment-plain"] = { id: "moment-plain", name: "Decision moment (no measures)", cols: "1fr 1.5fr",
-    areas: ["problem options", "verdict options"],
-    md: { cols: "1fr", areas: ["problem", "options", "verdict"] },
-    slots: [["problem", "problem"], ["options", "proscons"], ["verdict", "decision"]] };
-  BentoKit.templates["option-dive"] = { id: "option-dive", name: "Option deep dive", cols: "1.3fr 1fr",
-    areas: ["story facts", "gains costs", "path path", "verdict verdict"],
-    md: { cols: "1fr", areas: ["story", "facts", "gains", "costs", "path", "verdict"] },
-    slots: [["story", "problem"], ["facts", "compare"], ["gains", "gains"], ["costs", "costs"], ["path", "timeline"], ["verdict", "decision"]] };
-  BentoKit.templates["option-dive-plain"] = { id: "option-dive-plain", name: "Option deep dive (no facts)", cols: "1.3fr 1fr",
-    areas: ["story story", "gains costs", "path path", "verdict verdict"],
-    md: { cols: "1fr", areas: ["story", "gains", "costs", "path", "verdict"] },
-    slots: [["story", "problem"], ["gains", "gains"], ["costs", "costs"], ["path", "timeline"], ["verdict", "decision"]] };
+  BentoKit.templates["moment-open"] = { id: "moment-open", name: "Decision moment", cols: "1.5fr 1fr",
+    areas: ["options problem", "options evidence"],
+    md: { cols: "1fr", areas: ["options", "problem", "evidence"] },
+    slots: [["problem", "problem"], ["options", "proscons"], ["evidence", "bars"]] };
+  BentoKit.templates["moment-open-plain"] = { id: "moment-open-plain", name: "Decision moment (no measures)", cols: "1.5fr 1fr",
+    areas: ["options problem"],
+    md: { cols: "1fr", areas: ["options", "problem"] },
+    slots: [["problem", "problem"], ["options", "proscons"]] };
+  BentoKit.templates["moment"] = { id: "moment", name: "Decision moment (picked)", cols: "1.5fr 1fr",
+    areas: ["options verdict", "options problem", "gains costs"],
+    md: { cols: "1fr", areas: ["options", "verdict", "problem", "gains", "costs"] },
+    slots: [["problem", "problem"], ["options", "proscons"], ["verdict", "decision"], ["gains", "gains"], ["costs", "costs"]] };
   BentoKit.templates["madr-record"] = { id: "madr-record", name: "MADR record", cols: "1.2fr 1fr 1fr",
     areas: ["problem verdict verdict", "problem gains costs", "confirm people people", "shelf shelf shelf", "more more more"],
     md: { cols: "1fr 1fr", areas: ["problem problem", "verdict verdict", "gains costs", "confirm people", "shelf shelf", "more more"] },
@@ -220,10 +216,16 @@
   }
 
   function prosConsOf(o) {
+    /* Pre-pick cards carry the top signals only; the full lists land
+       in the record and in the gains/costs compartments after a pick. */
     var items = [];
-    (o.unlocks || []).forEach(function (t) { items.push({ kind: "good", text: t }); });
-    (o.watch || []).forEach(function (t) { items.push({ kind: "bad", text: t }); });
+    (o.unlocks || []).slice(0, 2).forEach(function (t) { items.push({ kind: "good", text: t }); });
+    (o.watch || []).slice(0, 2).forEach(function (t) { items.push({ kind: "bad", text: t }); });
     return items;
+  }
+  function cardDesc(o) {
+    var nums = (o.numbers || []).slice(0, 2).map(function (n) { return n[0] + " " + n[1]; });
+    return (o.desc || "") + (nums.length ? (o.desc ? " · " : "") + nums.join(" · ") : "");
   }
   function metricsOf(q, opts) {
     var out = [];
@@ -253,42 +255,30 @@
     opts.forEach(function (o) { pc[o.value] = prosConsOf(o); });
     return {
       title: q.title, question: q.title, context: context,
-      options: opts.map(function (o) { return { id: o.value, name: o.name, desc: o.desc }; }),
+      options: opts.map(function (o) { return { id: o.value, name: o.name, desc: cardDesc(o) }; }),
       chosen: pickedId || null,
       because: picked ? (picked.why || picked.desc || "") : null,
+      consequences: picked ? { good: (picked.unlocks || []).slice(), bad: (picked.watch || []).slice(), neutral: [] } : { good: [], bad: [], neutral: [] },
       prosCons: pc, metrics: metricsOf(q, opts)
     };
   }
-  function diveData(q, o) {
+  function optionCardsWire(q) {
+    var mount = $("bk-moment");
+    if (!mount || !q) return;
+    var cards = mount.querySelectorAll(".bk-opt");
     var opts = allOptions();
-    var labels = [], seen = {};
-    opts.forEach(function (x) {
-      (x.numbers || []).forEach(function (n) { if (!seen[n[0]]) { seen[n[0]] = 1; labels.push(n[0]); } });
-    });
-    var attributes = labels.map(function (label) {
-      var values = {};
-      opts.forEach(function (x) {
-        var hit = null;
-        (x.numbers || []).forEach(function (n) { if (n[0] === label) hit = n[1]; });
-        values[x.value] = hit == null ? "—" : hit;
+    cards.forEach(function (card, i) {
+      if (!opts[i]) return;
+      card.setAttribute("role", "button");
+      card.setAttribute("tabindex", "0");
+      card.style.cursor = "pointer";
+      card.title = "Pick " + opts[i].name;
+      var go = function () { pick(opts[i].value); };
+      card.addEventListener("click", go);
+      card.addEventListener("keydown", function (ev) {
+        if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); go(); }
       });
-      return { name: label, values: values };
     });
-    var context = [];
-    if (o.why) context.push(o.why);
-    if (o.living) context.push(o.living);
-    var more = [];
-    (q.links || []).forEach(function (l) { more.push("[" + l.t + "](" + l.u + ")"); });
-    if (o.docs) more.push("[Documentation](" + o.docs + ")");
-    return {
-      title: o.name, question: q.title, context: context,
-      options: opts.map(function (x) { return { id: x.value, name: x.name, desc: x.desc }; }),
-      chosen: o.value, because: o.why || o.desc || "",
-      attributes: attributes,
-      consequences: { good: (o.unlocks || []).slice(), bad: (o.watch || []).slice(), neutral: [] },
-      timeline: (o.journey || []).map(function (s, i) { return { when: "Step " + (i + 1), what: s }; }),
-      more: more
-    };
   }
 
   function tabsHtml() {
@@ -328,57 +318,13 @@
     return head + forkHtml(q);
   }
 
-  function deepReady(q) {
-    if (!q.draft) return true;
-    if (q.draft.deep === true) return true;
-    var opts = q.draft.options || [];
-    for (var i = 0; i < opts.length; i++) {
-      if ((opts[i].numbers || []).length || (opts[i].trajectory || []).length) return true;
-    }
-    return false;
-  }
-  function deepPullHtml(q) {
-    if (state.deepErr[q.id]) {
-      return '<p class="err">' + esc(state.deepErr[q.id]) + "</p>" +
-        '<div class="actions"><button type="button" class="mini-btn" data-action="deepretry" data-v="' + esc(q.id) + '">Try again</button></div>';
-    }
-    return '<div class="progress">Pulling the numbers for the deep dive…' + TYPING + "</div>";
-  }
-  function triggerDeep(q) {
-    if (!q.draft || state.deepLoading[q.id] || state.deepTried[q.id]) return;
-    if (!LIVE) { state.deepErr[q.id] = "The sample data has no deep dive for this one."; return; }
-    state.deepLoading[q.id] = true;
-    state.deepTried[q.id] = true;
-    state.deepErr[q.id] = null;
-    post("/api/session/decisions/" + q.id + "/deep", {}).then(function (dr) {
-      state.deepLoading[q.id] = false;
-      if (S.session && S.session.drafts) S.session.drafts[q.id] = dr;
-      render();
-    }).catch(function (e) {
-      state.deepLoading[q.id] = false;
-      state.deepErr[q.id] = (e && e.message) || "Couldn't pull the numbers.";
-      render();
-    });
-  }
-
   function hoistHtml() {
     var q = Q();
     if (q.preparing) return momentHtml();
-    var opts = allOptions();
     var data = momentData(q, state.picked);
     var html = '<div id="bk-moment"></div>';
+    html += '<p class="hint">' + (state.picked ? "Tap another card to change your pick." : "Tap a card to pick it — why it wins and what to watch is on the card.") + "</p>";
     if (data.metrics.length) html += '<p class="hint">Bars are relative within this option set, not absolute costs.</p>';
-    if (state.picked && !deepReady(q)) { html += deepPullHtml(q); triggerDeep(q); }
-    html += '<div class="opts">';
-    for (var i = 0; i < opts.length; i++) {
-      var o = opts[i];
-      var on = state.picked === o.value;
-      html += '<div class="optrow"><button type="button" class="opt" data-action="pick" data-v="' + esc(o.value) + '" aria-pressed="' + (on ? "true" : "false") + '">' +
-        '<span class="onum">' + (i + 1) + "</span><b>" + esc(o.name) + "</b>" + (o.added ? ' <span class="hint">(added by you)</span>' : "") +
-        "<small>" + esc(o.desc) + "</small></button>" +
-        '<button type="button" class="hyper-btn" data-action="hyper" data-v="' + esc(o.value) + '" aria-label="Deep dive into ' + esc(o.name) + '">' + ICONS.expand + "</button></div>";
-    }
-    html += "</div>";
     html += '<div class="actions"><span class="spacer"></span><button type="button" class="btn" data-action="confirm"' +
       (state.picked ? "" : " disabled") + ">Commit choice</button></div>";
     if (!state.picked) html += '<p class="hint">Pick an option above to enable this — committing needs a pick first.</p>';
@@ -649,31 +595,6 @@
     return html;
   }
 
-  function hyperHtml(o) {
-    var q = Q();
-    var idx = 0, all = allOptions();
-    for (var k = 0; k < all.length; k++) if (all[k].value === o.value) idx = k + 1;
-    var ddg = "https://duckduckgo.com/?q=" + encodeURIComponent(o.name + " " + q.decision);
-    var html = '<div class="veil" data-action="hyperclose"><div class="sheet" role="dialog" aria-modal="true" aria-label="' + esc(o.name) + ' deep dive">';
-    html += '<div class="sheet-top"><div><h2><span class="onum">' + idx + "</span> " + esc(o.name) + '</h2><p class="sub">' + esc(o.desc) + " · deep dive for “" + esc(q.title) + "”</p></div>" +
-      '<button type="button" class="x-btn" data-action="hyperx">Close</button></div>';
-    html += '<div id="bk-dive"></div>';
-    if (CTX.kind === "session" && q.draft && !deepReady(q)) { html += deepPullHtml(q); triggerDeep(q); }
-    html += '<p class="hint"><a href="' + esc(ddg) + '" target="_blank" rel="noopener">Search the web for ' + esc(o.name) + "</a></p>";
-    html += '<div class="actions"><button type="button" class="btn" data-action="hyperpick" data-v="' + esc(o.value) + '">Commit ' + esc(o.name) + "</button></div>";
-    return html + "</div></div>";
-  }
-  function openHyper(v) {
-    if (!optBy(v)) return;
-    state.hyper = v;
-    render();
-    if (document.querySelector) {
-      var c = document.querySelector(".sheet .x-btn");
-      if (c && c.focus) c.focus();
-    }
-  }
-  function closeHyper() { state.hyper = null; render(); }
-
   function switchQ(id) {
     var ok = false;
     for (var i = 0; i < PACKS.length; i++) if (PACKS[i].id === id) ok = true;
@@ -683,8 +604,7 @@
     state.path = null;
     state.picked = null;
     state.showCustom = false;
-    state.hyper = null;
-    state.err = null;
+        state.err = null;
     render();
   }
   function choosePath(p) {
@@ -695,8 +615,7 @@
     state.phase = p;
     state.picked = null;
     state.showCustom = false;
-    state.hyper = null;
-    state.err = null;
+        state.err = null;
     render();
   }
   function pick(v) {
@@ -719,7 +638,7 @@
   }
   function advance() {
     var next = nextUnanswered();
-    state.picked = null; state.showCustom = false; state.hyper = null; state.err = null;
+    state.picked = null; state.showCustom = false; state.err = null;
     if (next) { state.qid = next; state.phase = "moment"; state.path = null; }
     else state.phase = "review";
     render();
@@ -822,8 +741,7 @@
     for (var i = 0; i < PACKS.length; i++) if (PACKS[i].id === id) ok = true;
     if (!ok) return;
     var a = state.answers[id];
-    state.qid = id; state.phase = "hoist"; state.path = "hoist"; state.hyper = null;
-    state.picked = a ? a.value : null;
+    state.qid = id; state.phase = "hoist"; state.path = "hoist";     state.picked = a ? a.value : null;
     state.showCustom = false;
     state.err = null;
     render();
@@ -1498,7 +1416,9 @@
     var m = $("bk-moment");
     if (m && q && state.phase === "hoist") {
       var data = momentData(q, state.picked);
-      mountInto("bk-moment", data.metrics.length ? "moment" : "moment-plain", data);
+      var tpl = state.picked ? "moment" : (data.metrics.length ? "moment-open" : "moment-open-plain");
+      mountInto("bk-moment", tpl, data);
+      optionCardsWire(q);
     }
     document.querySelectorAll("[id^='bk-rec-']").forEach(function (el) {
       var qid = el.id.slice(7);
@@ -1512,12 +1432,6 @@
       var rec2 = null;
       (S.records || []).forEach(function (r) { if (r.file === param || (r.file || "").indexOf(param) === 0) rec2 = r; });
       if (rec2) mountInto("bk-one", "madr-record", recordData(rec2));
-    }
-    var dive = $("bk-dive");
-    if (dive && state.hyper && optBy(state.hyper) && q) {
-      var o = optBy(state.hyper);
-      var dd = diveData(q, o);
-      mountInto("bk-dive", dd.attributes.length ? "option-dive" : "option-dive-plain", dd);
     }
   }
 
@@ -1540,27 +1454,23 @@
           conflictHtml(dec) +
           '<a class="opt list-opt" href="#/" style="margin-top:12px"><b>Open now</b></a>';
         mountCanvases();
-        paintModal();
         return;
       }
-      if (!CAT) { app.innerHTML = progressHtml({ task: "Loading the decision…", status: "planning", total: 1, drafted: [] }); paintModal(); return; }
+      if (!CAT) { app.innerHTML = progressHtml({ task: "Loading the decision…", status: "planning", total: 1, drafted: [] }); return; }
       if (CTX.kind !== "decide" || CTX.id !== id || !PACKS.length) { CTX = { kind: "decide", id: id }; buildDecidePack(dec); resetState(); state.qid = PACKS[0].id; }
       app.innerHTML = engineHtml();
       mountCanvases();
-      paintModal();
       return;
     }
     if (h.indexOf("#/records/") === 0) {
       nav("nav-home", false); nav("nav-session", false); nav("nav-records", true);
       app.innerHTML = recordOneHtml(decodeURIComponent(h.slice(10)));
       mountCanvases();
-      paintModal();
       return;
     }
     if (h === "#/records") {
       nav("nav-home", false); nav("nav-session", false); nav("nav-records", true);
       app.innerHTML = recordsHtml();
-      paintModal();
       return;
     }
     if (h === "#/session") {
@@ -1568,19 +1478,10 @@
       if (CTX.kind !== "session") { CTX = { kind: "session" }; resetState(); buildSessionPacks(); restoreFromOutcomes(); }
       app.innerHTML = sessionHtml();
       mountCanvases();
-      paintModal();
       return;
     }
     nav("nav-home", true); nav("nav-session", false); nav("nav-records", false);
     app.innerHTML = homeHtml();
-    paintModal();
-  }
-
-  function paintModal() {
-    var mo = $("modal");
-    if (!mo) return;
-    mo.innerHTML = (state.hyper && optBy(state.hyper) && (state.phase === "hoist" || state.phase === "quick")) ? hyperHtml(optBy(state.hyper)) : "";
-    mountCanvases();
   }
 
   function onClick(ev) {
@@ -1596,7 +1497,6 @@
     else if (action === "delegate") delegate();
     else if (action === "propose") propose();
     else if (action === "drop") dropChallenger();
-    else if (action === "deepretry") { state.deepTried[v] = null; state.deepErr[v] = null; render(); }
     else if (action === "review") { state.phase = "review"; state.err = null; render(); }
     else if (action === "change") changeQ(v);
     else if (action === "file") fileRecords();
@@ -1607,13 +1507,6 @@
       CTX = { kind: "session" }; resetState();
       render();
     }
-    else if (action === "hyper") openHyper(v);
-    else if (action === "hyperx") closeHyper();
-    else if (action === "hyperclose") {
-      if (ev.target && ev.target.closest && ev.target.closest(".sheet")) return;
-      closeHyper();
-    }
-    else if (action === "hyperpick") { if (optBy(v)) { state.hyper = null; state.picked = v; confirm("chosen"); } }
     else if (action === "conflict") showConflict(v);
     else if (action === "ex") { var el = $("taskIn"); if (el) el.value = v; }
     else if (action === "start") { var ti = $("taskIn"); startSession(ti ? ti.value : "", false); }
@@ -1664,9 +1557,6 @@
       render();
       if (needCAT()) ensureCAT().then(render, render);
       document.addEventListener("click", onClick);
-      document.addEventListener("keydown", function (ev) {
-        if (ev.key === "Escape" && state.hyper) closeHyper();
-      });
       window.addEventListener("hashchange", function () {
         if (needCAT()) ensureCAT().then(render, render);
         else render();

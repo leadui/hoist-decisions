@@ -33,23 +33,15 @@ PRESENT = [
     ("moment canvas", "bk-moment"),
     ("moment template", '"moment"'),
     ("madr record canvas", "madr-record"),
-    ("option dive canvas", "option-dive"),
     ("record canvas data", "recordData"),
     # decision-moment flow
     ("moment box", "Decision moment"),
     ("two paths", "Walk through it"),
     ("tabs switch questions", 'data-action="q"'),
-    ("rows expand options", 'data-action="pick"'),
+    ("quick picks commit", 'data-action="quickpick"'),
     ("moment names its question", "Earlier you chose"),
     ("mobile rules", "@media (max-width: 560px)"),
     ("answered pills turn green", "qtab.done"),
-    ("hyper-dive opens", 'data-action="hyper"'),
-    # modal closes three ways
-    ("modal veil", 'class="veil"'),
-    ("modal sheet", 'role="dialog"'),
-    ("modal X action", "hyperx"),
-    ("modal backdrop action", "hyperclose"),
-    ("modal escape key", '"Escape"'),
     ("typing indicator", 'class="typing"'),
     # escape row + review gate
     ("custom option escape", 'data-v="custom"'),
@@ -65,8 +57,6 @@ PRESENT = [
     ("replays sample offline", "sample.json"),
     ("files session records", "/api/session/decisions/"),
     ("abandons to chat", "/api/session/abandon"),
-    ("lazy deep pull", "/deep"),
-    ("deep pull indicator", "Pulling the numbers"),
     ("files single decisions", "/api/decisions/"),
     ("Muse Spark progress", "Muse Spark"),
     ("record fields chips", "rec-fields"),
@@ -74,6 +64,7 @@ PRESENT = [
     ("sample badge", "Sample data"),
     ("conflict block", "Do not add"),
     ("commit verb", "Commit choice"),
+    ("cards pick options", "optionCardsWire"),
 ]
 ABSENT = [
     # retired: agent-lean display
@@ -112,6 +103,9 @@ ABSENT = [
     ("no seal wording", "seal"),
     ("no confirm verb", "Confirm choice"),
     ("no choose verb", "Choose "),
+    ("no hyper dive", 'data-action="hyper"'),
+    ("no deep pull", "/deep"),
+    ("no hyper modal", "hyperHtml"),
 ]
 
 

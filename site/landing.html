@@ -163,12 +163,6 @@
   .demo .opt[aria-pressed="true"] .detail{display:block}
   .demo .opt .chev{transition:transform .16s ease}
   .demo .opt[aria-pressed="true"] .chev{transform:rotate(180deg)}
-  .demo .sheet-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px}
-  .demo .x-btn{flex:none;font:inherit;font-size:13px;font-weight:650;cursor:pointer;border:1px solid var(--dline);border-radius:999px;padding:5px 14px;background:transparent;color:var(--dink);white-space:nowrap}
-  .shot-veil{position:fixed;inset:0;z-index:60;background:rgba(10,14,20,.55);display:flex;align-items:flex-start;justify-content:center;padding:24px 16px;overflow-y:auto}
-  .shot-sheet{border-radius:14px;max-width:560px;width:100%;margin:auto 0}
-  .shot-sheet h2{font-size:19px;margin:0 0 4px}
-  .shot-sheet .sub{font-size:13px;color:var(--dink2);margin:0}
   .shot-cap{padding:0 22px 18px;color:var(--dim);font-size:12.5px}
   .madr-pills{display:flex;gap:10px;flex-wrap:wrap;margin:22px 0 14px}
   .madr-view{--macc:#e8bb4f;position:relative;border:1px solid rgba(232,187,79,.38);border-radius:22px;padding:26px 26px 30px;background:linear-gradient(180deg,rgba(232,187,79,.09),rgba(232,187,79,.02) 45%,transparent);box-shadow:0 0 80px rgba(232,187,79,.12),inset 0 1px 0 rgba(255,255,255,.06)}
@@ -400,9 +394,9 @@
           <div class="edu" id="mock-edu">
             <h2>Which auth fits a 3-person team?</h2>
             <p class="q-hint">One hard choice. Expand, compare, commit — one record at the end.</p>
-            <div class="optrow"><button type="button" class="opt" data-mopt="0" aria-pressed="false"><span class="onum">1</span><b>Clerk</b><span class="chev">▾</span><small>Hosted auth, fastest to ship; per-user pricing.</small><span class="detail"><span class="why">Drop-in SDK with prebuilt login UI. Live this afternoon — then a per-user bill that grows with you.</span><span class="micro"><small>Setup effort</small><span class="micro-track"><span class="micro-fill" style="width:20%"></span></span></span><span class="journey"><span class="jstep">Add SDK</span><span class="jstep">Style UI</span><span class="jstep">Ship login</span></span><dl class="nums"><div class="num-row"><dt>Cost</dt><dd>$25+/mo</dd></div><div class="num-row"><dt>Time to login</dt><dd>~2 hours</dd></div></dl></span></button><button type="button" class="hyper-btn" data-mhyper="0" aria-label="Hyper-dive option 1">⤢</button></div>
-            <div class="optrow"><button type="button" class="opt" data-mopt="1" aria-pressed="true"><span class="onum">2</span><b>Auth.js + Postgres</b><span class="chev">▾</span><small>Self-hosted, free forever; you own the sessions table.</small><span class="detail"><span class="why">Open standard with an adapter for your stack and magic links included. Costs about a day to wire up.</span><span class="micro"><small>Setup effort</small><span class="micro-track"><span class="micro-fill" style="width:65%"></span></span></span><span class="journey"><span class="jstep">Install adapter</span><span class="jstep">Wire providers</span><span class="jstep">Ship login</span></span><dl class="nums"><div class="num-row"><dt>Cost</dt><dd>$0/mo</dd></div><div class="num-row"><dt>Time to login</dt><dd>~1 day</dd></div></dl></span></button><button type="button" class="hyper-btn" data-mhyper="1" aria-label="Hyper-dive option 2">⤢</button></div>
-            <div class="optrow"><button type="button" class="opt" data-mopt="2" aria-pressed="false"><span class="onum">3</span><b>Roll your own</b><span class="chev">▾</span><small>Full control; you also own every breach.</small><span class="detail"><span class="why">Every flow exactly yours — plus every reset email, session bug, and 2am breach page.</span><span class="micro"><small>Setup effort</small><span class="micro-track"><span class="micro-fill" style="width:95%"></span></span></span><span class="journey"><span class="jstep">Design schema</span><span class="jstep">Build flows</span><span class="jstep">Audit everything</span></span><dl class="nums"><div class="num-row"><dt>Cost</dt><dd>$0/mo</dd></div><div class="num-row"><dt>Time to login</dt><dd>~2 weeks</dd></div></dl></span></button><button type="button" class="hyper-btn" data-mhyper="2" aria-label="Hyper-dive option 3">⤢</button></div>
+            <div class="optrow"><button type="button" class="opt" data-mopt="0" aria-pressed="false"><span class="onum">1</span><b>Clerk</b><span class="chev">▾</span><small>Hosted auth, fastest to ship; per-user pricing.</small><span class="detail"><span class="why">Drop-in SDK with prebuilt login UI. Live this afternoon — then a per-user bill that grows with you.</span><span class="micro"><small>Setup effort</small><span class="micro-track"><span class="micro-fill" style="width:20%"></span></span></span><span class="journey"><span class="jstep">Add SDK</span><span class="jstep">Style UI</span><span class="jstep">Ship login</span></span><dl class="nums"><div class="num-row"><dt>Cost</dt><dd>$25+/mo</dd></div><div class="num-row"><dt>Time to login</dt><dd>~2 hours</dd></div></dl></span></button></div>
+            <div class="optrow"><button type="button" class="opt" data-mopt="1" aria-pressed="true"><span class="onum">2</span><b>Auth.js + Postgres</b><span class="chev">▾</span><small>Self-hosted, free forever; you own the sessions table.</small><span class="detail"><span class="why">Open standard with an adapter for your stack and magic links included. Costs about a day to wire up.</span><span class="micro"><small>Setup effort</small><span class="micro-track"><span class="micro-fill" style="width:65%"></span></span></span><span class="journey"><span class="jstep">Install adapter</span><span class="jstep">Wire providers</span><span class="jstep">Ship login</span></span><dl class="nums"><div class="num-row"><dt>Cost</dt><dd>$0/mo</dd></div><div class="num-row"><dt>Time to login</dt><dd>~1 day</dd></div></dl></span></button></div>
+            <div class="optrow"><button type="button" class="opt" data-mopt="2" aria-pressed="false"><span class="onum">3</span><b>Roll your own</b><span class="chev">▾</span><small>Full control; you also own every breach.</small><span class="detail"><span class="why">Every flow exactly yours — plus every reset email, session bug, and 2am breach page.</span><span class="micro"><small>Setup effort</small><span class="micro-track"><span class="micro-fill" style="width:95%"></span></span></span><span class="journey"><span class="jstep">Design schema</span><span class="jstep">Build flows</span><span class="jstep">Audit everything</span></span><dl class="nums"><div class="num-row"><dt>Cost</dt><dd>$0/mo</dd></div><div class="num-row"><dt>Time to login</dt><dd>~2 weeks</dd></div></dl></span></button></div>
             <p class="expand-hint">Tap an option for its full deep dive inline.</p>
             <div class="actions"><button type="button" class="btn" data-mcommit>Commit &amp; send back to chat</button></div>
           </div>
@@ -633,8 +627,7 @@
       '<span class="onum">' + (i + 1) + "</span><b>" + o.name + '</b><span class="chev">▾</span>' +
       "<small>" + o.desc + '</small><span class="detail"><span class="why">' + o.why + "</span>" +
       '<span class="micro"><small>Setup effort</small><span class="micro-track"><span class="micro-fill" style="width:' + o.micro + '%"></span></span></span>' +
-      '<span class="journey">' + j + '</span><dl class="nums">' + n + "</dl></span></button>" +
-      '<button type="button" class="hyper-btn" data-mhyper="' + i + '" aria-label="Hyper-dive option ' + (i + 1) + '">⤢</button></div>';
+      '<span class="journey">' + j + '</span><dl class="nums">' + n + "</dl></span></button></div>";
   }
   function renderRightPane(idx) {
     var edu = document.getElementById("mock-edu");
@@ -658,7 +651,6 @@
       for (var i = 0; i < nums.length; i++) nums[i].textContent = t.n;
       root.querySelector(".js-mshort").textContent = t.short;
       root.querySelector(".js-mtitle").textContent = t.title;
-      closeShot();
       renderRightPane(idx);
     });
   });
@@ -668,7 +660,6 @@
       for (var i = 0; i < row.length; i++) row[i].classList.toggle("primary", row[i] === btn);
     });
   });
-  function closeShot() { var v = document.querySelector(".shot-veil"); if (v && v.parentNode) v.parentNode.removeChild(v); }
   function bindMockEdu(scope) {
     var mopts = scope.querySelectorAll("[data-mopt]");
     for (var i = 0; i < mopts.length; i++) {
@@ -677,21 +668,6 @@
         var group = this.closest(".edu").querySelectorAll("[data-mopt]");
         for (var g = 0; g < group.length; g++) group[g].setAttribute("aria-pressed", "false");
         this.setAttribute("aria-pressed", was ? "false" : "true");
-      });
-    }
-    var mhyps = scope.querySelectorAll("[data-mhyper]");
-    for (var h = 0; h < mhyps.length; h++) {
-      mhyps[h].addEventListener("click", function () {
-        closeShot();
-        var opt = this.parentNode.querySelector("[data-mopt]");
-        var v = document.createElement("div");
-        v.className = "shot-veil";
-        v.innerHTML = '<div class="shot-sheet demo" role="dialog" aria-modal="true"><div class="sheet-top"><div><h2>' +
-          opt.querySelector("b").textContent + '</h2><p class="sub">Hyper-dive — everything about this option.</p></div>' +
-          '<button type="button" class="x-btn" data-mclose>Close</button></div>' +
-          '<div class="opt" aria-pressed="true">' + opt.innerHTML + "</div></div>";
-        v.addEventListener("click", function (ev) { if (ev.target === v || (ev.target.closest && ev.target.closest("[data-mclose]"))) closeShot(); });
-        document.body.appendChild(v);
       });
     }
     var mcoms = scope.querySelectorAll("[data-mcommit]");
@@ -705,7 +681,6 @@
     }
   }
   bindMockEdu(document);
-  document.addEventListener("keydown", function (ev) { if (ev.key === "Escape") closeShot(); });
 })();
 </script>
 <script type="module">
