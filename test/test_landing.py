@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Landing-page tests: site/landing.html is the full Hoist pitch.
+"""Landing-page tests: site/landing.html is the Hoist pitch (v2); site/landing-v1.html is the earlier one, kept for reference.
 
 Asserts over the exact bytes that every section is present (hero,
 problem, moment flow, records, install, footer), that demo/repo links
@@ -16,7 +16,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 FAILURES = []
-PAGE = Path(__file__).resolve().parent.parent / "site" / "landing.html"
+PAGE = Path(__file__).resolve().parent.parent / "site" / "landing-v1.html"
 SRC = PAGE.read_text()
 
 
@@ -116,10 +116,31 @@ def test_landing_anchors():
         check("anchor " + href + " resolves", href[1:] in ids, href)
 
 
+V2 = (Path(__file__).resolve().parent.parent / "site" / "landing.html").read_text()
+
+
+def test_landing_v2():
+    """Version 2: one live canvas, pause → decide → record, ask vs autopilot, Bento MADR, install."""
+    for name, needle in [("headline", "It's okay to stop and"), ("terminal moment", 'id="term"'), ("one live canvas", 'id="live"'),
+                         ("kit composes the canvas", "K.compose("), ("Hoist extensions", "hoist-bento.js"),
+                         ("pinned kit", "vendor/bento-madr/bento-kit.js"), ("ask vs autopilot", "hoist.py mode autopilot"),
+                         ("four beliefs", "It's not okay to say yes to everything."), ("Bento MADR link", "github.com/leadui/bento-madr"),
+                         ("Muse Spark credit", "Muse Spark"), ("reduced motion", "prefers-reduced-motion"), ("mobile menu", 'id="burger"')]:
+        check("v2 has " + name, needle in V2, repr(needle))
+    check("v2 has exactly one live canvas", V2.count('id="live"') == 1)
+    check("v2 has no 3D scene", "three.module" not in V2 and "importmap" not in V2 and "GLTFLoader" not in V2)
+    for f in ("Inter", "Roboto"):
+        check("v2 avoids " + f, '"' + f + '"' not in V2)
+    ids = set(re.findall(r'id="([^"]+)"', V2))
+    for href in set(re.findall(r'href="#([^"]+)"', V2)):
+        check("v2 anchor #" + href + " exists", href in ids)
+
+
 if __name__ == "__main__":
     test_landing_shape()
     test_no_banned_styles()
     test_landing_anchors()
+    test_landing_v2()
     print(f"\n{len(FAILURES)} failure(s)")
     for f in FAILURES:
         print("FAILED:", f)

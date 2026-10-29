@@ -32,6 +32,11 @@ PRESENT = [
     ("bento kit js", "bento-kit.js"),
     ("moment canvas", "bk-moment"),
     ("kit composes the moment", "BentoKit.compose"),
+    ("demo opens on the Muse terminal", "sampleHomeHtml"),
+    ("nav is Start and Records", 'id="nav-records"'),
+    ("terminal routes to Hoist", 'data-action="intro" data-v="hoist"'),
+    ("terminal shows the expert questionnaire", "This is the questionnaire Hoist replaces"),
+    ("agent resumes after commit", "resumeTtyHtml"),
     ("options lead the canvas", 'lead: "proscons"'),
     ("pros and cons data", "prosCons"),
     ("kind switch", 'data-action="kind"'),
@@ -62,7 +67,7 @@ PRESENT = [
     ("confirm + review + seal", 'data-action="file"'),
     ("commit CTA", "Commit &amp; send back to chat"),
     ("review and commit tab", "Review &amp; commit"),
-    ("theme toggle", "theme-toggle"),
+    ("pinned to the light theme", 'data-theme="light"'),
     # Hoist wiring underneath
     ("loads live state", "/api/state"),
     ("replays sample offline", "sample.json"),
@@ -81,6 +86,9 @@ PRESENT = [
     ("kit option shelf cards", "proscons"),
 ]
 ABSENT = [
+    # retired: Session tab and theme toggle in the nav
+    ("no Session nav tab", 'id="nav-session"'),
+    ("no theme toggle", "theme-toggle"),
     # retired: agent-lean display
     ("no lean box", "lean-box"),
     ("no lean strip builder", "leanStrip"),

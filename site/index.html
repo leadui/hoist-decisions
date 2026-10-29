@@ -27,10 +27,8 @@
   .topbar h1{font-family:var(--bk-display);font-size:26px;letter-spacing:-0.01em;margin:0;font-weight:780}
   .topbar h1 i{display:inline-block;width:11px;height:11px;border-radius:50%;background:var(--bk-accent);margin-right:9px}
   .topnav{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-  .topnav a,.theme-btn{font:inherit;font-size:13px;font-weight:600;color:var(--bk-muted);text-decoration:none;border:1px solid var(--bk-line);border-radius:999px;padding:8px 16px;white-space:nowrap;display:inline-flex;align-items:center;min-height:44px;background:var(--bk-tile);cursor:pointer}
+  .topnav a{font:inherit;font-size:13px;font-weight:600;color:var(--bk-muted);text-decoration:none;border:1px solid var(--bk-line);border-radius:999px;padding:8px 16px;white-space:nowrap;display:inline-flex;align-items:center;min-height:44px;background:var(--bk-tile);cursor:pointer}
   .topnav a.on{color:var(--bk-accent);border-color:var(--bk-accent)}
-  .theme-btn:hover{border-color:var(--bk-accent);color:var(--bk-accent)}
-  .theme-btn:focus-visible{outline:2px dashed var(--bk-muted);outline-offset:3px}
   :focus-visible{outline:2px solid var(--bk-accent);outline-offset:2px}
   .lede{color:var(--bk-muted);margin:4px 0 14px;max-width:62ch}
   .offlinebar{display:none;background:var(--bk-choice);border:1px solid var(--bk-signal);border-radius:10px;padding:8px 14px;font-size:13.5px;margin-bottom:12px;color:var(--bk-ink)}
@@ -41,11 +39,9 @@
   .card h2{font-family:var(--bk-display);font-size:19px;margin:0 0 6px;font-weight:700}
   .hint{font-size:13.5px;color:var(--bk-muted);margin:2px 0 10px}
   .btn{font:inherit;font-weight:650;font-size:14px;cursor:pointer;border-radius:10px;padding:11px 22px;background:var(--bk-accent);border:1px solid var(--bk-accent);color:#fff}
-  [data-theme="dark"] .btn{color:#0c1712}
   .btn:disabled{background:var(--bk-well);border-color:var(--bk-line);color:var(--bk-muted);opacity:1;cursor:not-allowed}
   .btn.ghost{background:transparent;color:var(--bk-ink);border-color:var(--bk-line)}
   .mini-btn{font:inherit;font-size:13.5px;font-weight:650;cursor:pointer;white-space:nowrap;border-radius:8px;padding:8px 16px;background:var(--bk-accent);border:1px solid var(--bk-accent);color:#fff}
-  [data-theme="dark"] .mini-btn{color:#0c1712}
   .actions{display:flex;justify-content:flex-end;gap:10px;margin-top:14px;flex-wrap:wrap;align-items:center}
   .actions .spacer{flex:1}
   .qtabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
@@ -62,7 +58,6 @@
   .fork button strong{display:block;font-size:15px;font-family:var(--bk-display)}
   .fork button span{font-size:13px;color:var(--bk-muted)}
   .fork button.primary{background:var(--bk-accent);border-color:var(--bk-accent);color:#fff}
-  [data-theme="dark"] .fork button.primary{color:#0c1712}
   .fork button.primary span{color:inherit;opacity:.85}
   .opts{display:grid;gap:10px;margin-top:12px}
   .optrow{display:flex;gap:10px;align-items:stretch}
@@ -73,6 +68,25 @@
   .opt[aria-pressed="true"]{border:2px solid var(--bk-signal);padding:11px 13px}
   .opt[aria-pressed="true"] .onum{border-color:var(--bk-signal);color:var(--bk-ink)}
   .escape-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--bk-line);font-size:13px;color:var(--bk-muted)}
+  /* the Muse Code terminal: how the demo opens, and how it ends */
+  .tty{background:#121915;color:#e4ebe6;border-radius:22px;padding:22px 24px;box-shadow:0 0 0 6px rgba(23,32,27,.06),0 24px 60px -30px rgba(23,32,27,.45);font:400 14px/1.75 var(--bk-mono);margin:0 0 16px}
+  .tty-head{display:flex;align-items:center;gap:7px;margin:-4px 0 14px;font:500 11px/1 var(--bk-mono);letter-spacing:.16em;text-transform:uppercase;color:#7d8a83}
+  .tty-head i{width:9px;height:9px;border-radius:50%;background:#2c3832}
+  .tty .ln{display:grid;grid-template-columns:22px 1fr;white-space:pre-wrap;word-break:break-word}
+  .tty .ln.new{animation:ttyIn .55s cubic-bezier(.32,.72,0,1) both}
+  .tty .p{color:#6f7f76}.tty .hl{color:#e3ab2c}.tty .ok{color:#7fc79a}.tty .dim{color:#7d8a83}
+  .tty .opts{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 2px}
+  .tty .opt-b{font:500 13.5px/1 var(--bk-mono);color:#e4ebe6;background:transparent;border:0;border-radius:999px;padding:9px 14px;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(255,255,255,.18);transition:background-color .4s cubic-bezier(.32,.72,0,1),transform .4s cubic-bezier(.32,.72,0,1)}
+  .tty .opt-b:hover{background:rgba(255,255,255,.06)}
+  .tty .opt-b:active{transform:scale(.97)}
+  .tty .opt-b.go{background:#e3ab2c;color:#1d1a10;box-shadow:none}
+  .tty .opt-b.go:hover{background:#ecbc4c}
+  .tty .xq{display:flex;flex-wrap:wrap;gap:6px 14px;color:#aab7b0}
+  .tty .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#e3ab2c;margin-left:6px;animation:ttyPulse 1s ease-in-out infinite alternate}
+  @keyframes ttyIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  @keyframes ttyPulse{from{opacity:.3}to{opacity:1}}
+  @media (prefers-reduced-motion: reduce){.tty .ln.new,.tty .dot{animation:none}}
+  .jump{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:13px;color:var(--bk-muted)}
   .captured{display:flex;gap:12px;align-items:center;margin:0 0 14px;padding:12px 14px;border-radius:12px;border:1.5px solid var(--bk-good);background:color-mix(in srgb, var(--bk-good) 10%, var(--bk-tile));animation:capIn .35s ease-out}
   .captured b{display:block;font-size:15px}
   .captured span:not(.cap-check){display:block;font-size:13px;color:var(--bk-muted)}
@@ -164,9 +178,7 @@
     <h1><i></i>Hoist</h1>
     <div class="topnav">
       <a id="nav-home" href="#/">Start</a>
-      <a id="nav-session" href="#/session">Session</a>
       <a id="nav-records" href="#/records">Records</a>
-      <button class="theme-btn" id="theme-toggle" type="button">Theme: Light</button>
     </div>
   </div>
   <div class="offlinebar" id="offline"><strong>Lost contact with Hoist</strong> — showing the last saved state. Restart Hoist, then reload to pick up where you left off.</div>
@@ -201,7 +213,7 @@
 
   var state = { qid: null, phase: "moment", path: null, picked: null,
     answers: {}, skipped: {}, abandoned: {}, added: {}, showCustom: false,
-    records: {}, err: null, theme: "light", kindView: {}, critic: {}, criticBusy: null, saving: false, enter: false };
+    records: {}, err: null, kindView: {}, critic: {}, criticBusy: null, saving: false, enter: false };
 
   function resetState() {
     state.qid = null; state.phase = "moment"; state.path = null; state.picked = null;
@@ -785,6 +797,26 @@
     if (out) out.innerHTML = '<div class="conflict-block">' + esc(msg) + "</div>";
   }
 
+  function taskName() {
+    var ses = (S && S.session) || SIM || {};
+    var dec = PACKS[0] && PACKS[0].dec;
+    return ses.task || (dec && dec.task) || "the original task";
+  }
+  function resumeTtyHtml() {
+    var lines = ['<div class="ln new"><span class="p">$</span><span>python3 hoist.py wait</span></div>'];
+    var n = 0;
+    PACKS.forEach(function (q) {
+      var a = state.answers[q.id], rec = state.records[q.id] || {};
+      var line = a ? '<span class="ok">✓ ' + esc(q.tab || q.shortTitle) + ": " + esc(a.name) + "</span>" + (rec.record ? ' <span class="dim">' + esc(rec.record) + "</span>" : "")
+        : state.abandoned[q.id] ? '<span class="dim">↩ ' + esc(q.tab || q.shortTitle) + ": back to chat — I'll ask you here</span>"
+        : state.skipped[q.id] ? '<span class="dim">… ' + esc(q.tab || q.shortTitle) + ": deferred</span>" : "";
+      if (!line) return;
+      n++;
+      lines.push('<div class="ln new" style="animation-delay:' + (0.35 * n).toFixed(2) + 's"><span class="p"> </span><span>' + line + "</span></div>");
+    });
+    lines.push('<div class="ln new" style="animation-delay:' + (0.35 * (n + 1)).toFixed(2) + 's"><span class="p">◼</span><span>Following your decisions. Continuing: <span class="hl">' + esc(taskName()) + "</span></span></div>");
+    return '<div class="tty" role="group" aria-label="Your agent, back at work"><div class="tty-head" aria-hidden="true"><i></i><i></i><i></i><span style="margin-left:8px">muse code · resumed</span></div>' + lines.join("") + "</div>";
+  }
   function recordHtml() {
     var filed = 0, deferred = 0;
     for (var i = 0; i < PACKS.length; i++) {
@@ -792,7 +824,8 @@
       else if (state.skipped[PACKS[i].id]) deferred++;
     }
     var html = '<p class="lede">Committed <strong>' + filed + " moment" + (filed === 1 ? "" : "s") + "</strong>" +
-      (deferred ? " — <strong>" + deferred + " deferred</strong>" : "") + ". Here's the set:</p>";
+      (deferred ? " — <strong>" + deferred + " deferred</strong>" : "") + ". Back in the terminal, your agent picks up where it stopped:</p>";
+    html += resumeTtyHtml() + '<p class="lede" style="margin-top:6px">Here\'s the set:</p>';
     for (var j = 0; j < PACKS.length; j++) {
       var q = PACKS[j];
       var a = state.answers[q.id];
@@ -1594,7 +1627,66 @@
     ensurePick(Q());
     return engineHtml();
   }
+  /* Sample mode opens where a real Hoist session starts: Muse Code, interrupted in the terminal. */
+  var INTRO = { stage: "ask", shown: 0 };
+  function ttyLines() {
+    var L = [
+      ['<span class="p">$</span>', 'muse "add user accounts with saved projects"'],
+      ['<span class="p">·</span>', '<span class="dim">reading the project, planning the change…</span>'],
+      ['<span class="p">◼</span>', 'About to run <span class="hl">npm install mongoose</span>'],
+      ['<span class="p">?</span>', 'The database and the sign-in method are hard to change later. How do you want to decide?']
+    ];
+    if (INTRO.stage === "ask") {
+      L.push(['<span class="p"> </span>', '<span class="opts"><button type="button" class="opt-b" data-action="intro" data-v="answer">Answer here</button>' +
+        '<button type="button" class="opt-b go" data-action="intro" data-v="hoist">Decide with Hoist instead</button></span>']);
+    }
+    if (INTRO.stage === "answer" || INTRO.stage === "answer-hoist") {
+      L.push(['<span class="p">❯</span>', "Answer here"]);
+      L.push(['<span class="p">?</span>', 'Which database should we use?']);
+      L.push(['<span class="p"> </span>', '<span class="xq"><span>▸ PostgreSQL</span><span>▸ MongoDB (Recommended)</span><span>▸ SQLite</span><span>▸ MySQL</span></span>']);
+      L.push(['<span class="p">?</span>', 'Which auth strategy?']);
+      L.push(['<span class="p"> </span>', '<span class="xq"><span>▸ JWT</span><span>▸ Session cookies</span><span>▸ OAuth (Recommended)</span></span>']);
+      L.push(['<span class="p">·</span>', '<span class="dim">This is the questionnaire Hoist replaces: it assumes you already know the answers.</span>']);
+      if (INTRO.stage === "answer") {
+        L.push(['<span class="p"> </span>', '<span class="opts"><button type="button" class="opt-b go" data-action="intro" data-v="hoist">Decide with Hoist instead</button></span>']);
+      }
+    }
+    if (INTRO.stage === "hoist" || INTRO.stage === "answer-hoist") {
+      L.push(['<span class="p">❯</span>', "Decide with Hoist instead"]);
+      L.push(['<span class="p">◼</span>', 'Hoist will walk you through these. Decide at <span class="hl">127.0.0.1:7317/#/session</span>']);
+      L.push(['<span class="p">$</span>', 'python3 hoist.py wait <span class="dim">— waiting for you</span><span class="dot"></span>']);
+    }
+    return L;
+  }
+  function introHtml() {
+    var L = ttyLines();
+    var html = '<div class="tty" role="group" aria-label="A Muse Code session, interrupted by Hoist"><div class="tty-head" aria-hidden="true"><i></i><i></i><i></i><span style="margin-left:8px">muse code · fieldnotes</span></div>';
+    L.forEach(function (l, i) {
+      html += '<div class="ln' + (i >= INTRO.shown ? " new" : "") + '"' + (i >= INTRO.shown ? ' style="animation-delay:' + ((i - INTRO.shown) * 0.38 + 0.15).toFixed(2) + 's"' : "") + ">" + l[0] + "<span>" + l[1] + "</span></div>";
+    });
+    INTRO.shown = L.length;
+    return html + "</div>";
+  }
+  function introAct(v) {
+    if (v === "answer") { INTRO.stage = "answer"; render(); return; }
+    INTRO.stage = INTRO.stage === "answer" ? "answer-hoist" : "hoist";
+    render();
+    var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+    setTimeout(function () {
+      INTRO = { stage: "ask", shown: 0 };
+      location.hash = "#/session";
+      setTimeout(function () { startSession(EXAMPLES[0], false); }, 30);
+    }, reduce ? 300 : 2200);
+  }
+  function sampleHomeHtml() {
+    return '<p class="lede">This is where a Hoist session starts: your agent, mid-task, about to make a choice that is hard to undo. Pick how you want to decide.</p>' +
+      introHtml() +
+      '<div class="jump"><span>Or jump in:</span><a class="escape-btn" href="#/session" style="text-decoration:none;display:inline-flex;align-items:center">The decision page</a>' +
+      '<a class="escape-btn" href="#/decide/0004" style="text-decoration:none;display:inline-flex;align-items:center">A single interruption</a>' +
+      '<a class="escape-btn" href="#/records" style="text-decoration:none;display:inline-flex;align-items:center">Records</a></div>';
+  }
   function homeHtml() {
+    if (!LIVE && S && S.sample_session) return sampleHomeHtml();
     var open = (S.decisions || []).filter(function (d) { return d.status === "open"; });
     var ses = S.session;
     var badge = LIVE ? "" : '<a class="sample-badge" href="landing.html#install">Sample data</a>';
@@ -1694,7 +1786,7 @@
     var app = $("app");
     if (!app) return;
     if (h.indexOf("#/decide/") === 0) {
-      nav("nav-home", true); nav("nav-session", false); nav("nav-records", false);
+      nav("nav-home", true); nav("nav-records", false);
       var id = h.slice(9);
       var dec = null;
       (S.decisions || []).forEach(function (x) { if (x.id === id) dec = x; });
@@ -1716,24 +1808,24 @@
       return;
     }
     if (h.indexOf("#/records/") === 0) {
-      nav("nav-home", false); nav("nav-session", false); nav("nav-records", true);
+      nav("nav-home", false); nav("nav-records", true);
       app.innerHTML = recordOneHtml(decodeURIComponent(h.slice(10)));
       mountCanvases();
       return;
     }
     if (h === "#/records") {
-      nav("nav-home", false); nav("nav-session", false); nav("nav-records", true);
+      nav("nav-home", false); nav("nav-records", true);
       app.innerHTML = recordsHtml();
       return;
     }
     if (h === "#/session") {
-      nav("nav-home", false); nav("nav-session", true); nav("nav-records", false);
+      nav("nav-home", true); nav("nav-records", false);
       if (CTX.kind !== "session") { CTX = { kind: "session" }; resetState(); buildSessionPacks(); restoreFromOutcomes(); }
       app.innerHTML = sessionHtml();
       mountCanvases();
       return;
     }
-    nav("nav-home", true); nav("nav-session", false); nav("nav-records", false);
+    nav("nav-home", true); nav("nav-records", false);
     app.innerHTML = homeHtml();
   }
 
@@ -1755,6 +1847,7 @@
     else if (action === "next") advance();
     else if (action === "kind") { var kq = Q(); if (kq) { state.kindView[kq.id] = v; render(); } }
     else if (action === "critic") askCritic(v);
+    else if (action === "intro") introAct(v);
     else if (action === "restart") {
       if (CTX.kind === "decide") { location.hash = "#/"; return; }
       S.session = null; SIM = null;
@@ -1765,25 +1858,6 @@
     else if (action === "ex") { var el = $("taskIn"); if (el) el.value = v; }
     else if (action === "start") { var ti = $("taskIn"); startSession(ti ? ti.value : "", false); }
     else if (action === "retry") startSession((S.session || {}).task || "", true);
-  }
-
-  function loadTheme() {
-    var saved = null;
-    try { saved = window.localStorage ? window.localStorage.getItem("hoist-theme") : null; } catch (e) { saved = null; }
-    if (saved === "light" || saved === "dark") return saved;
-    if (typeof window.matchMedia === "function" &&
-        window.matchMedia("(prefers-color-scheme: dark)").matches) return "dark";
-    return "light";
-  }
-  function applyTheme() {
-    document.documentElement.setAttribute("data-theme", state.theme);
-    var btn = $("theme-toggle");
-    if (btn) btn.textContent = "Theme: " + (state.theme === "dark" ? "Dark" : "Light");
-    try { if (window.localStorage) window.localStorage.setItem("hoist-theme", state.theme); } catch (e) { /* private mode */ }
-  }
-  function toggleTheme() {
-    state.theme = state.theme === "dark" ? "light" : "dark";
-    applyTheme();
   }
 
   function needCAT() {
@@ -1799,8 +1873,6 @@
       '<div class="skel-bar" style="width:95%"></div></div></div>';
   }
   function boot() {
-    state.theme = loadTheme();
-    applyTheme();
     var app = $("app");
     if (app) app.innerHTML = loadingHtml();
     loadState().then(function () {
@@ -1815,8 +1887,6 @@
         if (needCAT()) ensureCAT().then(render, render);
         else render();
       });
-      var tb = $("theme-toggle");
-      if (tb && tb.addEventListener) tb.addEventListener("click", toggleTheme);
       setInterval(function () {
         var ses = S.session;
         var busy = !!SIM || (ses && (ses.status === "planning" || ses.status === "drafting"));
