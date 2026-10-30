@@ -31,10 +31,25 @@ When you are about to ask the user to choose something hard to undo, first ask o
 Then:
 
 - If the user picks `Answer here`, ask your real questions as usual.
-- If the user picks `Decide with Hoist instead`, do not ask anything else. Hoist opens the page and prepares the decisions. Say in one line: "Hoist will walk you through these. Decide at http://127.0.0.1:7317/#/session." Then run `python3 <path to hoist.py> wait` (the path is in .muse/hooks.json) and let it finish. Do not end your turn while it waits; if it moves to the background, keep checking its output.
-- When it finishes it prints the user's decisions. Follow them exactly and continue the original task without asking the user to say "continue".
+- If the user picks `Decide with Hoist instead`, do not ask anything else. Hoist opens the page and tells you what to do next (the path to hoist.py is in .muse/hooks.json):
+  - usually you draft the decisions for the page yourself: see **Drafting for Hoist** below, then run `python3 <path to hoist.py> wait`;
+  - if Hoist says Muse Spark is preparing them, just run `python3 <path to hoist.py> wait`.
+  Say in one line: "Hoist will walk you through these. Decide at http://127.0.0.1:7317/#/session." Do not end your turn while it waits; if it moves to the background, keep checking its output.
+- When `wait` finishes it prints the user's decisions. Follow them exactly and continue the original task without asking the user to say "continue".
 
 If the user picks `Decide with Hoist instead` on any question in any form, treat the whole form as abandoned and do the same.
+
+## Drafting for Hoist
+
+By default you write the decisions the user sees; Hoist checks them and shows them on the page.
+
+1. Run `python3 <path to hoist.py> brief`. It prints exactly what to write next (first the plan, then one decision at a time), the rules, the project input, and the file to write.
+2. If you can start a subagent, give it the brief and let it write the file: a fresh context drafts the options without your own preferences. Otherwise write it yourself.
+3. Write only the JSON object to the file it names, then run the `submit` command it prints.
+4. If `submit` lists problems, fix exactly those in the same file and submit again.
+5. Repeat `brief` → write → `submit` until it says every decision is on the page. Then run `wait`.
+
+Write for a smart newcomer and keep every option fair. Your own preference goes only in `agent_pick` and `lean`; never decide for the user.
 
 ## When a decision is waiting
 

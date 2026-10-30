@@ -6,7 +6,7 @@ Coding agents make choices that take weeks to undo, often in a single line of a 
 - **Read the pitch:** https://leadui.github.io/hoist-decisions/landing.html
 - **Built on [Bento MADR](https://github.com/leadui/bento-madr)**, the decision-canvas library that started here.
 
-Built for the Meta Global AI Developer Hackathon with **Muse Code** (the agent Hoist guards) and **Muse Spark** (which drafts every decision you see).
+Built for the Meta Global AI Developer Hackathon with **Muse Code** (the agent Hoist guards) and, optionally, **Muse Spark** (an independent drafter and critic). No API key is needed: by default your agent drafts the decisions and Hoist checks them.
 
 What Hoist stands for:
 
@@ -21,8 +21,8 @@ Hoist steps in at two moments.
 
 **When the agent is about to ask you something hard to undo**, Hoist's skill has it ask one question first: *"These are hard to change later. How do you want to decide?"* with **Answer here** or **Decide with Hoist instead**. If you pick Hoist:
 
-1. Hoist reads the task and the project, and Muse Spark plans which decisions really need you.
-2. Your browser opens the decision page. Each decision is one canvas: the options in plain words, your answers as a matrix that shows what would flip the pick, the risks, the agent's own lean, and a critic you can call in.
+1. Your agent drafts the decisions for the page through `hoist brief` and `hoist submit`, handing the work to a fresh subagent when it can, so the options aren't shaped by its own favourite. Hoist checks every draft against its rules (plain words, fair options, an honest downside for each) and sends problems back to fix. With a Muse Spark key you can make Muse Spark the drafter instead.
+2. Your browser opens the decision page. Each decision is one canvas: the options in plain words, your answers as a matrix that shows what would flip the pick, the risks, the agent's own lean, and a critic.
 3. You pick and commit. Hoist writes one [MADR](https://adr.github.io/madr/) record per decision to `docs/decisions/`.
 4. The agent, waiting on `hoist wait`, gets your decisions and carries on. The page tells you it's okay to go back to the terminal.
 
@@ -32,7 +32,7 @@ Records bind afterwards: if the agent later tries something that conflicts with 
 
 ## Install
 
-Requires macOS or Linux, Python 3.9+ (no packages), and [Muse Code](https://dev.meta.ai/resources/blog/build-with-muse-code). Live decisions also need a Muse Spark API key from [dev.meta.ai](https://dev.meta.ai).
+Requires macOS or Linux, Python 3.9+ (no packages), and [Muse Code](https://dev.meta.ai/resources/blog/build-with-muse-code). No API key needed.
 
 ```bash
 git clone https://github.com/leadui/hoist-decisions.git
@@ -46,16 +46,25 @@ This adds to your project:
 - `docs/decisions/`: where the records go
 - `.hoist/` in `.gitignore`: local working state
 
-Give Hoist your Muse Spark key, either way works:
-
-```bash
-export MODEL_API_KEY=...   # in the shell you start Muse Code from
-security add-generic-password -a "$USER" -s hoist-meta-api -w   # or, on macOS, once in the Keychain
-```
-
-Then restart Muse Code in the project and trust the folder so the hook loads. Without a key the hook still pauses the agent, but the page can't draft the decisions.
+Restart Muse Code in the project and trust the folder so the hook loads.
 
 **Try it:** ask Muse Code to *"add user accounts with saved projects"* and pick **Decide with Hoist instead** when it asks how you want to decide.
+
+### Optional: Muse Spark
+
+A key from [dev.meta.ai](https://dev.meta.ai) adds what an agent drafting for itself can't give you:
+
+- **An independent drafter.** Muse Spark plans and drafts the decisions instead of the agent, a second opinion that doesn't grade the agent's own homework.
+- **The live critic.** Ask a skeptic, a CFO, an on-call engineer and other personas to argue against your pick.
+- **Starting a session from the page** instead of from the agent, and `hoist_audit.py`, which lists the decisions a repo has already made.
+
+```bash
+export MODEL_API_KEY=...                                         # in the shell you start Muse Code from
+security add-generic-password -a "$USER" -s hoist-meta-api -w    # or, on macOS, once in the Keychain
+python3 hoist-decisions/hoist.py drafter muse /path/to/your/project
+```
+
+`drafter agent` switches back. Without a key Hoist always falls back to the agent.
 
 ## Ask or autopilot
 
@@ -80,6 +89,9 @@ python3 hoist.py serve [project]                 # the decision page and records
 python3 hoist.py wait [ID] [project]             # wait for the open decision, then print what was chosen
 python3 hoist.py mode [ask|autopilot] [project]  # show or set the mode
 python3 hoist.py log TITLE --chose X --because Y [--options "A|B"] [--project DIR]
+python3 hoist.py drafter [agent|muse] [project]  # who drafts: the agent (default) or Muse Spark (needs a key)
+python3 hoist.py brief [project]                 # for the agent: what to draft next
+python3 hoist.py submit plan FILE | submit draft ID FILE   # for the agent: hand in the plan or one draft
 python3 hoist_audit.py <path-or-url>             # Muse Spark: list the decisions a repo has already made (needs: pip install openai)
 ```
 
@@ -88,15 +100,17 @@ The hook (`hoist.py gate`) and the page server start on their own; you rarely ne
 ## Privacy and cost
 
 - The decision page and its server listen on 127.0.0.1 only.
-- Live sessions send Muse Spark the task, the titles of existing decision records, the folder layout, and an excerpt of the project's manifest, config and schema files (for example `package.json`, Dockerfiles, CI workflows, Prisma or SQL schemas, READMEs, `.env.example`), about 9,000 characters in all. Never `.env` and never application source files. The full list is `EVIDENCE` in `hoist_audit.py`.
-- Every Muse Spark call is logged to `~/.hoist/spend.json` with its cost, and calls are refused once the ledger reaches $25. Delete or edit the ledger to reset it.
+- By default nothing leaves your machine beyond what your agent already reads and sends: the agent drafts, Hoist checks locally.
+- With `drafter muse`, sessions and the critic send Muse Spark the task, the titles of existing decision records, the folder layout, and an excerpt of the project's manifest, config and schema files (for example `package.json`, Dockerfiles, CI workflows, Prisma or SQL schemas, READMEs, `.env.example`), about 9,000 characters in all. Never `.env` and never application source files. The full list is `EVIDENCE` in `hoist_audit.py`.
+- Every Muse Spark call (only with a key) is logged to `~/.hoist/spend.json` with its cost, and calls are refused once the ledger reaches $25. Delete or edit the ledger to reset it.
 - The hosted demo uses recorded sample data and makes no API calls.
 
 ## Configuration
 
 | Variable | Default | What it does |
 |---|---|---|
-| `MODEL_API_KEY` | — | Muse Spark key (or the Keychain entry `hoist-meta-api` on macOS) |
+| `MODEL_API_KEY` | — | Optional Muse Spark key (or the Keychain entry `hoist-meta-api` on macOS) |
+| `HOIST_DRAFTER` | `agent` | Overrides the project's drafter: `agent` or `muse` |
 | `HOIST_MODE` | `ask` | Overrides the project's mode: `ask` or `autopilot` |
 | `HOIST_PORT` | `7317` | Port for the local decision page |
 | `HOIST_MODEL` | `muse-spark-1.1` | Muse Spark model |
@@ -105,7 +119,8 @@ The hook (`hoist.py gate`) and the page server start on their own; you rarely ne
 ## Troubleshooting
 
 - **The agent never pauses.** Restart Muse Code in the project and trust the folder; hooks load at start.
-- **The page says there's no Muse Spark key.** Export `MODEL_API_KEY` in the shell you start Muse Code from, or add the Keychain entry above, then restart Muse Code.
+- **The page waits on "your agent is writing this moment".** The agent drafts through `hoist brief` and `hoist submit`; if it stopped, ask it to run `hoist brief` and carry on.
+- **You set `drafter muse` but the agent still drafts.** Hoist didn't find a key: export `MODEL_API_KEY` in the shell you start Muse Code from (or add the Keychain entry), then restart Muse Code.
 - **The page doesn't open.** Run `python3 hoist.py serve /path/to/project` and open http://127.0.0.1:7317. If the port is taken, set `HOIST_PORT`.
 - **Start over.** Delete the project's `.hoist/` folder. Records in `docs/decisions/` are yours to keep or remove.
 
@@ -122,7 +137,7 @@ The hook (`hoist.py gate`) and the page server start on their own; you rarely ne
 
 ## Status
 
-Built during the hackathon (Oct 26 to Nov 4, 2026) with Muse Code. Shipped: the live session flow with Muse Spark drafting, Bento MADR canvases with a critic and kind-shaped layouts, MADR records that block conflicting changes, autopilot, the sample-data demo, and the landing page.
+Built during the hackathon (Oct 26 to Nov 4, 2026) with Muse Code. Shipped: the live session flow (drafted by your agent, or by Muse Spark with a key), Bento MADR canvases with a critic and kind-shaped layouts, MADR records that block conflicting changes, autopilot, the sample-data demo, and the landing page.
 
 ## License
 

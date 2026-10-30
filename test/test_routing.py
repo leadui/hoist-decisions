@@ -20,6 +20,9 @@ from unittest import mock
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import hoist
 
+# These tests cover the Muse Spark drafter (with a key). The default, agent drafting, is in test_agent_draft.py.
+hoist.effective_drafter = lambda root: "muse"
+
 ROOT = Path(__file__).resolve().parent.parent
 FIXTURE = ROOT / "test" / "fixtures" / "post_tool_batch_hoist_pick.json"
 

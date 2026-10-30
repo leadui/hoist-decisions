@@ -328,7 +328,7 @@
           <a class="btn primary" href="index.html#/">Try the demo <span class="pod"><svg viewBox="0 0 16 16"><path d="M5 11 11 5M6 5h5v5"/></svg></span></a>
           <a class="btn ghost" href="#install">Install <span class="pod"><svg viewBox="0 0 16 16"><path d="M8 3v9M4 8l4 4 4-4"/></svg></span></a>
         </div>
-        <p class="hero-note rv d3">Python 3.9+ · no dependencies · runs on your machine</p>
+        <p class="hero-note rv d3">Python 3.9+ · no dependencies · no API key · runs on your machine</p>
       </div>
     </div>
   </section>
@@ -365,7 +365,7 @@
               <div class="step-n"><b>2</b> Decide</div>
               <h3>One canvas, shaped by the decision</h3>
             </div>
-            <p>Muse Spark drafts the options in plain words. Your answers become a matrix that shows what would flip the pick; the agent's lean, the risks and a critic sit beside it. This canvas is live: tap an option, or switch the kind of decision.</p>
+            <p>Your agent drafts the options in plain words (or Muse Spark, as an independent second opinion, when you add a key), and Hoist checks every draft. Your answers become a matrix that shows what would flip the pick; the agent's lean, the risks and a critic sit beside it. This canvas is live: tap an option, or switch the kind of decision.</p>
           </div>
           <div class="kinds" id="kinds" role="group" aria-label="Canvas for this kind of decision"></div>
           <p class="canvas-note" id="canvas-note"></p>
@@ -472,7 +472,7 @@
         </div></div>
         <div class="bezel rv d1"><div class="core credits">
           <div><b>Muse Code</b><span>The agent Hoist guards: it pauses, waits for your call, and carries on.</span></div>
-          <div><b>Muse Spark</b><span>Drafts every decision moment: the options, the analogies, the risks and the critic.</span></div>
+          <div><b>Muse Spark</b><span>Optional. Add a key and it drafts every decision as an independent second opinion, and powers the live critic. Without one, your agent drafts.</span></div>
           <div><b>Bento MADR</b><span>Draws each moment and record as a canvas you can read at a glance.</span></div>
         </div></div>
       </div>
@@ -630,7 +630,7 @@
     $("canvas-note").textContent = K.templates[state.kind].name + ": " + K.templates[state.kind].for;
     var own = state.data.dr.kind;
     $("kind-note").innerHTML = state.kind === own
-      ? "<b>One real decision, drafted by Muse Spark.</b> ✦ marks the canvas it chose. Switch the kind to see the same decision reshaped — the options stay the same so the canvases can be compared."
+      ? "<b>One real decision, drafted by Muse Spark for this demo.</b> ✦ marks the canvas it chose. Switch the kind to see the same decision reshaped — the options stay the same so the canvases can be compared."
       : "<b>Same decision, reshaped as a " + K.util.esc(K.templates[state.kind].name.toLowerCase()) + " canvas.</b> The options are still the database choice on purpose — only the layout changes, so you can compare canvases.";
     drawMaps(d);
   }

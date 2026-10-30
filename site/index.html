@@ -221,6 +221,12 @@
   }
   function today() { var d = new Date(); return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2); }
   function doorWord(n) { return n === 3 ? "one-way" : n === 2 ? "heavy" : n === 1 ? "two-way" : "one-way"; }
+  /* Who wrote the decisions: the agent itself (default, no key) or Muse Spark (with a key). */
+  function drafterName(cap, dr) {
+    var ses = (S && S.session) || SIM || {};
+    var agent = dr ? dr.drafter === "agent" : ses.drafter === "agent";
+    return agent ? (cap ? "Your agent" : "your agent") : "Muse Spark";
+  }
   function stripTags(s) { return String(s == null ? "" : s).replace(/<[^>]*>/g, ""); }
 
   var S = null, LIVE = false, CAT = null, CATFAIL = false, PACKS = [], CTX = { kind: "session" }, SIM = null;
@@ -391,12 +397,12 @@
   }
   function peopleOf(q) {
     var agent = (q.dec && q.dec.agent) || "Muse Code";
-    return { decided: ["You"], responsible: [agent + " (your agent)"], consulted: q.draft ? ["Muse Spark (drafted the options)"] : [], informed: [] };
+    return { decided: ["You"], responsible: [agent + " (your agent)"], consulted: q.draft ? [drafterName(true, q.draft) + " (drafted the options)"] : [], informed: [] };
   }
   function moreOf(q, opts) {
     var out = [];
     ((q.draft && q.draft.evidence) || []).forEach(function (e) {
-      var src = e.source === "profile" ? "assumed" : e.source === "inferred" ? "inferred by Muse Spark" : e.source;
+      var src = e.source === "profile" ? "assumed" : e.source === "inferred" ? "inferred by " + drafterName(false, q.draft) : e.source;
       out.push("**" + src + "** — " + (e.detail || ""));
     });
     (q.links || []).forEach(function (l) { out.push("[" + l.t + "](" + l.u + ")"); });
@@ -466,7 +472,7 @@
 
   function preparingHtml(q) {
     return '<div class="card"><h2>Decision moment ' + esc(momentNum()) + ": " + esc(q.shortTitle) + "?</h2>" +
-      '<div class="progress">Muse Spark is writing this moment — it will appear here on its own.' + TYPING + "</div></div>";
+      '<div class="progress">' + drafterName(true) + " is writing this moment — it will appear here on its own." + TYPING + "</div></div>";
   }
 
   function hoistHtml() {
@@ -562,26 +568,26 @@
     var mp = bentoMap({ slots: c.template.slots, cols: c.wide.cols, areas: c.wide.areas }, data);
     var html = '<div class="canvas-bar"><div class="cb-head">' +
       '<div><b class="cb-title">Bento Kit · ' + esc(BentoKit.templates[c.kind].name) + "</b>" +
-      '<span class="cb-count">' + mp.filled + " of " + mp.total + " compartments filled" +
+      '<span class="cb-count">' + (q.draft ? "Drafted by " + esc(drafterName(false, q.draft)) + " · " : "") + mp.filled + " of " + mp.total + " compartments filled" +
       (mp.missing.length ? " · missing: " + esc(mp.missing.join(", ").toLowerCase()) : "") + "</span></div>" + mp.html + "</div>" +
       '<div class="cb-kinds" role="group" aria-label="Canvas for this kind of decision">';
     KIND_IDS.forEach(function (k) {
       html += '<button type="button" class="cb-kind" data-action="kind" data-v="' + k + '" aria-pressed="' + (c.kind === k ? "true" : "false") + '"' +
-        (k === own ? ' title="The kind Muse Spark gave this decision"' : "") + ">" + esc(BentoKit.templates[k].name) + (k === own ? " ✦" : "") + "</button>";
+        (k === own ? ' title="The kind ' + drafterName(false, q.draft) + ' gave this decision"' : "") + ">" + esc(BentoKit.templates[k].name) + (k === own ? " ✦" : "") + "</button>";
     });
     html += "</div>";
     var why = BentoKit.templates[c.kind].for;
     var sw = Object.keys(c.swaps).map(function (a) { return BentoKit.components[c.swaps[a]].name; });
     if (sw.length) why += " Filled from this decision's data: " + sw.join(", ").toLowerCase() + ".";
     html += '<p class="cb-why">' + esc(why) + "</p>";
-    if (c.kind !== own) html += '<p class="cb-why" style="color:var(--bk-ink)"><b>Same decision, reshaped as a ' + esc(BentoKit.templates[c.kind].name.toLowerCase()) + " canvas</b> — the options stay the same so you can compare layouts. ✦ marks the canvas Muse Spark chose.</p>";
+    if (c.kind !== own) html += '<p class="cb-why" style="color:var(--bk-ink)"><b>Same decision, reshaped as a ' + esc(BentoKit.templates[c.kind].name.toLowerCase()) + " canvas</b> — the options stay the same so you can compare layouts. ✦ marks the canvas " + drafterName(false, q.draft) + " chose.</p>";
     html += "</div>";
     return html;
   }
   function criticHtml(q, data) {
     if (!state.picked || typeof BentoKit === "undefined") return "";
     var baked = (q.draft && q.draft.advocate && q.draft.advocate[state.picked]) || {};
-    var avail = PERSONAS.filter(function (p) { return LIVE || baked[p]; });
+    var avail = PERSONAS.filter(function (p) { return (LIVE && S.muse) || baked[p]; });
     if (!avail.length) return "";
     var cur = data.advocate && data.advocate.persona;
     var html = '<div class="escape-row critic-row"><span>Stress-test ' + esc((optBy(state.picked) || {}).name || "the pick") + " with</span>";
@@ -605,7 +611,7 @@
       state.critic[q.id][opt] = r;
     };
     if (baked) { keep(baked); render(); return; }
-    if (!LIVE) return;
+    if (!LIVE || !S.muse) return;
     var d = momentData(q, opt);
     d.advocate = null;
     state.criticBusy = pid; state.err = null; render();
@@ -1305,7 +1311,7 @@
       : lc(opt.why || opt.desc);
     var ev = (dr.evidence || []).map(function (e) {
       var src = e.source === "profile" ? "assumed by your agent, not checked"
-        : e.source === "inferred" ? "inferred by Muse Spark" : e.source === "task" ? "the task" : "seen in " + e.source;
+        : e.source === "inferred" ? "inferred by " + drafterName(false, dr) : e.source === "task" ? "the task" : "seen in " + e.source;
       return "- " + (e.detail || e.Detail || "") + " (" + src + ")";
     });
     var viable = (dr.options || []).filter(function (x) { return !x.ruled_out; });
@@ -1323,7 +1329,7 @@
       "date: " + today(),
       "door: " + doorWord(dr.door || d.door),
       "proposed-by: " + (LIVE ? "Muse Code" : "your agent") + " (task: " + ((S.session || {}).task || "") + ")",
-      "consulted: Muse Spark (drafted the questions and options)",
+      "consulted: " + drafterName(false, dr) + " (drafted the questions and options)",
       "deciders: " + (mode === "delegated" ? "Hoist, delegated by the project owner" : "project owner"),
       "confidence: " + cf.lv,
       "---",
@@ -1607,7 +1613,7 @@
   function startHtml() {
     var badge = LIVE ? "" : '<a class="sample-badge" href="landing.html#install">Sample data</a>';
     return '<div class="card"><h2>What are we deciding?' + badge + "</h2>" +
-      '<p class="hint">Tell me the task — I\'ll find every choice that\'s hard to undo, and we\'ll take each decision moment together. Muse Spark prepares each moment; Hoist checks every draft against its rules before you see it.</p>' +
+      '<p class="hint">Tell me the task — I\'ll find every choice that\'s hard to undo, and we\'ll take each decision moment together. ' + esc(LIVE && !S.muse ? "Your agent drafts each moment" : LIVE && S.drafter === "agent" ? "Your agent drafts each moment" : "Muse Spark prepares each moment") + '; Hoist checks every draft against its rules before you see it.</p>' +
       '<textarea class="task-input" id="taskIn" aria-label="Task"' + (LIVE ? "" : " readonly") + ">" + (LIVE ? "" : esc(EXAMPLES[0])) + "</textarea>" +
       (LIVE ? '<div class="escape-row">' + EXAMPLES.map(function (e) {
         return '<button type="button" class="escape-btn" data-action="ex" data-v="' + esc(e) + '">' + esc(e) + "</button>";
@@ -1623,11 +1629,11 @@
     var simNote = !LIVE ?
       '<p class="hint">Sample run — this session is generated sample data, not live AI reasoning.</p>' : "";
     return '<div class="card"><h2>Working on ' + esc(ses.task || "") + '</h2><div class="progress">' + esc(line) + TYPING + "</div>" + simNote +
-      '<p class="hint">Muse Spark writes the questions and options; Hoist checks every draft against its rules before you see it.</p></div>';
+      '<p class="hint">' + drafterName(true) + " writes the questions and options; Hoist checks every draft against its rules before you see it.</p></div>";
   }
   function errorHtml(ses) {
     return '<div class="card"><h2>Couldn\'t finish preparing</h2>' +
-      '<p class="hint">Muse Spark couldn\'t finish the decision moments. Try again picks up where it stopped and keeps what is already written. Your agent is still waiting.' +
+      '<p class="hint">' + drafterName(true) + ' couldn\'t finish the decision moments. Try again picks up where it stopped and keeps what is already written. Your agent is still waiting.' +
       (ses.error ? " Details: " + esc(ses.error) : "") + "</p>" +
       '<div class="actions"><button type="button" class="btn" data-action="retry">Try again</button></div>' +
       (state.err ? '<p class="err">' + esc(state.err) + "</p>" : "") + "</div>";
@@ -1786,12 +1792,12 @@
       var asks = ses.plan.decisions.filter(function (d) { return d.mode === "ask"; });
       var left = asks.filter(function (d) { return !(ses.outcomes || {})[d.id]; }).length;
       html += '<a class="opt list-opt" href="#/session"><b>' + esc(ses.task || "Task session") + "</b><small>" +
-        esc(ses.status === "ready" ? left + " of " + asks.length + " left to decide" : "Muse Spark is preparing it…") + "</small></a>";
+        esc(ses.status === "ready" ? left + " of " + asks.length + " left to decide" : drafterName(true) + " is preparing it…") + "</small></a>";
     } else if (ses) {
-      html += '<a class="opt list-opt" href="#/session"><b>' + esc(ses.task || "Task session") + "</b><small>Muse Spark is preparing it…</small></a>";
+      html += '<a class="opt list-opt" href="#/session"><b>' + esc(ses.task || "Task session") + "</b><small>" + esc(drafterName(true)) + " is preparing it…</small></a>";
     }
     html += '<a class="opt list-opt" href="#/session" style="border:2px solid var(--bk-signal)"><b>' + (LIVE ? "Walk a task" : "Walk the sample task") + "</b><small>" +
-      esc(LIVE ? "Describe a task; Muse Spark finds every hard-to-undo choice in it." : "Add user accounts with saved projects · three moments drafted by Muse Spark") + "</small></a>";
+      esc(LIVE ? "Describe a task; " + (S.drafter === "muse" ? "Muse Spark" : "your agent") + " finds every hard-to-undo choice in it." : "Add user accounts with saved projects · three moments drafted by Muse Spark") + "</small></a>";
     html += "</div>";
     return html;
   }
