@@ -241,7 +241,7 @@
   .head.wide > div{grid-column:1;grid-row:1}
   .head.wide > .lede{grid-column:1;grid-row:2}
   .ic-wide{grid-column:2;grid-row:1 / span 2;width:210px;margin:0 3% 0 0}
-  .rec-art{width:190px;margin:20px 0 -6px 0}
+  .rec-art{width:260px;margin:24px 0 -6px 0}
   .photo{margin:0 0 56px}
   .photo .core{padding:0;overflow:hidden}
   .photo img{display:block;width:100%;height:auto;aspect-ratio:3/2;object-fit:cover}
@@ -263,6 +263,38 @@
   .rot > span{grid-area:1 / 1;opacity:0;transform:translateY(.3em);transition:opacity .6s var(--spring),transform .6s var(--spring)}
   .rot > span.on{opacity:1;transform:none}
 
+
+  /* v3: sharper story */
+  .hero h1{font-size:clamp(50px,6.6vw,100px)}
+  .hero .idea-line{margin:0 0 6px;font-size:clamp(22px,2.2vw,30px);color:var(--muted)}
+  .hero .idea-line .rot{color:var(--sage)}
+  .band-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:48px;align-items:end}
+  .band h2{font-size:clamp(56px,8vw,120px);max-width:none}
+  .band-term{background:rgba(18,25,21,.82);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08),0 30px 60px -30px rgba(0,0,0,.6)}
+  .band-term .term{font-size:15px}
+  .rules{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  .rule{display:grid;gap:6px;align-content:start;padding:24px 22px;border-radius:24px;background:rgba(23,32,27,.035);box-shadow:inset 0 0 0 1px var(--hair)}
+  .rule .n{font:400 34px/1 var(--serif);font-style:italic;color:var(--sage)}
+  .rule b{font:650 19px/1.25 var(--display);letter-spacing:-.015em}
+  .rule span:last-child{font-size:14.5px;color:var(--muted)}
+  .rule.dark{background:var(--night);box-shadow:none}
+  .rule.dark .n{color:var(--signal)}.rule.dark b{color:#f0ece2}.rule.dark span:last-child{color:#aab7b0}
+  .finale{margin:40px 16px 0;border-radius:40px;background:var(--night);color:#e4ebe6;padding:120px 0 96px;overflow:hidden;position:relative;isolation:isolate}
+  .finale::before{content:"";position:absolute;inset:auto -10% -40% 30%;height:80%;background:radial-gradient(closest-side,rgba(227,171,44,.16),rgba(227,171,44,0));z-index:-1}
+  .finale-grid{display:grid;grid-template-columns:1fr auto;gap:40px;align-items:center}
+  .finale h2{color:#f5f1e8;font-size:clamp(44px,6vw,88px);max-width:16ch}
+  .finale h2 .serif{color:var(--signal)}
+  .finale .lede{color:#aab7b0}
+  .finale .lede code{color:#e4ebe6}
+  .finale .eyebrow{color:#f5f1e8;background:rgba(245,241,232,.1);box-shadow:inset 0 0 0 1px rgba(245,241,232,.18)}
+  .ic-finale{width:380px;margin:0 1% 0 0}
+  .btn.signal{background:var(--signal);color:#1d1a10}
+  .btn.signal .pod{background:rgba(29,26,16,.12)}
+  .btn.ghost-light{background:transparent;color:#f5f1e8;box-shadow:inset 0 0 0 1px rgba(245,241,232,.22);padding-left:22px}
+  .btn.ghost-light .pod{background:rgba(245,241,232,.1)}
+  .finale-term{margin-top:56px;padding:24px 26px;border-radius:22px;background:var(--night-2);box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);overflow-x:auto;white-space:pre}
+  .finale-credits{grid-template-columns:repeat(4,1fr);margin-top:40px;gap:24px}
+  .finale-credits b{color:#f5f1e8}.finale-credits span{color:#aab7b0}
   /* the story */
   .idea-line{margin:22px 0 0;font:400 clamp(30px,3.6vw,46px)/1.1 var(--serif);font-style:italic;letter-spacing:-.01em}
   .idea-line .rot{color:var(--ink)}
@@ -279,6 +311,11 @@
   .kinds-sm{margin-top:4px}
   .kinds-sm .kind{font-size:12px;padding:7px 11px}
   #ideas{margin:14px 0 0}
+  .idea-chip{display:inline-flex;align-items:center;gap:8px;padding:6px 14px 6px 8px}
+  #glance .split.top{grid-template-columns:auto 1fr;gap:32px}
+  #ideas{flex-wrap:nowrap}
+  .idea-chip{white-space:nowrap}
+  .idea-chip img{width:28px;height:28px;object-fit:contain;filter:drop-shadow(0 3px 4px rgba(23,32,27,.18))}
 
   /* entry: heavy fade-up */
   .rv{opacity:0;transform:translateY(56px);filter:blur(8px);transition:opacity 1s var(--spring),transform 1s var(--spring),filter 1s var(--spring)}
@@ -306,6 +343,16 @@
 
     .tilt{transform:none}
     .head,.beliefs,.modes,.kit,.install,.asks{grid-template-columns:1fr}
+    .band-grid,.finale-grid{grid-template-columns:1fr;gap:28px}
+    #gamble{padding-top:120px}
+    #gamble .band-bg::after{background:linear-gradient(0deg,rgba(14,20,17,.92) 0%,rgba(14,20,17,.8) 55%,rgba(14,20,17,.55) 100%)}
+    .rules{grid-template-columns:1fr 1fr;gap:10px}
+    .finale{margin:24px 8px 0;border-radius:28px;padding:80px 0 64px}
+    .finale-credits{grid-template-columns:1fr 1fr}
+    .ic-finale{width:160px;justify-self:end;margin:-12px 0 0}
+    .finale-term{font-size:12px}
+    #glance .split.top{grid-template-columns:1fr}
+    #ideas{flex-wrap:wrap}
     .ask-you{font-size:23px}
     .head{gap:20px;margin-bottom:48px}
     .split,.ask-opts{grid-template-columns:1fr;gap:20px}
@@ -336,26 +383,25 @@
 <header class="nav" id="nav">
   <a class="brand" href="#top" aria-label="Hoist, back to top"><span class="mark" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>Hoist</a>
   <nav class="links" aria-label="Sections">
-    <a href="#questions">The story</a><a href="#answers">How it helps</a><a href="#modes">Ask or autopilot</a><a href="#bento">Bento MADR</a><a href="#install">Install</a>
+    <a href="#glance">How it works</a><a href="#answers">Why it works</a><a href="#modes">Ask or autopilot</a><a href="#bento">Bento MADR</a><a href="#install">Install</a>
   </nav>
   <a class="btn primary" href="index.html#/">Try it with an idea <span class="pod"><svg viewBox="0 0 16 16"><path d="M5 11 11 5M6 5h5v5"/></svg></span></a>
   <button class="burger" id="burger" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="overlay"><span></span><span></span></button>
 </header>
 <nav class="overlay" id="overlay" aria-label="Menu">
-  <a href="#questions">The story</a><a href="#answers">How it helps</a><a href="#modes">Ask or autopilot</a><a href="#bento">Bento MADR</a><a href="#install">Install</a><a href="index.html#/">Try it with an idea ↗</a>
+  <a href="#glance">How it works</a><a href="#answers">Why it works</a><a href="#modes">Ask or autopilot</a><a href="#bento">Bento MADR</a><a href="#install">Install</a><a href="index.html#/">Try it with an idea ↗</a>
 </nav>
 
 <main id="top">
   <section class="hero" aria-labelledby="h1">
     <div class="hero-bg" id="hero-bg" data-video="" aria-hidden="true">
-      <img src="images/desk.webp" width="1600" height="1067" alt="" fetchpriority="high">
+      <img src="images/idea-desk.webp" width="1600" height="1067" alt="" fetchpriority="high">
     </div>
     <div class="wrap">
       <div class="hero-copy">
-        <span class="eyebrow rv"><i></i>Meta Global AI Developer Hackathon</span>
-        <h1 id="h1" class="rv d1">You've got a <span class="serif">great idea.</span></h1>
-        <p class="idea-line rv d2" aria-label="Cake pre-orders, a dog-walking app, a paid newsletter, the next big thing."><span class="rot" aria-hidden="true"><span class="on">Cake pre-orders.</span><span>An app for dog walkers.</span><span>A paid newsletter.</span><span>The next big thing.</span></span></p>
-        <p class="lede rv d2">You open your agent and start building. Soon it starts asking you things. Option one, option two, option three. Hoist makes sure you know what you're saying yes to.</p>
+        <p class="idea-line rv" aria-label="You've got a great idea: cake pre-orders, a dog-walking app, a paid newsletter, the next big thing.">You've got a great idea: <span class="rot" aria-hidden="true"><span class="on">cake pre-orders.</span><span>a dog-walking app.</span><span>a paid newsletter.</span><span>the next big thing.</span></span></p>
+        <h1 id="h1" class="rv d1">Stop gambling on your <span class="serif">agent's options.</span></h1>
+        <p class="lede rv d2">Your agent asks: option one, two or three? Some of those answers take weeks to undo. Hoist lifts what each one means for you to the surface, so you decide at a glance.</p>
         <div class="ctas rv d3">
           <a class="btn primary" href="index.html#/">Try it with an idea <span class="pod"><svg viewBox="0 0 16 16"><path d="M5 11 11 5M6 5h5v5"/></svg></span></a>
           <a class="btn ghost" href="#install">Install <span class="pod"><svg viewBox="0 0 16 16"><path d="M8 3v9M4 8l4 4 4-4"/></svg></span></a>
@@ -365,85 +411,31 @@
     </div>
   </section>
 
-  <div class="wrap">
-    <section id="questions" aria-labelledby="q-h">
-      <span class="sec-num" aria-hidden="true">01</span>
-      <div class="head">
-        <div>
-          <span class="eyebrow rv"><i></i>The questions come</span>
-          <h2 id="q-h" class="rv d1">Option one. Option two. <span class="serif">Option three.</span></h2>
-        </div>
-        <div class="head-side"><img class="ic obj ic-head" src="images/door.webp" width="503" height="560" alt="" aria-hidden="true" loading="lazy">
-        <p class="lede rv d2">Whatever you build, your agent will ask. Most of all at the start, when the answers shape everything after. And most of the time, you pick the one that sounds right.</p>
-        </div>
-      </div>
-      <div class="bezel rv"><div class="core split">
-        <div>
-          <h3>A real question, from a real bakery idea</h3>
-          <p class="muted-p">Maya wants customers to pre-order cakes online. Her agent needs to know when they pay. Three options, one line each, and a "Recommended" on one of them.</p>
-          <p class="muted-p">Does a deposit scare off her regulars? What happens on a busy Saturday when someone doesn't show up? The question doesn't say.</p>
-        </div>
-        <div class="term-box" role="group" aria-label="An agent asking a question with three options">
-          <div class="term-head" aria-hidden="true"><i></i><i></i><i></i><span style="margin-left:8px">muse code · crumb-and-co</span></div>
-<pre class="term" id="term"><span class="ln"><span class="p">$</span><span>muse "let customers pre-order cakes online for pickup"</span></span><span class="ln"><span class="p">·</span><span class="dim">reading the project, planning the change…</span></span><span class="ln"><span class="p">?</span><span>When should customers pay for a custom cake they order online?</span></span><span class="ln"><span class="p"> </span><span>1. Pay at pickup, no online charge</span></span><span class="ln"><span class="p"> </span><span>2. Small deposit online, remainder at pickup <span class="dim">(Recommended)</span></span></span><span class="ln"><span class="p"> </span><span>3. Full payment online at time of order</span></span><span class="ln"><span class="p">❯</span><span class="hl">uh… two?</span></span></pre>
-        </div>
-      </div></div>
-    </section>
-  </div>
-
-  <section class="band" id="undo" aria-labelledby="undo-h">
+  <section class="band" id="gamble" aria-labelledby="gamble-h">
     <div class="band-bg" aria-hidden="true"><img src="images/yes.webp" width="1600" height="1067" alt="" loading="lazy"></div>
-    <span class="sec-num" aria-hidden="true">02</span>
-    <div class="wrap">
-      <span class="eyebrow rv"><i></i>The catch</span>
-      <h2 id="undo-h" class="rv d1">What if that one was <span class="serif">hard to undo?</span></h2>
-      <p class="band-cap rv d2">Some questions are small. Some take weeks to walk back: how customers pay, what paying readers were promised, where the data lives. <b>In the chat they all look the same.</b> You can keep asking it to explain. Ten messages later, you're still guessing.</p>
+    <span class="sec-num" aria-hidden="true">01</span>
+    <div class="wrap band-grid">
+      <div>
+        <span class="eyebrow rv"><i></i>The gamble</span>
+        <h2 id="gamble-h" class="rv d1">“Uh… <span class="serif">two?”</span></h2>
+        <p class="band-cap rv d2">That's how most hard calls get made with an agent. One line per option, a "Recommended" on one of them, and no word on what it costs you later. <b>In the chat, the choice you'll regret looks exactly like the harmless one.</b></p>
+      </div>
+      <div class="term-box band-term rv d2" role="group" aria-label="An agent asking a question with three options">
+        <div class="term-head" aria-hidden="true"><i></i><i></i><i></i><span style="margin-left:8px">muse code · crumb-and-co</span></div>
+<pre class="term" id="term"><span class="ln"><span class="p">?</span><span>When should customers pay for a custom cake?</span></span><span class="ln"><span class="p"> </span><span>1. Pay at pickup</span></span><span class="ln"><span class="p"> </span><span>2. Small deposit online <span class="dim">(Recommended)</span></span></span><span class="ln"><span class="p"> </span><span>3. Full payment online</span></span><span class="ln"><span class="p">❯</span><span class="hl">2</span></span><span class="ln"><span class="p">·</span><span class="dim">Refunds? No-shows? Regulars? Nobody said.</span></span></pre>
+      </div>
     </div>
   </section>
 
   <div class="wrap">
-    <section class="after-band" id="believe" aria-labelledby="rules-h">
-      <span class="sec-num" aria-hidden="true">03</span>
-      <div class="head intro">
+    <section id="glance" class="after-band" aria-labelledby="gl-h">
+      <span class="sec-num" aria-hidden="true">02</span>
+      <div class="head wide"><img class="ic obj ic-wide" src="images/hook.webp" width="373" height="560" alt="" aria-hidden="true" loading="lazy">
         <div>
-          <span class="eyebrow rv"><i></i>What we believe</span>
-          <h2 id="rules-h" class="rv d1">It's okay to stop <span class="serif">and ask.</span></h2>
+          <span class="eyebrow rv"><i></i>How it works</span>
+          <h2 id="gl-h" class="rv d1">Hoist what matters. <span class="serif">Decide at a glance.</span></h2>
         </div>
-        <img class="ic obj ic-hand" src="images/hand.webp" width="355" height="560" alt="" aria-hidden="true" loading="lazy">
-      </div>
-      <div class="beliefs">
-        <div class="bezel belief rv"><div class="core"><span class="n" aria-hidden="true">i</span><h3>It's okay to pause.</h3><p>A pause costs a minute; a wrong call can cost weeks. Hoist steps in only at the questions that are hard to walk back.</p></div></div>
-        <div class="bezel belief rv d1"><div class="core"><span class="n" aria-hidden="true">ii</span><h3>It's okay to ask dumb questions.</h3><p>Every option comes with an everyday analogy, what living with it is like, and the jargon explained. No question is too basic.</p></div></div>
-        <div class="bezel belief rv"><div class="core"><span class="n" aria-hidden="true">iii</span><h3>It's okay to take your time.</h3><p>Decide later, send it back to chat, or pick for now. The record says why, so changing course later is a plan, not a regret.</p></div></div>
-        <div class="bezel dark belief rv d1"><div class="core"><span class="n" aria-hidden="true">iv</span><h3>It's not okay to say yes blindly.</h3><p>Speed is fine. Silence isn't: every hard call, yours or the agent's, goes on the record.</p></div></div>
-      </div>
-    </section>
-  </div>
-
-  <div class="wrap">
-    <section id="answers" aria-labelledby="ans-h">
-      <span class="sec-num" aria-hidden="true">04</span>
-      <div class="head wide">
-        <div>
-          <span class="eyebrow rv"><i></i>You don't even have to ask</span>
-          <h2 id="ans-h" class="rv d1">The answers are there <span class="serif">before you ask.</span></h2>
-        </div>
-        <p class="lede rv d2">The questions you'd have about any decision are known. Hoist answers them up front, built on how good decisions are already made: the decision records engineering teams keep, and the research behind the decision aids doctors use with patients. We hoist all of it to the surface.</p>
-      </div>
-      <div class="asks" id="asks" role="list"></div>
-      <p class="sources rv"><b>Built on</b> <a href="https://adr.github.io/madr/">MADR</a> decision records · <a href="https://decisionaid.ohri.ca/">Ottawa decision aids</a> and the IPDAS standards: every option with its benefits <em>and</em> its harms · contrastive explanations (Miller, 2017): what would change the answer · cognitive forcing (Buçinca et al., 2021): you weigh the options before you see the AI's pick · progressive disclosure: a glance first, depth on request</p>
-    </section>
-  </div>
-
-  <div class="wrap">
-    <section id="glance" aria-labelledby="gl-h">
-      <span class="sec-num" aria-hidden="true">05</span>
-      <div class="head">
-        <div>
-          <span class="eyebrow rv"><i></i>At a glance, then deeper</span>
-          <h2 id="gl-h" class="rv d1">See the impact <span class="serif">before you pick.</span></h2>
-        </div>
-        <p class="lede rv d2">When a hard question comes, the agent asks how you want to decide. Pick Hoist and the decision opens as one canvas. Glance at the options in plain words, unpack one, then weigh it: your answers, what would flip the pick, and a critic who argues with your choice.</p>
+        <p class="lede rv d2">Before a hard call, the agent stops and asks how you want to decide. Pick Hoist and the question opens as one canvas: every option in plain words, what it costs you later, what would flip the pick, and a critic who argues with your choice. Try it on a real draft.</p>
       </div>
       <div class="bezel rv"><div class="core">
         <div class="split top">
@@ -462,14 +454,50 @@
   </div>
 
   <div class="wrap">
+    <section id="answers" aria-labelledby="ans-h">
+      <span class="sec-num" aria-hidden="true">03</span>
+      <div class="head">
+        <div>
+          <span class="eyebrow rv"><i></i>Why it works</span>
+          <h2 id="ans-h" class="rv d1">Answered <span class="serif">before you ask.</span></h2>
+        </div>
+        <div class="head-side"><img class="ic obj ic-head" src="images/doors.webp" width="560" height="434" alt="" aria-hidden="true" loading="lazy">
+        <p class="lede rv d2">The questions behind any good decision are known. Hoist answers them up front, on the same rules doctors use to explain treatment choices and engineering teams use to record decisions.</p>
+        </div>
+      </div>
+      <div class="asks" id="asks" role="list"></div>
+      <p class="sources rv"><b>Built on</b> <a href="https://adr.github.io/madr/">MADR</a> decision records · <a href="https://decisionaid.ohri.ca/">Ottawa decision aids</a> and the IPDAS standards: every option with its benefits <em>and</em> its harms · contrastive explanations (Miller, 2017): what would change the answer · cognitive forcing (Buçinca et al., 2021): you weigh the options before you see the AI's pick · progressive disclosure: a glance first, depth on request</p>
+    </section>
+  </div>
+
+  <div class="wrap">
+    <section id="believe" aria-labelledby="rules-h">
+      <span class="sec-num" aria-hidden="true">04</span>
+      <div class="head intro">
+        <div>
+          <span class="eyebrow rv"><i></i>What we believe</span>
+          <h2 id="rules-h" class="rv d1">It's okay to stop <span class="serif">and ask.</span></h2>
+        </div>
+        <img class="ic obj ic-hand" src="images/hand.webp" width="355" height="560" alt="" aria-hidden="true" loading="lazy">
+      </div>
+      <div class="rules">
+        <div class="rule rv"><span class="n" aria-hidden="true">i</span><b>It's okay to pause.</b><span>A pause costs a minute. A wrong call costs weeks.</span></div>
+        <div class="rule rv d1"><span class="n" aria-hidden="true">ii</span><b>No question is too basic.</b><span>Analogies, plain words, the jargon explained.</span></div>
+        <div class="rule rv d2"><span class="n" aria-hidden="true">iii</span><b>Take your time.</b><span>Decide later or pick for now. The record says why.</span></div>
+        <div class="rule dark rv d3"><span class="n" aria-hidden="true">iv</span><b>Never a blind yes.</b><span>Every hard call, yours or the agent's, goes on the record.</span></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="wrap">
     <section id="outlive" aria-labelledby="out-h">
-      <span class="sec-num" aria-hidden="true">06</span>
+      <span class="sec-num" aria-hidden="true">05</span>
       <div class="head">
         <div>
           <span class="eyebrow rv"><i></i>Written down, with the why</span>
           <h2 id="out-h" class="rv d1">Your decisions outlive <span class="serif">your subscription.</span></h2>
         </div>
-        <p class="lede rv d2">You commit, and the agent carries on with your call. Every decision lands in your repo as a plain record. So when you run out of credits and switch agents, or come back in six months, nobody trips over what you already decided.</p>
+        <p class="lede rv d2">Every call lands in your repo as a plain record. Run out of credits, switch agents, come back in six months: nobody trips over what you already decided.</p>
       </div>
       <div class="bezel rv"><div class="core split">
         <div>
@@ -477,7 +505,7 @@
             <div class="term-head" aria-hidden="true"><i></i><i></i><i></i><span style="margin-left:8px">three weeks later</span></div>
 <pre class="term" id="term2"><span class="ln"><span class="p">!</span><span class="hl">Usage limit reached. Switching agents.</span></span><span class="ln"><span class="p">$</span><span>another-agent "add a holiday cake menu"</span></span><span class="ln"><span class="p">·</span><span class="dim">reading docs/decisions/…</span></span><span class="ln"><span class="p">✓</span><span class="ok">0001 Take a small deposit online, rest at pickup</span></span><span class="ln"><span class="p">✓</span><span class="ok">0002 Hourly pickup slots, a few cakes per hour</span></span><span class="ln"><span class="p">◼</span><span>Holiday orders will use the same deposit and slots.</span></span></pre>
           </div>
-          <img class="ic obj rec-art" src="images/record.webp" width="560" height="477" alt="" aria-hidden="true" loading="lazy">
+          <img class="ic obj rec-art" src="images/handoff.webp" width="560" height="337" alt="" aria-hidden="true" loading="lazy">
         </div>
 <pre class="madr" aria-label="Excerpt of a decision record"><span class="k">status:</span> accepted   <span class="k">door:</span> heavy
 <span class="k">deciders:</span> Maya   <span class="k">confidence:</span> medium
@@ -495,26 +523,25 @@
 
   <div class="wrap">
     <section id="modes" aria-labelledby="modes-h">
+      <span class="sec-num" aria-hidden="true">06</span>
       <div class="head">
         <div>
           <span class="eyebrow rv"><i></i>Ask or autopilot</span>
           <h2 id="modes-h" class="rv d1">Fast is good. <span class="serif">Blind yes is not.</span></h2>
         </div>
-        <p class="lede rv d2">Ask when you want to think it through. Autopilot when you need to ship tonight. Either way, every hard-to-undo call is written down with its reasons, for you to review in the morning.</p>
+        <p class="lede rv d2">Ask when you want to think it through. Autopilot when you need to ship tonight: the agent decides, and Hoist writes down every call for you to review in the morning.</p>
       </div>
       <div class="modes">
         <div class="bezel mode rv"><div class="core"><img class="ic obj ic-card" src="images/switch.webp" width="543" height="560" alt="" aria-hidden="true" loading="lazy">
           <span class="tag">Ask · default</span>
           <h3>You decide</h3>
           <p>The agent pauses at hard-to-undo calls and waits while you see what each option means for you.</p>
-          <ul><li><span>Options in plain words, with analogies</span></li><li><span>Your answers shape the comparison</span></li><li><span>Commit once, the agent continues</span></li></ul>
           <div class="cmd">python3 hoist.py mode ask</div>
         </div></div>
         <div class="bezel dark mode rv d1"><div class="core">
           <span class="tag">Autopilot</span>
           <h3>The agent decides, on the record</h3>
-          <p>No pause. The agent makes the call and Hoist writes it down, marked low confidence until you review it.</p>
-          <ul><li><span>Every call becomes a decision record</span></li><li><span>Any agent can log with <code>hoist log</code></span></li><li><span>Review and revisit when you're ready</span></li></ul>
+          <p>No pause. Every call becomes a decision record, marked low confidence until you review it. Any agent can log with <code>hoist log</code>.</p>
           <div class="cmd">python3 hoist.py mode autopilot</div>
         </div></div>
       </div>
@@ -528,7 +555,7 @@
         <div class="rv">
           <span class="eyebrow"><i></i>Supports Bento MADR</span>
           <h2 id="bento-h">Every compartment answers <span class="serif">a question.</span></h2>
-          <p class="lede">Every moment and record is drawn with <a href="https://github.com/leadui/bento-madr">Bento MADR</a>, an open library that lays a decision out as a bento box. Each compartment exists to answer one question you would have asked: what are the options, what does it cost later, what would change the answer, who disagrees. Hoist picks the canvas from the kind of decision and adds its own compartments with the kit's <code>define()</code>.</p>
+          <p class="lede">The canvases come from <a href="https://github.com/leadui/bento-madr">Bento MADR</a>, an open library that lays a decision out as a bento box, one compartment per question you'd ask. Use it for your own decision records.</p>
           <div class="links-row">
             <a class="btn primary" href="https://leadui.github.io/bento-madr/">Open the catalog <span class="pod"><svg viewBox="0 0 16 16"><path d="M5 11 11 5M6 5h5v5"/></svg></span></a>
             <a class="btn ghost" href="https://github.com/leadui/bento-madr">GitHub <span class="pod"><svg viewBox="0 0 16 16"><path d="M5 11 11 5M6 5h5v5"/></svg></span></a>
@@ -543,29 +570,29 @@
     </section>
   </div>
 
-  <div class="wrap">
-    <section id="install" aria-labelledby="install-h">
-      <span class="sec-num" aria-hidden="true">08</span>
-      <div class="head wide"><img class="ic obj ic-wide" src="images/bento.webp" width="533" height="560" alt="" aria-hidden="true" loading="lazy">
+  <section class="finale" id="install" aria-labelledby="install-h">
+    <div class="wrap">
+      <div class="finale-grid">
         <div>
           <span class="eyebrow rv"><i></i>Install</span>
-          <h2 id="install-h" class="rv d1" aria-label="Three commands before your next big question.">Three commands before your next <span class="rot serif" aria-hidden="true"><span class="on">big question.</span><span>option three.</span><span>hard-to-undo call.</span></span></h2>
+          <h2 id="install-h" class="rv d1">Your agent will ask again. <span class="serif">Next time, know before you pick.</span></h2>
+          <p class="lede rv d2">Two commands add a hook, a skill and a <code>docs/decisions/</code> folder to your project. The decision page runs on your machine. No API key.</p>
+          <div class="ctas rv d3">
+            <a class="btn signal" href="index.html#/">Try it with an idea <span class="pod"><svg viewBox="0 0 16 16"><path d="M5 11 11 5M6 5h5v5"/></svg></span></a>
+            <a class="btn ghost-light" href="https://github.com/leadui/hoist-decisions">GitHub <span class="pod"><svg viewBox="0 0 16 16"><path d="M5 11 11 5M6 5h5v5"/></svg></span></a>
+          </div>
         </div>
-        <p class="lede rv d2">Hoist adds a hook, a skill and a <code>docs/decisions/</code> folder to your project. The decision page runs on your machine. Whatever you build, the questions will come.</p>
+        <img class="ic obj ic-finale" src="images/dice.webp" width="560" height="305" alt="" aria-hidden="true" loading="lazy">
       </div>
-      <div class="install">
-        <div class="bezel dark rv"><div class="core">
-<pre class="term play"><span class="ln"><span class="p">$</span><span>git clone https://github.com/leadui/hoist-decisions.git</span></span><span class="ln"><span class="p">$</span><span>python3 hoist-decisions/hoist.py install /path/to/project</span></span><span class="ln"><span class="p">$</span><span>python3 hoist-decisions/hoist.py serve /path/to/project</span></span><span class="ln"><span class="p"> </span><span class="dim"># optional: let the agent decide, with every call recorded</span></span><span class="ln"><span class="p">$</span><span>python3 hoist-decisions/hoist.py mode autopilot /path/to/project</span></span><span class="ln"><span class="p"> </span><span class="dim"># optional, with a Muse Spark key: an independent drafter + the live critic</span></span><span class="ln"><span class="p">$</span><span>python3 hoist-decisions/hoist.py drafter muse /path/to/project</span></span></pre>
-        </div></div>
-        <div class="bezel rv d1"><div class="core credits">
-          <div><b>Muse Code</b><span>The agent Hoist works with: it stops before the hard calls, waits for yours, and carries on.</span></div>
-          <div><b>Muse Spark</b><span>Optional. Add a key and it drafts every decision as an independent second opinion, and powers the live critic. Without one, your agent drafts.</span></div>
-          <div><b>Bento MADR</b><span>Draws each moment and record as a canvas you can read at a glance.</span></div>
-          <div><b>Oleg Balakirev</b><span>Built Hoist and Bento MADR for the Meta Global AI Developer Hackathon.</span></div>
-        </div></div>
+<pre class="term play finale-term rv"><span class="ln"><span class="p">$</span><span>git clone https://github.com/leadui/hoist-decisions.git</span></span><span class="ln"><span class="p">$</span><span>python3 hoist-decisions/hoist.py install /path/to/project</span></span><span class="ln"><span class="p"> </span><span class="dim"># optional: autopilot, with every call recorded</span></span><span class="ln"><span class="p">$</span><span>python3 hoist-decisions/hoist.py mode autopilot /path/to/project</span></span><span class="ln"><span class="p"> </span><span class="dim"># optional, with a Muse Spark key: an independent drafter + the live critic</span></span><span class="ln"><span class="p">$</span><span>python3 hoist-decisions/hoist.py drafter muse /path/to/project</span></span></pre>
+      <div class="credits finale-credits rv">
+        <div><b>Muse Code</b><span>Stops before the hard calls, waits for yours, carries on.</span></div>
+        <div><b>Muse Spark</b><span>Optional: an independent drafter and the live critic.</span></div>
+        <div><b>Bento MADR</b><span>Draws every decision as a canvas you read at a glance.</span></div>
+        <div><b>Oleg Balakirev</b><span>Built Hoist and Bento MADR for the Meta Global AI Developer Hackathon.</span></div>
       </div>
-    </section>
-  </div>
+    </div>
+  </section>
 
   <div class="wrap">
     <footer>
@@ -622,7 +649,7 @@
     var v = document.createElement("video");
     v.muted = true; v.loop = true; v.playsInline = true; v.autoplay = true;
     v.setAttribute("muted", ""); v.setAttribute("playsinline", ""); v.preload = "auto";
-    v.poster = "images/desk.webp"; v.src = clip;
+    v.poster = "images/idea-desk.webp"; v.src = clip;
     v.addEventListener("canplay", function () { v.classList.add("on"); }, { once: true });
     bgBox.appendChild(v);
     var p = v.play(); if (p && p.catch) p.catch(function () {});
@@ -733,7 +760,8 @@
       ? "<b>A real decision, drafted by Muse Spark.</b> Tap an option to pick it, or switch the canvas: the options stay the same, only the layout changes."
       : "<b>Same decision, as a " + K.util.esc(K.templates[state.kind].name.toLowerCase()) + " canvas.</b> Only the layout changes; ✦ marks the one Muse Spark chose.";
     $("ideas").innerHTML = state.scen.map(function (s) {
-      return '<button type="button" class="kind" data-idea="' + K.util.esc(s.id) + '" aria-pressed="' + (s.id === state.idea) + '">' + K.util.esc(s.idea) + "</button>";
+      return '<button type="button" class="kind idea-chip" data-idea="' + K.util.esc(s.id) + '" aria-pressed="' + (s.id === state.idea) + '">' +
+        (s.icon ? '<img src="images/' + K.util.esc(s.icon) + '.webp" alt="" aria-hidden="true">' : "") + K.util.esc(s.idea) + "</button>";
     }).join("");
     var sc = state.scen.filter(function (s) { return s.id === state.idea; })[0];
     $("idea-note").textContent = sc ? sc.blurb + " The agent's task: “" + sc.session.task + ".”" : "";

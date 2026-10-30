@@ -179,6 +179,7 @@
   .idea{display:grid;gap:4px;align-content:start;text-align:left}
   .idea[aria-pressed="true"]{border:2px solid var(--bk-signal);padding:11px 13px}
   .idea small{margin:0}
+  .idea img{width:56px;height:56px;object-fit:contain;margin:-4px 0 4px -4px;filter:drop-shadow(0 6px 8px rgba(23,32,27,.16))}
   .idea i{font-style:normal;font:500 12px/1.4 var(--bk-mono);color:var(--bk-muted);margin-top:6px}
   @media (max-width: 720px){.ideas{grid-template-columns:1fr}}
   @media (max-width: 560px) {
@@ -1799,6 +1800,7 @@
     var cur = scenario().id;
     return '<div class="ideas" role="group" aria-label="What are you building?">' + list.map(function (sc) {
       return '<button type="button" class="opt idea" data-action="idea" data-v="' + esc(sc.id) + '" aria-pressed="' + (sc.id === cur ? "true" : "false") + '">' +
+        (sc.icon ? '<img src="images/' + esc(sc.icon) + '.webp" alt="" aria-hidden="true">' : "") +
         "<b>" + esc(sc.idea) + "</b><small>" + esc(sc.blurb) + "</small><i>“" + esc(sc.session.task) + "”</i></button>";
     }).join("") + "</div>";
   }

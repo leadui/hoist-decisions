@@ -3914,7 +3914,8 @@
      "custom-cake-options-structure"
     ],
     "total": 3
-   }
+   },
+   "icon": "cake"
   },
   {
    "id": "dogwalker",
@@ -5869,7 +5870,8 @@
      "client-identity-model"
     ],
     "total": 3
-   }
+   },
+   "icon": "leash"
   },
   {
    "id": "newsletter",
@@ -8027,7 +8029,8 @@
      "pricing-and-billing-structure"
     ],
     "total": 3
-   }
+   },
+   "icon": "envelope"
   }
  ]
 }
