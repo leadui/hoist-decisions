@@ -34,10 +34,10 @@ Records bind afterwards: if the agent later tries something that conflicts with 
 
 Requires macOS or Linux, Python 3.9+ (no packages), and [Muse Code](https://dev.meta.ai/resources/blog/build-with-muse-code). No API key needed.
 
-In your project folder:
+In your project folder (the same line works for every project, and updates Hoist):
 
 ```bash
-git clone https://github.com/leadui/hoist-decisions.git ~/hoist-decisions && python3 ~/hoist-decisions/hoist.py install .
+git clone -q https://github.com/leadui/hoist-decisions.git ~/hoist-decisions 2>/dev/null || git -C ~/hoist-decisions pull -q; python3 ~/hoist-decisions/hoist.py install .
 ```
 
 Update later with `git -C ~/hoist-decisions pull`.
