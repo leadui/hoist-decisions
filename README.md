@@ -34,10 +34,13 @@ Records bind afterwards: if the agent later tries something that conflicts with 
 
 Requires macOS or Linux, Python 3.9+ (no packages), and [Muse Code](https://dev.meta.ai/resources/blog/build-with-muse-code). No API key needed.
 
+In your project folder:
+
 ```bash
-git clone https://github.com/leadui/hoist-decisions.git
-python3 hoist-decisions/hoist.py install /path/to/your/project
+git clone https://github.com/leadui/hoist-decisions.git ~/hoist-decisions && python3 ~/hoist-decisions/hoist.py install .
 ```
+
+Update later with `git -C ~/hoist-decisions pull`.
 
 This adds to your project:
 
@@ -61,7 +64,7 @@ A key from [dev.meta.ai](https://dev.meta.ai) adds what an agent drafting for it
 ```bash
 export MODEL_API_KEY=...                                         # in the shell you start Muse Code from
 security add-generic-password -a "$USER" -s hoist-meta-api -w    # or, on macOS, once in the Keychain
-python3 hoist-decisions/hoist.py drafter muse /path/to/your/project
+python3 ~/hoist-decisions/hoist.py drafter muse .
 ```
 
 `drafter agent` switches back. Without a key Hoist always falls back to the agent.
@@ -121,7 +124,7 @@ The hook (`hoist.py gate`) and the page server start on their own; you rarely ne
 - **The agent never pauses.** Restart Muse Code in the project and trust the folder; hooks load at start.
 - **The page waits on "your agent is writing this moment".** The agent drafts through `hoist brief` and `hoist submit`; if it stopped, ask it to run `hoist brief` and carry on.
 - **You set `drafter muse` but the agent still drafts.** Hoist didn't find a key: export `MODEL_API_KEY` in the shell you start Muse Code from (or add the Keychain entry), then restart Muse Code.
-- **The page doesn't open.** Run `python3 hoist.py serve /path/to/project` and open http://127.0.0.1:7317. If the port is taken, set `HOIST_PORT`.
+- **The page doesn't open.** Run `python3 hoist.py serve /path/to/project` and open http://127.0.0.1:7317. Hoist serves one project at a time on that port: when you work in another project, its page takes the port over by itself (the other project's session stays on disk). If a program that isn't Hoist holds the port, set `HOIST_PORT`.
 - **Start over.** Delete the project's `.hoist/` folder. Records in `docs/decisions/` are yours to keep or remove.
 
 ## Repository

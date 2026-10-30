@@ -295,6 +295,28 @@
   .finale-term{margin-top:56px;padding:24px 26px;border-radius:22px;background:var(--night-2);box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);overflow-x:auto;white-space:pre}
   .finale-credits{grid-template-columns:repeat(4,1fr);margin-top:40px;gap:24px}
   .finale-credits b{color:#f5f1e8}.finale-credits span{color:#aab7b0}
+
+  /* install, one copy away */
+  .copy-cmd{display:flex;align-items:center;gap:10px;width:100%;max-width:640px;border:0;cursor:pointer;text-align:left;border-radius:14px;padding:11px 12px 11px 16px;
+    background:var(--night);color:#e4ebe6;font:400 13px/1.4 var(--mono);box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);transition:transform .4s var(--spring)}
+  .copy-cmd:active{transform:scale(.99)}
+  .copy-cmd .p{color:#6f7f76}
+  .copy-cmd code{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:inherit}
+  .copy-tag{flex:none;font:600 11px/1 var(--body);letter-spacing:.04em;border-radius:999px;padding:7px 11px;background:rgba(255,255,255,.1);color:#f5f1e8}
+  .copy-cmd.done .copy-tag{background:var(--signal);color:#1d1a10}
+  .hero-install{margin-top:28px;max-width:600px}
+  .hero-install .hero-note{margin-top:10px}
+  .install-steps{list-style:none;margin:56px 0 0;padding:0;display:grid;grid-template-columns:1.6fr 1fr 1fr;gap:16px}
+  .install-steps li{display:grid;grid-template-columns:auto 1fr;gap:14px;padding:22px;border-radius:22px;background:var(--night-2);box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
+  .install-steps .n{font:400 30px/1 var(--serif);font-style:italic;color:var(--signal)}
+  .install-steps b{display:block;color:#f5f1e8;font:650 17px/1.3 var(--display);margin-bottom:8px}
+  .install-steps span{color:#aab7b0;font-size:14.5px}
+  .install-steps em{color:#f5f1e8;font-style:normal;font-weight:600}
+  .copy-cmd.big{max-width:none;background:#0d1310;font-size:13.5px;white-space:normal}
+  .copy-cmd.big code{white-space:normal;word-break:break-all}
+  .install-more{display:grid;grid-template-columns:auto 1fr;gap:8px 16px;align-items:center;margin-top:22px;color:#aab7b0;font-size:13.5px}
+  .install-more > span{grid-column:1 / -1;font:500 10.5px/1 var(--mono);letter-spacing:.2em;text-transform:uppercase;color:#7d8a83}
+  .install-more .copy-cmd{background:var(--night-2);max-width:560px}
   /* the story */
   .idea-line{margin:22px 0 0;font:400 clamp(30px,3.6vw,46px)/1.1 var(--serif);font-style:italic;letter-spacing:-.01em}
   .idea-line .rot{color:var(--ink)}
@@ -344,6 +366,9 @@
     .tilt{transform:none}
     .head,.beliefs,.modes,.kit,.install,.asks{grid-template-columns:1fr}
     .band-grid,.finale-grid{grid-template-columns:1fr;gap:28px}
+    .install-steps{grid-template-columns:1fr}
+    .install-more{grid-template-columns:1fr}
+    .install-more small{margin:-2px 0 6px}
     #gamble{padding-top:120px}
     #gamble .band-bg::after{background:linear-gradient(0deg,rgba(14,20,17,.92) 0%,rgba(14,20,17,.8) 55%,rgba(14,20,17,.55) 100%)}
     .rules{grid-template-columns:1fr 1fr;gap:10px}
@@ -406,7 +431,7 @@
           <a class="btn primary" href="index.html#/">Try it with an idea <span class="pod"><svg viewBox="0 0 16 16"><path d="M5 11 11 5M6 5h5v5"/></svg></span></a>
           <a class="btn ghost" href="#install">Install <span class="pod"><svg viewBox="0 0 16 16"><path d="M8 3v9M4 8l4 4 4-4"/></svg></span></a>
         </div>
-        <p class="hero-note rv d3">Works with Muse Code · no API key · runs on your machine</p>
+        <div class="hero-install rv d3"><button type="button" class="copy-cmd" data-copy="git clone https://github.com/leadui/hoist-decisions.git ~/hoist-decisions &amp;&amp; python3 ~/hoist-decisions/hoist.py install ." aria-label="Copy: git clone https://github.com/leadui/hoist-decisions.git ~/hoist-decisions &amp;&amp; python3 ~/hoist-decisions/hoist.py install ."><span class="p" aria-hidden="true">$</span><code>git clone https://github.com/leadui/hoist-decisions.git ~/hoist-decisions &amp;&amp; python3 ~/hoist-decisions/hoist.py install .</code><span class="copy-tag" aria-hidden="true">Copy</span></button><p class="hero-note">Run it in your project folder · Python 3.9+ · works with Muse Code · no API key</p></div>
       </div>
     </div>
   </section>
@@ -576,7 +601,7 @@
         <div>
           <span class="eyebrow rv"><i></i>Install</span>
           <h2 id="install-h" class="rv d1">Your agent will ask again. <span class="serif">Next time, know before you pick.</span></h2>
-          <p class="lede rv d2">Two commands add a hook, a skill and a <code>docs/decisions/</code> folder to your project. The decision page runs on your machine. No API key.</p>
+          <p class="lede rv d2">One command adds a hook, a skill and a <code>docs/decisions/</code> folder to your project. The decision page runs on your machine. No API key.</p>
           <div class="ctas rv d3">
             <a class="btn signal" href="index.html#/">Try it with an idea <span class="pod"><svg viewBox="0 0 16 16"><path d="M5 11 11 5M6 5h5v5"/></svg></span></a>
             <a class="btn ghost-light" href="https://github.com/leadui/hoist-decisions">GitHub <span class="pod"><svg viewBox="0 0 16 16"><path d="M5 11 11 5M6 5h5v5"/></svg></span></a>
@@ -584,7 +609,7 @@
         </div>
         <img class="ic obj ic-finale" src="images/dice.webp" width="560" height="305" alt="" aria-hidden="true" loading="lazy">
       </div>
-<pre class="term play finale-term rv"><span class="ln"><span class="p">$</span><span>git clone https://github.com/leadui/hoist-decisions.git</span></span><span class="ln"><span class="p">$</span><span>python3 hoist-decisions/hoist.py install /path/to/project</span></span><span class="ln"><span class="p"> </span><span class="dim"># optional: autopilot, with every call recorded</span></span><span class="ln"><span class="p">$</span><span>python3 hoist-decisions/hoist.py mode autopilot /path/to/project</span></span><span class="ln"><span class="p"> </span><span class="dim"># optional, with a Muse Spark key: an independent drafter + the live critic</span></span><span class="ln"><span class="p">$</span><span>python3 hoist-decisions/hoist.py drafter muse /path/to/project</span></span></pre>
+<ol class="install-steps rv"><li><span class="n">1</span><div><b>In your project folder, run</b><button type="button" class="copy-cmd big" data-copy="git clone https://github.com/leadui/hoist-decisions.git ~/hoist-decisions &amp;&amp; python3 ~/hoist-decisions/hoist.py install ." aria-label="Copy: git clone https://github.com/leadui/hoist-decisions.git ~/hoist-decisions &amp;&amp; python3 ~/hoist-decisions/hoist.py install ."><span class="p" aria-hidden="true">$</span><code>git clone https://github.com/leadui/hoist-decisions.git ~/hoist-decisions &amp;&amp; python3 ~/hoist-decisions/hoist.py install .</code><span class="copy-tag" aria-hidden="true">Copy</span></button></div></li><li><span class="n">2</span><div><b>Restart Muse Code there</b><span>and trust the folder, so the hook loads.</span></div></li><li><span class="n">3</span><div><b>Build something with real choices</b><span>When the agent asks how you want to decide, pick <em>Decide with Hoist instead</em>. The page opens on its own.</span></div></li></ol><div class="install-more rv"><span>Optional</span><button type="button" class="copy-cmd" data-copy="python3 ~/hoist-decisions/hoist.py mode autopilot ." aria-label="Copy: python3 ~/hoist-decisions/hoist.py mode autopilot ."><span class="p" aria-hidden="true">$</span><code>python3 ~/hoist-decisions/hoist.py mode autopilot .</code><span class="copy-tag" aria-hidden="true">Copy</span></button><small>the agent decides, every call recorded</small><button type="button" class="copy-cmd" data-copy="python3 ~/hoist-decisions/hoist.py drafter muse ." aria-label="Copy: python3 ~/hoist-decisions/hoist.py drafter muse ."><span class="p" aria-hidden="true">$</span><code>python3 ~/hoist-decisions/hoist.py drafter muse .</code><span class="copy-tag" aria-hidden="true">Copy</span></button><small>with a Muse Spark key: an independent drafter + the live critic</small><button type="button" class="copy-cmd" data-copy="git -C ~/hoist-decisions pull" aria-label="Copy: git -C ~/hoist-decisions pull"><span class="p" aria-hidden="true">$</span><code>git -C ~/hoist-decisions pull</code><span class="copy-tag" aria-hidden="true">Copy</span></button><small>update Hoist</small></div>
       <div class="credits finale-credits rv">
         <div><b>Muse Code</b><span>Stops before the hard calls, waits for yours, carries on.</span></div>
         <div><b>Muse Spark</b><span>Optional: an independent drafter and the live critic.</span></div>
@@ -622,6 +647,23 @@
   burger.addEventListener("click", function () { setMenu(!document.body.classList.contains("menu-open")); });
   $("overlay").addEventListener("click", function (e) { if (e.target.closest("a")) setMenu(false); });
   document.addEventListener("keydown", function (e) { if (e.key === "Escape") setMenu(false); });
+
+
+  /* install commands copy in one click */
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest(".copy-cmd");
+    if (!b) return;
+    var text = b.getAttribute("data-copy"), tag = b.querySelector(".copy-tag");
+    var done = function () { b.classList.add("done"); if (tag) tag.textContent = "Copied"; setTimeout(function () { b.classList.remove("done"); if (tag) tag.textContent = "Copy"; }, 1600); };
+    var fallback = function () {
+      var t = document.createElement("textarea"); t.value = text; t.setAttribute("readonly", ""); t.style.position = "fixed"; t.style.opacity = "0";
+      document.body.appendChild(t); t.select();
+      try { if (document.execCommand("copy")) done(); } catch (x) {}
+      t.remove();
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback);
+    else fallback();
+  });
 
   /* entry reveals and the terminal playback */
   var terms = [].slice.call(document.querySelectorAll(".term:not(.play)"));

@@ -16,7 +16,7 @@ and nothing leaves the machine. With a Muse Spark key (MODEL_API_KEY or the macO
 "hoist-meta-api") and `drafter muse`, Muse Spark drafts them and the live critic works; those calls send the
 task and an excerpt of the project's manifest, config and schema files to api.meta.ai.
 """
-import argparse, concurrent.futures, json, os, re, shlex, shutil, socket, subprocess, sys, threading, time, urllib.request, webbrowser
+import argparse, concurrent.futures, json, os, re, shlex, shutil, signal, socket, subprocess, sys, threading, time, urllib.request, webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -367,7 +367,7 @@ def ensure_server(root):
     """Make sure the page server for this project is answering; start it detached if needed."""
     if serving(root):
         return True
-    if port_open():  # something else holds the port, likely a server for another project
+    if port_open() and not take_over_port(root):  # held by something that isn't a Hoist page: leave it alone
         return False
     if os.fork() == 0:  # double fork, so cancelling the hook can't take the server down with it
         os.setsid()
@@ -389,12 +389,46 @@ def port_open():
         return s.connect_ex(("127.0.0.1", PORT)) == 0
 
 
-def serving(root):
+def page_state():
     try:
         with urllib.request.urlopen(f"{URL}/api/state", timeout=1) as r:
-            return json.loads(r.read()).get("root") == str(root)
+            return json.loads(r.read())
     except (OSError, ValueError):
+        return None
+
+
+def serving(root):
+    return (page_state() or {}).get("root") == str(root)
+
+
+def take_over_port(root):
+    """The port holds another project's Hoist page (one port serves one project). The person is working here now,
+    so that page steps aside; its session stays on disk and its own hook takes the port back when it runs."""
+    other = page_state()
+    if not other or "root" not in other:
         return False
+    req = urllib.request.Request(f"{URL}/api/shutdown", data=b"{}", method="POST", headers={"Content-Type": "application/json", "Origin": URL})
+    try:
+        urllib.request.urlopen(req, timeout=2).read()
+    except OSError:
+        pass
+    for attempt in range(60):
+        if not port_open():
+            return True
+        if attempt == 20:  # a page from an older Hoist has no shutdown route: stop that server process directly
+            try:
+                pids = subprocess.run(["lsof", "-tiTCP:%d" % PORT, "-sTCP:LISTEN"], capture_output=True, text=True, timeout=5).stdout.split()
+            except (OSError, subprocess.SubprocessError):
+                pids = []
+            for pid in pids:
+                cmd = subprocess.run(["ps", "-o", "command=", "-p", pid], capture_output=True, text=True).stdout
+                if "hoist.py" in cmd and " serve" in cmd:
+                    try:
+                        os.kill(int(pid), signal.SIGTERM)
+                    except (OSError, ValueError):
+                        pass
+        time.sleep(0.1)
+    return not port_open()
 
 
 # ---------- the local page ----------
@@ -439,6 +473,9 @@ def make_handler(root):
             if self.headers.get("Origin") not in allowed:
                 return self.send(403, {"error": "Requests must come from the Hoist page."})
             body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))) or "{}")
+            if self.path == "/api/shutdown":  # another project's hook needs the port; this project's session stays on disk
+                threading.Timer(0.2, os._exit, (0,)).start()
+                return self.send(200, {"stopping": str(root)})
             if self.path == "/api/session":
                 ses = load_session(root)
                 if ses and ses["status"] in ("planning", "drafting"):
@@ -605,8 +642,13 @@ def wait_session(root):
     print(f"{line}\nHOIST: paused while you make this task's lasting decisions\n  Task:       {ses['task']}\n"
           f"  Decide at:  {URL}/#/session\n  " + ("Your agent drafted them" if ses.get("drafter") == "agent" else "Muse Spark prepares them first")
           + f"; the agent continues when you're done.\n{line}", flush=True)
-    error_since = None
+    error_since, checked = None, 0.0
     while True:
+        if time.time() - checked > 5:  # the page must show this project; take it back if another project's page holds the port
+            checked = time.time()
+            if not serving(root) and ensure_server(root):
+                print(f"HOIST: the decision page now shows this project: {URL}/#/session", flush=True)
+                webbrowser.open(f"{URL}/#/session")
         ses = session_state(root)
         if ses["status"] == "error":
             if not error_since:
