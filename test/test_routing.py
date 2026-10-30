@@ -72,9 +72,11 @@ def test_live_sequence():
         root = Path(tmp)
         prompt = {"hook_event_name": "UserPromptSubmit", "cwd": str(root),
                   "prompt": "Add user accounts with saved projects. Use MongoDB."}
-        with mock.patch.object(hoist.sys, "stdin", io.StringIO(json.dumps(prompt))), \
-             contextlib.redirect_stdout(io.StringIO()):
+        said = io.StringIO()
+        with mock.patch.object(hoist.sys, "stdin", io.StringIO(json.dumps(prompt))), contextlib.redirect_stdout(said):
             check("prompt-submit returns 0", hoist.gate() == 0)
+        check("every prompt tells the agent to route hard choices, skill or no skill",
+              "Decide with Hoist instead" in said.getvalue() and "even when they only ask what is best" in said.getvalue(), said.getvalue()[:120])
         check("prompt-submit saves last_task.txt",
               (root / ".hoist" / "last_task.txt").read_text().startswith("Add user accounts"))
         rc, out, calls = run_gate(routing_payload("Decide with Hoist instead", root))

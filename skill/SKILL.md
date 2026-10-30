@@ -1,6 +1,6 @@
 ---
 name: hoist
-description: Use before asking the user about, or choosing, anything in this project that is hard to undo (database, hosting, sign-in method, language or framework, data format, design tokens), whenever a step is blocked by a message that starts with "Hoist:", and whenever .hoist/decisions has an open decision. Hoist explains the options to the user in plain words, records the decision in docs/decisions, and tells you what was chosen so you can carry on.
+description: Use before answering, recommending, asking the user about, or choosing anything that is hard to undo (how customers order or pay, pricing, database, hosting, sign-in method, language or framework, data format), even when the user only asks what is best, whenever a step is blocked by a message that starts with "Hoist:", and whenever .hoist/decisions has an open decision. Hoist explains the options to the user in plain words, records the decision in docs/decisions, and tells you what was chosen so you can carry on.
 ---
 
 # Hoist

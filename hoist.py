@@ -149,6 +149,15 @@ AUTOPILOT_NOTE = ("Hoist is on autopilot in this project. When you reach a choic
                   "Recorded decisions in docs/decisions/ still bind you.")
 
 
+ASK_NOTE = ("Hoist is on in this project. Before you answer, recommend or build: does this request involve a choice that is hard to undo for "
+            "the user? That covers how customers order or pay, pricing, what data is kept, sign-in, hosting, and any other choice between real "
+            "options, and it counts even when they only ask what is best or how to do it. If yes, do not answer or choose yet. Your first and "
+            "only action is one questionnaire (request_user_input) with one question and nothing else: \"<the choices, in plain words> are hard "
+            "to change later. How do you want to decide?\" with the options \"Answer here\" (description: Quick: I'll ask you the questions now.) "
+            "and \"Decide with Hoist instead\" (description: Opens a page that explains each option in plain words and records your choice.). "
+            "If no, or if docs/decisions already covers it, carry on normally and do not mention Hoist. The hoist skill has the details.")
+
+
 # ---------- what did the agent just add? ----------
 PKG_RE = re.compile(r'"(@?[A-Za-z0-9][\w.\-/]*)"\s*:\s*"[^"]*"')
 INSTALL_VERBS = {"install", "i", "add"}
@@ -229,6 +238,8 @@ def gate():
         (root / ".hoist" / "last_task.txt").write_text(payload.get("prompt", ""))
         if get_mode(root) == "autopilot":
             print(AUTOPILOT_NOTE.format(hoist=shlex.quote(str(HOME / "hoist.py"))))
+        else:  # a skill loads only if the model thinks of it; the note arrives with every prompt
+            print(ASK_NOTE)
         return 0
     if event == "PostToolBatch":
         return questionnaire_handoff(payload, root)
