@@ -104,9 +104,9 @@
   .tag{font-size:11.5px;font-weight:600;border-radius:999px;padding:2px 9px;white-space:nowrap}
   .tag.good{color:var(--bk-good);background:color-mix(in srgb,var(--bk-good) 12%,transparent)}
   .tag.warn{color:var(--bk-bad);background:color-mix(in srgb,var(--bk-bad) 10%,transparent)}
-  .finish{display:flex;gap:14px;align-items:center;margin:0 0 16px;padding:16px 18px;border-radius:14px;border:1.5px solid var(--bk-good);background:color-mix(in srgb, var(--bk-good) 10%, var(--bk-tile))}
-  .finish b{display:block;font-size:17px;color:var(--bk-ink)}
-  .finish span:not(.cap-check){display:block;font-size:13.5px;color:var(--bk-muted);margin-top:2px}
+  /* stays in view while the person scrolls the records below */
+  .finish{position:sticky;top:12px;z-index:6;display:flex;gap:10px;align-items:center;margin:0 0 16px;padding:12px 16px;border-radius:14px;border:1.5px solid var(--bk-good);background:color-mix(in srgb, var(--bk-good) 10%, var(--bk-tile));box-shadow:0 10px 28px rgba(20,40,30,.14)}
+  .finish b{font-size:16px;line-height:1.3;color:var(--bk-ink)}
   #bk-moment .bk-stamp.is-captured{background:var(--bk-good);color:#fff}
   #bk-moment.is-captured .bk-opt.is-chosen{border-color:var(--bk-good)}
   .moment-enter{animation:momentIn .32s ease-out}
@@ -869,12 +869,12 @@
       if (state.answers[PACKS[i].id]) filed++;
       else if (state.skipped[PACKS[i].id]) deferred++;
     }
-    var html = '<div class="finish" role="status"><span class="cap-check" aria-hidden="true">✓</span><div>' +
-      "<b>All set — it's okay to return to your terminal now.</b>" +
-      "<span>" + (LIVE ? "Your agent already has " + (filed === 1 ? "your decision" : "all " + filed + " decisions") + " and is carrying on with the task. You can close this tab; the records stay in <code>docs/decisions/</code>."
-        : "In a real run your agent already has your decisions and carries on in the terminal, like this:") + "</span></div></div>";
+    var html = '<div class="finish" role="status"><span class="cap-check sm" aria-hidden="true">✓</span>' +
+      "<b>All set — it's okay to return to your terminal now.</b></div>";
     html += '<p class="lede">Committed <strong>' + filed + " moment" + (filed === 1 ? "" : "s") + "</strong>" +
-      (deferred ? " — <strong>" + deferred + " deferred</strong>" : "") + ".</p>";
+      (deferred ? " — <strong>" + deferred + " deferred</strong>" : "") + ". " +
+      (LIVE ? "Your agent already has " + (filed === 1 ? "your decision" : "them") + " and is carrying on with the task. You can close this tab; the records stay in <code>docs/decisions/</code>."
+        : "In a real run your agent already has your decisions and carries on in the terminal, like this:") + "</p>";
     if (!LIVE) html += resumeTtyHtml();
     html += '<p class="lede" style="margin-top:6px">Here\'s the set:</p>';
     for (var j = 0; j < PACKS.length; j++) {

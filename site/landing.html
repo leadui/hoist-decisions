@@ -130,7 +130,7 @@
   .steps{display:grid;gap:20px}
   .split{display:grid;grid-template-columns:5fr 7fr;gap:48px;align-items:center}
   .split .term{font-size:13.5px}
-  .split.top{align-items:end;margin-bottom:6px}
+  .split.top{align-items:center;margin-bottom:6px}
   .split.top p{margin:0}
   .ask{border-radius:20px;padding:24px;background:var(--paper-2);box-shadow:inset 0 0 0 1px var(--hair)}
   .ask-q{margin:0 0 16px;font-size:16px}
@@ -147,7 +147,11 @@
   .kind:hover{color:var(--ink)}
   .kind:active{transform:scale(.97)}
   .kind[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
-  .kind-note{margin:0 0 16px;padding:12px 16px;border-radius:14px;font-size:14px;line-height:1.5;color:var(--ink);background:rgba(227,171,44,.14);box-shadow:inset 0 0 0 1px rgba(227,171,44,.35)}
+  .kind-note{margin:0 0 18px;font-size:13.5px;line-height:1.5;color:var(--muted)}
+  .kind-note b{color:var(--ink);font-weight:600}
+  .live-pill{display:inline-flex;align-items:center;gap:6px;margin-left:10px;border-radius:999px;padding:4px 10px;font:500 10px/1 var(--mono);letter-spacing:.14em;color:var(--sage);background:rgba(44,90,76,.08)}
+  .live-pill i{width:6px;height:6px;border-radius:50%;background:#2f9a5e;box-shadow:0 0 0 0 rgba(47,154,94,.5);animation:livePulse 2s ease-out infinite}
+  @keyframes livePulse{0%{box-shadow:0 0 0 0 rgba(47,154,94,.45)}70%{box-shadow:0 0 0 7px rgba(47,154,94,0)}100%{box-shadow:0 0 0 0 rgba(47,154,94,0)}}
   .kind-note b{font-weight:600}
   .canvas-note{font-size:13.5px;color:var(--muted);margin:0 0 18px;max-width:80ch}
   #live .bk-box{border-radius:22px}
@@ -162,12 +166,14 @@
   .madr .k{color:var(--sage)}.madr .h{color:var(--ink);font-weight:500}
 
   /* beliefs + modes */
-  .beliefs{list-style:none;margin:0 0 72px;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:0 56px}
-  .beliefs li{display:grid;grid-template-columns:56px 1fr;padding:26px 0;box-shadow:inset 0 1px 0 var(--hair-2)}
-  .beliefs .n{font:400 30px/1 var(--serif);font-style:italic;color:var(--sage)}
-  .beliefs b{display:block;font:650 21px/1.25 var(--display);letter-spacing:-.02em}
-  .beliefs span{display:block;color:var(--muted);margin-top:6px}
-  .beliefs li.no .n,.beliefs li.no b{color:#9a3b2e}
+  .beliefs{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:0}
+  .belief .core{display:grid;grid-template-columns:64px 1fr;gap:4px 18px;align-content:start;padding:30px 32px}
+  .belief .n{grid-row:span 2;font:400 52px/.9 var(--serif);font-style:italic;color:var(--sage)}
+  .belief h3{font-size:23px;line-height:1.2}
+  .belief p{grid-column:2;margin:6px 0 0;color:var(--muted)}
+  .belief.dark .n{color:var(--signal)}
+  .belief.dark h3{color:#f0ece2}
+  .belief.dark p{color:#aab7b0}
   .modes{display:grid;grid-template-columns:1fr 1fr;gap:20px}
   .mode .tag{display:inline-block;font:500 10.5px/1 var(--mono);letter-spacing:.2em;text-transform:uppercase;border-radius:999px;padding:6px 10px;background:rgba(44,90,76,.08);color:var(--sage)}
   .mode h3{font-size:34px;margin:18px 0 10px;letter-spacing:-.03em}
@@ -214,7 +220,7 @@
   .band .eyebrow{color:#f5f1e8;background:rgba(245,241,232,.12);box-shadow:inset 0 0 0 1px rgba(245,241,232,.2)}
   .band-cap{margin:22px 0 0;font-size:18px;color:rgba(245,241,232,.82);max-width:46ch}
   .band-cap b{color:#f5f1e8;font-weight:600}
-  .band .sec-num{-webkit-text-stroke-color:rgba(245,241,232,.22);top:64px}
+  .band .sec-num{-webkit-text-stroke-color:rgba(245,241,232,.28);top:48px;left:auto;right:32px}
   .after-band{padding-top:96px}
 
   /* from v1: the 3D icons float above their cards */
@@ -227,7 +233,7 @@
   .head-side{display:flex;flex-direction:column;align-items:flex-end;gap:10px}
   .head-side .lede{text-align:left;align-self:stretch}
   .ic-head{width:190px;margin:-130px 0 -2px 0}
-  .head.intro{grid-template-columns:1fr auto;align-items:center;margin-bottom:40px}
+  .head.intro{grid-template-columns:1fr auto;align-items:end;margin-bottom:48px}
   .ic-hand{width:140px;margin:-24px 5% -12px 0}
   .ic-card{float:right;width:150px;margin:-64px -6px 8px 16px}
   .head.wide{grid-template-columns:1fr auto;align-items:center}
@@ -244,15 +250,17 @@
   @keyframes floaty{50%{transform:translateY(-10px) rotate(-2deg)}}
   /* from v1: giant outlined section numbers behind each head */
   section{position:relative}
-  .sec-num{position:absolute;top:84px;right:-8px;font:600 clamp(110px,13vw,200px)/1 var(--display);letter-spacing:-.04em;color:transparent;
-    -webkit-text-stroke:1.2px rgba(23,32,27,.11);pointer-events:none;user-select:none;z-index:0}
+  /* top-left and staggered: the digits rise above the eyebrow, only their foot sits behind the heading, nothing covers them */
+  .sec-num{position:absolute;top:22px;left:-10px;font:600 clamp(110px,13vw,200px)/1 var(--display);letter-spacing:-.04em;color:transparent;
+    -webkit-text-stroke:1.3px rgba(23,32,27,.17);pointer-events:none;user-select:none;z-index:0}
   .head{position:relative}
   .head.wide{grid-template-columns:1fr}
   .head.wide h2{max-width:24ch}
   /* from v1: the install headline rotates the decision it guards */
-  .rot{display:inline-block;color:var(--sage)}
-  .rot.tick{animation:tick .7s var(--spring)}
-  @keyframes tick{from{opacity:0;transform:translateY(.35em)}to{opacity:1;transform:none}}
+  /* every phrase sits in the same cell, so the slot is always sized for the longest: no reflow when it changes */
+  .rot{display:inline-grid;color:var(--sage);vertical-align:top}
+  .rot > span{grid-area:1 / 1;opacity:0;transform:translateY(.3em);transition:opacity .6s var(--spring),transform .6s var(--spring)}
+  .rot > span.on{opacity:1;transform:none}
 
   /* entry: heavy fade-up */
   .rv{opacity:0;transform:translateY(56px);filter:blur(8px);transition:opacity 1s var(--spring),transform 1s var(--spring),filter 1s var(--spring)}
@@ -261,7 +269,8 @@
   @media (prefers-reduced-motion:reduce){
     .rv,.term .ln,.overlay a{opacity:1;transform:none;filter:none;transition:none}
     .hero-bg img,.hero-bg video,.band-bg img{animation:none}
-    .ic,.rot.tick{animation:none}
+    .ic,.live-pill i{animation:none}
+    .rot > span{transition:none}
     html{scroll-behavior:auto}
   }
 
@@ -283,12 +292,14 @@
     .split,.ask-opts{grid-template-columns:1fr;gap:20px}
     .core{padding:22px}
     .term{font-size:12.5px}
-    .beliefs{gap:0}
+    .beliefs{gap:14px}
+    .belief .core{grid-template-columns:44px 1fr;padding:24px 22px}
+    .belief .n{font-size:38px}
     .band{margin:0 8px;border-radius:28px;min-height:78vh;padding-bottom:56px}
     .band-bg img{object-position:38% 40%}
     .after-band{padding-top:64px}
     .ic-head{position:absolute;top:-8px;right:0;width:96px;margin:0}  /* beside the eyebrow and the short first line, clear of the heading */
-    .head.intro{grid-template-columns:1fr}
+    .head.intro{grid-template-columns:1fr auto;align-items:end}
     .ic-hand{width:96px;margin:-20px 0 -14px auto}
     .ic-card{width:84px;margin:-44px -4px 2px 8px}
     .head.wide{grid-template-columns:1fr}
@@ -296,7 +307,8 @@
     .ic-wide{width:140px;justify-self:end;margin:-8px 0 0}
     .rec-art{width:150px}
     .photo.wide img{aspect-ratio:4/3}
-    .sec-num{top:60px;font-size:96px}
+    .sec-num{top:10px;left:-4px;font-size:92px}
+    .band .sec-num{top:28px;right:16px}
   }
 </style>
 </head>
@@ -332,8 +344,6 @@
       </div>
     </div>
   </section>
-      </div>
-  </div>
 
   <div class="wrap">
     <section id="how" aria-labelledby="how-h">
@@ -362,13 +372,12 @@
         <div class="bezel step rv"><div class="core">
           <div class="split top">
             <div>
-              <div class="step-n"><b>2</b> Decide</div>
+              <div class="step-n"><b>2</b> Decide <span class="live-pill"><i></i>Live canvas</span></div>
               <h3>One canvas, shaped by the decision</h3>
             </div>
-            <p>Your agent drafts the options in plain words (or Muse Spark, as an independent second opinion, when you add a key), and Hoist checks every draft. Your answers become a matrix that shows what would flip the pick; the agent's lean, the risks and a critic sit beside it. This canvas is live: tap an option, or switch the kind of decision.</p>
+            <p>Every option in plain words, checked by Hoist before you see it. Your answers become a matrix that shows what would flip the pick, with the risks and a critic alongside.</p>
           </div>
           <div class="kinds" id="kinds" role="group" aria-label="Canvas for this kind of decision"></div>
-          <p class="canvas-note" id="canvas-note"></p>
           <p class="kind-note" id="kind-note" role="status"></p>
           <div class="clip" id="clip"><div id="live"><p class="canvas-note">Loading the canvas…</p></div></div>
           <div class="more-row"><button type="button" class="btn ghost" id="more" aria-expanded="false" aria-controls="clip">Show the whole canvas <span class="pod"><svg viewBox="0 0 16 16"><path d="M8 3v9M4 8l4 4 4-4"/></svg></span></button></div>
@@ -393,28 +402,43 @@
     </section>
   </div>
 
-  <section class="band" id="modes" aria-labelledby="modes-h">
+  <section class="band" id="believe" aria-labelledby="believe-h">
     <div class="band-bg" aria-hidden="true"><img src="images/yes.webp" width="1600" height="1067" alt="" loading="lazy"></div>
     <span class="sec-num" aria-hidden="true">02</span>
     <div class="wrap">
       <span class="eyebrow rv"><i></i>What we believe</span>
-      <h2 id="modes-h" class="rv d1">Fast is good. <span class="serif">Blind yes</span> is not.</h2>
+      <h2 id="believe-h" class="rv d1">Fast is good. <span class="serif">Blind yes</span> is not.</h2>
       <p class="band-cap rv d2"><b>Approve, approve, approve.</b> Fast, and nobody actually decided anything.</p>
     </div>
   </section>
 
   <div class="wrap">
-    <section class="after-band" aria-label="Ask or autopilot">
+    <section class="after-band" aria-labelledby="rules-h">
       <div class="head intro">
-        <p class="lede rv">Hoist has two modes, because some days you want to think it through and some days you need to ship. Neither one decides in silence.</p>
+        <div>
+          <span class="eyebrow rv"><i></i>Four rules we built on</span>
+          <h2 id="rules-h" class="rv d1">Slow down <span class="serif">where it counts.</span></h2>
+        </div>
         <img class="ic obj ic-hand" src="images/hand.webp" width="355" height="560" alt="" aria-hidden="true" loading="lazy">
       </div>
-      <ol class="beliefs">
-        <li class="rv"><span class="n">i</span><div><b>It's okay to interrupt.</b><span>A pause costs a minute. A wrong database costs weeks.</span></div></li>
-        <li class="rv d1"><span class="n">ii</span><div><b>It's okay to ask dumb questions.</b><span>Every option comes with an everyday analogy, what living with it is like, and the terms explained.</span></div></li>
-        <li class="rv"><span class="n">iii</span><div><b>It's okay to take your time.</b><span>Decide later, send it back to chat, or pick for now. The record says why, so changing it later is a plan, not a regret.</span></div></li>
-        <li class="rv d1 no"><span class="n">iv</span><div><b>It's not okay to say yes to everything.</b><span>Speed is fine. Silence is not: every call is written down.</span></div></li>
-      </ol>
+      <div class="beliefs">
+        <div class="bezel belief rv"><div class="core"><span class="n" aria-hidden="true">i</span><h3>It's okay to interrupt.</h3><p>A pause costs a minute; a wrong database costs weeks. Hoist steps in only at the doors that are hard to walk back through.</p></div></div>
+        <div class="bezel belief rv d1"><div class="core"><span class="n" aria-hidden="true">ii</span><h3>It's okay to ask dumb questions.</h3><p>Every option comes with an everyday analogy, what living with it is like, and the jargon explained. No question is too basic.</p></div></div>
+        <div class="bezel belief rv"><div class="core"><span class="n" aria-hidden="true">iii</span><h3>It's okay to take your time.</h3><p>Decide later, send it back to chat, or pick for now. The record says why, so changing course later is a plan, not a regret.</p></div></div>
+        <div class="bezel dark belief rv d1"><div class="core"><span class="n" aria-hidden="true">iv</span><h3>It's not okay to say yes to everything.</h3><p>Speed is fine. Silence isn't: every hard call, yours or the agent's, goes on the record.</p></div></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="wrap">
+    <section id="modes" aria-labelledby="modes-h">
+      <div class="head">
+        <div>
+          <span class="eyebrow rv"><i></i>Ask or autopilot</span>
+          <h2 id="modes-h" class="rv d1">Two speeds. <span class="serif">Both on the record.</span></h2>
+        </div>
+        <p class="lede rv d2">Ask when you want to think it through; autopilot when you need to ship. Either way every hard-to-undo call is written down with its reasons, and the records block what conflicts with them.</p>
+      </div>
       <div class="modes">
         <div class="bezel mode rv"><div class="core"><img class="ic obj ic-card" src="images/switch.webp" width="543" height="560" alt="" aria-hidden="true" loading="lazy">
           <span class="tag">Ask · default</span>
@@ -462,7 +486,7 @@
       <div class="head wide"><img class="ic obj ic-wide" src="images/bento.webp" width="533" height="560" alt="" aria-hidden="true" loading="lazy">
         <div>
           <span class="eyebrow rv"><i></i>Install</span>
-          <h2 id="install-h" class="rv d1" aria-label="Three commands before your next hard-to-undo decision.">Three commands before your next <span class="rot serif" id="rot" aria-hidden="true">hard-to-undo decision.</span></h2>
+          <h2 id="install-h" class="rv d1" aria-label="Three commands before your next hard-to-undo decision.">Three commands before your next <span class="rot serif" id="rot" aria-hidden="true"><span class="on">hard-to-undo decision.</span><span>database decision.</span></span></h2>
         </div>
         <p class="lede rv d2">Hoist adds a hook, a skill and a <code>docs/decisions/</code> folder to your project. The decision page runs on your machine.</p>
       </div>
@@ -542,11 +566,12 @@
 
   /* the decision Hoist guards, one after another */
   /* Rotate only within what the hook guards today (catalog.json: database). Add a word when a new kind ships. */
-  var rot = $("rot"), words = ["hard-to-undo decision.", "database decision."], wi = 0;
-  if (rot && !reduce) setInterval(function () {
-    wi = (wi + 1) % words.length;
-    rot.textContent = words[wi];
-    rot.classList.remove("tick"); void rot.offsetWidth; rot.classList.add("tick");
+  var rot = $("rot"), wi = 0;
+  var phrases = rot ? rot.children : [];
+  if (phrases.length > 1 && !reduce) setInterval(function () {
+    phrases[wi].classList.remove("on");
+    wi = (wi + 1) % phrases.length;
+    phrases[wi].classList.add("on");
   }, 2600);
 
   if (typeof BentoKit === "undefined") return;
@@ -627,11 +652,10 @@
     $("kinds").innerHTML = Object.keys(K.kinds).map(function (k) {
       return '<button type="button" class="kind" data-kind="' + k + '" aria-pressed="' + (k === state.kind) + '">' + K.util.esc(K.templates[k].name) + (k === state.data.dr.kind ? " ✦" : "") + "</button>";
     }).join("");
-    $("canvas-note").textContent = K.templates[state.kind].name + ": " + K.templates[state.kind].for;
     var own = state.data.dr.kind;
     $("kind-note").innerHTML = state.kind === own
-      ? "<b>One real decision, drafted by Muse Spark for this demo.</b> ✦ marks the canvas it chose. Switch the kind to see the same decision reshaped — the options stay the same so the canvases can be compared."
-      : "<b>Same decision, reshaped as a " + K.util.esc(K.templates[state.kind].name.toLowerCase()) + " canvas.</b> The options are still the database choice on purpose — only the layout changes, so you can compare canvases.";
+      ? "<b>A real decision, drafted by Muse Spark.</b> Tap an option to pick it, or switch the canvas: the options stay the same, only the layout changes."
+      : "<b>Same decision, as a " + K.util.esc(K.templates[state.kind].name.toLowerCase()) + " canvas.</b> Only the layout changes; ✦ marks the one Muse Spark chose.";
     drawMaps(d);
   }
   $("more").addEventListener("click", function () {

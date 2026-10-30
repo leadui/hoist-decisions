@@ -61,14 +61,17 @@ def test_landing_v2():
     check("v2 hero has a video slot", 'data-video=' in V2 and "createElement(\"video\")" in V2)
     check("v2 yes-person is a full-bleed band", 'class="band"' in V2 and "images/yes.webp" in V2)
     check("v2 has no framed photos left", 'class="bezel photo' not in V2)
+    check("v2 rotating phrases share one slot (no reflow)", ".rot > span{grid-area:1 / 1" in V2)
+    check("v2 section numbers sit top-left, clear of icons", ".sec-num{position:absolute;top:22px;left:-10px" in V2)
     check("v2 icons sit in the layout, not offset", "icon3d" not in V2 and V2.count('class="ic obj') == 6)
     check("v2 terminal lives in the Pause step", 'class="term-box"' in V2 and "hero-term" not in V2)
     check("v2 link preview image", 'og:image' in V2 and (site / "images" / "og.jpg").exists())
     import json as _json
     kinds = list(_json.loads((Path(__file__).resolve().parent.parent / "catalog.json").read_text())["kinds"])
-    words = re.findall(r'"([a-z -]+) decision\."', V2[V2.index("var rot ="):V2.index("var rot =") + 300])
+    rot = V2[V2.index('id="rot"'):V2.index('id="rot"') + 300]
+    words = re.findall(r'<span[^>]*>([a-z -]+) decision\.</span>', rot)
     check("v2 rotation stays within guarded kinds", words and all(w == "hard-to-undo" or w in kinds for w in words), str(words))
-    check("v2 kind tabs disclose the same decision", "Same decision, reshaped as a" in V2)
+    check("v2 kind tabs disclose the same decision", "Same decision, as a" in V2 and "the options stay the same" in V2)
     check("v2 demo links open the Start terminal", 'href="index.html#/"' in V2 and "index.html#/session" not in V2)
     check("v2 has no 3D scene", "three.module" not in V2 and "importmap" not in V2 and "GLTFLoader" not in V2)
     for f in ("Inter", "Roboto"):
