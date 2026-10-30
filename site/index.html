@@ -93,6 +93,20 @@
   .cap-check{flex:none;display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--bk-good);color:#fff;font-weight:800;animation:capPop .45s cubic-bezier(.2,1.4,.4,1)}
   .cap-check.sm{width:20px;height:20px;font-size:12px;margin-right:4px;vertical-align:-4px}
   .commitbar.is-captured{border-color:var(--bk-good)}
+  .commitbar{align-items:center}
+  .dots{display:inline-flex;gap:6px;align-items:center;flex:none;margin-right:4px}
+  .dots i{width:9px;height:9px;border-radius:50%;background:var(--bk-line);transition:transform .4s cubic-bezier(.32,.72,0,1),background-color .4s}
+  .dots i.done{background:var(--bk-good)}
+  .dots i.now{background:transparent;box-shadow:inset 0 0 0 2px var(--bk-ink);transform:scale(1.15)}
+  .cbar-text{min-width:0;font-size:14px;color:var(--bk-muted)}
+  .cbar-pick{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .cbar-pick strong{color:var(--bk-ink)}
+  .tag{font-size:11.5px;font-weight:600;border-radius:999px;padding:2px 9px;white-space:nowrap}
+  .tag.good{color:var(--bk-good);background:color-mix(in srgb,var(--bk-good) 12%,transparent)}
+  .tag.warn{color:var(--bk-bad);background:color-mix(in srgb,var(--bk-bad) 10%,transparent)}
+  .finish{display:flex;gap:14px;align-items:center;margin:0 0 16px;padding:16px 18px;border-radius:14px;border:1.5px solid var(--bk-good);background:color-mix(in srgb, var(--bk-good) 10%, var(--bk-tile))}
+  .finish b{display:block;font-size:17px;color:var(--bk-ink)}
+  .finish span:not(.cap-check){display:block;font-size:13.5px;color:var(--bk-muted);margin-top:2px}
   #bk-moment .bk-stamp.is-captured{background:var(--bk-good);color:#fff}
   #bk-moment.is-captured .bk-opt.is-chosen{border-color:var(--bk-good)}
   .moment-enter{animation:momentIn .32s ease-out}
@@ -493,12 +507,14 @@
     if (data.metrics.length) html += '<p class="hint">Bars are relative within this option set, not absolute costs.</p>';
     var po = optBy(state.picked);
     if (captured) {
-      html += '<div class="actions commitbar is-captured"><span class="hint" style="margin:0"><span class="cap-check sm" aria-hidden="true">✓</span> Captured: <strong>' + esc(prev.name) + "</strong>" +
+      html += '<div class="actions commitbar is-captured">' + progressDots() + '<span class="cbar-text"><span class="cbar-pick"><span class="cap-check sm" aria-hidden="true">✓</span> <strong>' + esc(prev.name) + "</strong></span>" +
         '</span><span class="spacer"></span><button type="button" class="btn" data-action="next">' +
-        (nextQ ? "Next: " + esc(nextQ.shortTitle) + " →" : "Review &amp; commit →") + "</button></div>";
+        (nextQ ? "Next: " + esc(nextQ.tab || nextQ.shortTitle) + " →" : "Review &amp; commit →") + "</button></div>";
     } else {
-      html += '<div class="actions commitbar"><span class="hint" style="margin:0">' +
-        (state.saving ? "Saving <strong>" + esc(po ? po.name : "") + "</strong>…" : po ? "Selected: <strong>" + esc(po.name) + "</strong>" : "Pick a card above — committing needs a pick first.") +
+      html += '<div class="actions commitbar">' + progressDots() + '<span class="cbar-text">' +
+        (state.saving ? '<span class="cbar-pick">Saving <strong>' + esc(po ? po.name : "") + "</strong>…</span>"
+          : po ? '<span class="cbar-pick"><strong>' + esc(po.name) + "</strong>" + pickTag(q, data, po) + "</span>"
+          : '<span class="cbar-pick">Pick an option above</span>') +
         '</span><span class="spacer"></span><button type="button" class="btn" data-action="confirm"' +
         (state.picked && !state.saving ? "" : " disabled") + ">" + (state.saving ? "Saving…" : prev ? "Replace decision" : "Commit choice") + "</button></div>";
     }
@@ -598,6 +614,26 @@
     }, function (e) {
       state.criticBusy = null; state.err = "The critic could not answer: " + e.message; render();
     });
+  }
+
+  /* The sticky bar stays glanceable: progress dots, the pick, and one tag only when it tells you something */
+  function progressDots() {
+    var done = 0;
+    var dots = PACKS.map(function (x) {
+      var d = !!(state.answers[x.id] || state.skipped[x.id]);
+      if (d) done++;
+      var cls = d ? "done" : x.id === (Q() || {}).id ? "now" : "";
+      return '<i class="' + cls + '"></i>';
+    }).join("");
+    if (PACKS.length < 2) return "";
+    return '<span class="dots" role="img" aria-label="' + done + " of " + PACKS.length + ' decided">' + dots + "</span>";
+  }
+  function pickTag(q, data, po) {
+    if (!(data.criteria || []).length || !BentoKit.analyze) return "";
+    var sc = BentoKit.analyze.scores(data), mine = null, best = null;
+    sc.forEach(function (t) { if (t.id === po.value) mine = t; if (!best || t.sum > best.sum) best = t; });
+    if (!mine || !best) return "";
+    return mine.sum >= best.sum ? '<span class="tag good">best fit</span>' : '<span class="tag warn">against your answers</span>';
   }
 
   function answerLabel(ans) {
@@ -827,9 +863,14 @@
       if (state.answers[PACKS[i].id]) filed++;
       else if (state.skipped[PACKS[i].id]) deferred++;
     }
-    var html = '<p class="lede">Committed <strong>' + filed + " moment" + (filed === 1 ? "" : "s") + "</strong>" +
-      (deferred ? " — <strong>" + deferred + " deferred</strong>" : "") + ". Back in the terminal, your agent picks up where it stopped:</p>";
-    html += resumeTtyHtml() + '<p class="lede" style="margin-top:6px">Here\'s the set:</p>';
+    var html = '<div class="finish" role="status"><span class="cap-check" aria-hidden="true">✓</span><div>' +
+      "<b>All set — it's okay to return to your terminal now.</b>" +
+      "<span>" + (LIVE ? "Your agent already has " + (filed === 1 ? "your decision" : "all " + filed + " decisions") + " and is carrying on with the task. You can close this tab; the records stay in <code>docs/decisions/</code>."
+        : "In a real run your agent already has your decisions and carries on in the terminal, like this:") + "</span></div></div>";
+    html += '<p class="lede">Committed <strong>' + filed + " moment" + (filed === 1 ? "" : "s") + "</strong>" +
+      (deferred ? " — <strong>" + deferred + " deferred</strong>" : "") + ".</p>";
+    if (!LIVE) html += resumeTtyHtml();
+    html += '<p class="lede" style="margin-top:6px">Here\'s the set:</p>';
     for (var j = 0; j < PACKS.length; j++) {
       var q = PACKS[j];
       var a = state.answers[q.id];
@@ -853,7 +894,6 @@
       html += '<div class="note"><strong>' + esc(defs[k].title) + " — default stands.</strong> " + esc(defs[k].label) + "</div>";
     }
     if (CTX.kind === "decide" && PACKS.length && PACKS[0].dec) html += conflictHtml(PACKS[0].dec);
-    html += '<div class="note">Committed — your agent already has this and is back to work. You can close this tab; the records stay under <strong>Records</strong>.</div>';
     html += '<div class="actions"><span class="spacer"></span><button type="button" class="btn ghost" data-action="restart">' +
       (CTX.kind === "decide" ? "Back to start" : "Start another task") + "</button></div>";
     return html;
