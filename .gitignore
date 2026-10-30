@@ -4,3 +4,7 @@ test/out/
 .env
 __pycache__/
 .venv/
+
+# local-only assets and OS files
+Icons/
+.DS_Store

@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Landing-page tests: site/landing.html is the Hoist pitch (v2); site/landing-v1.html is the earlier one, kept for reference.
+"""Landing-page tests: site/landing.html is the Hoist pitch.
 
-Asserts over the exact bytes that every section is present (hero,
-problem, moment flow, records, install, footer), that demo/repo links
-point at real targets, and that no banned cheap-default styling
-crept in.
+Asserts over the exact bytes that the story is present (hero, pause → decide →
+record, ask vs autopilot, Bento MADR, install), that links and anchors resolve,
+and that no banned cheap-default styling crept in.
 
 Run:  python3 test/test_landing.py
 Standard library only.
@@ -16,7 +15,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 FAILURES = []
-PAGE = Path(__file__).resolve().parent.parent / "site" / "landing-v1.html"
+PAGE = Path(__file__).resolve().parent.parent / "site" / "landing.html"
 SRC = PAGE.read_text()
 
 
@@ -24,81 +23,6 @@ def check(name, cond, detail=""):
     print(("PASS " if cond else "FAIL ") + name)
     if not cond:
         FAILURES.append(name + (" — " + detail if detail else ""))
-
-
-PRESENT = [
-    ("title", "<title>Hoist — every decision moment, together</title>"),
-    ("hackathon eyebrow", "Meta Global AI Developer Hackathon"),
-    ("hero headline", "It's okay to stop and"),
-    ("premises", "IT'S NOT OKAY TO SAY YES TO EVERYTHING"),
-    ("autopilot install line", "hoist.py mode autopilot"),
-    ("hero canvas", 'id="scene"'),
-    ("hero headline words", "['Decide', 'With', 'AI']"),
-    ("hero sr headline", "Decide With AI</h1>"),
-    ("section numerals", 'sec-num" aria-hidden="true">05<'),
-    ("ui examples", "js-mtitle"),
-    ("demo styling", ".demo .opt[aria-pressed"),
-    ("madr viewer", 'data-madr="2"'),
-    ("muse terminal", "hoist.py wait"),
-    ("madr switch", "madrShow"),
-    ("madr icon", "icons/clipboard.webp"),
-    ("https clone", "https://github.com/leadui/hoist-decisions.git"),
-    ("hero dpr cap", "devicePixelRatio || 1, 1.5"),
-    ("hero static fallback", "hero-static"),
-    ("live canvas render", "renderLive"),
-    ("live canvas mount", 'id="bk-live"'),
-    ("landing composes its canvas", "BentoKit.compose"),
-    ("landing uses the pinned kit", "vendor/bento-madr/bento-kit.js"),
-    ("landing links Bento MADR", "leadui.github.io/bento-madr"),
-    ("bento section", 'id="bentomadr"'),
-    ("bento nav", 'href="#bentomadr"'),
-    ("Bento MADR catalog cta", "Open the Bento MADR catalog"),
-    ("completeness strips", "Thin record · 2 of 8"),
-    ("component chips", "Devil's advocate"),
-    ("problem icon", "icons/idea.webp"),
-    ("moment icon", "icons/chart.webp"),
-    ("install icon", "icons/shield.webp"),
-    ("live mocks", "data-mopt"),
-    ("cube arrows", 'id="prev"'),
-    ("moment numeral", ">01<"),
-    ("three.js pinned", "three@0.169.0"),
-    ("display font", "Bricolage+Grotesque"),
-    ("bento kit css", "bento-kit.css"),
-    ("landing record canvas", "madr-record"),
-    ("bk board mount", "bk-board"),
-    ("demo CTA", 'href="index.html#/session"'),
-    ("records link", 'href="index.html#/records"'),
-    ("repo link", "https://github.com/leadui/hoist-decisions"),
-    ("problem section", 'id="problem"'),
-    ("moment section", 'id="moment"'),
-    ("records section", 'id="records"'),
-    ("install section", 'id="install"'),
-    ("install command", "hoist.py install"),
-    ("serve command", "hoist.py serve"),
-    ("madr sample", "## Decision Drivers"),
-    ("island nav", 'class="island"'),
-    ("burger morph", 'class="burger"'),
-    ("staggered menu", 'class="menu"'),
-    ("scroll reveals", "IntersectionObserver"),
-    ("reduced motion", "prefers-reduced-motion"),
-]
-
-ABSENT = [
-    ("hand-rolled mock", "mock-edu"),
-    ("old pane builder", "rpOptHtml"),
-    ("no banned font Roboto", "Roboto"),
-    ("no banned font Arial", "Arial"),
-    ("no banned font Helvetica", "Helvetica"),
-    ("no banned font Open Sans", "Open Sans"),
-    ("no layout animation", "transition:transform .5s var(--ease),top"),
-]
-
-
-def test_landing_shape():
-    for name, needle in PRESENT:
-        check("landing has " + name, needle in SRC, repr(needle))
-    for name, needle in ABSENT:
-        check("landing: " + name, needle not in SRC, repr(needle))
 
 
 def test_no_banned_styles():
@@ -155,7 +79,6 @@ def test_landing_v2():
 
 
 if __name__ == "__main__":
-    test_landing_shape()
     test_no_banned_styles()
     test_landing_anchors()
     test_landing_v2()

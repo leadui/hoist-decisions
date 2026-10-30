@@ -5,11 +5,13 @@ Commands:
   python3 hoist.py install [project]   add Hoist to a project (Muse Code hook, skill, docs/decisions)
   python3 hoist.py serve [project]     run the decision page on http://127.0.0.1:7317
   python3 hoist.py gate                Muse Code hook entry point (reads the hook payload on stdin)
-  python3 hoist.py wait ID [project]   wait until decision ID is made, then print the outcome
+  python3 hoist.py wait [ID] [project] wait until the open decision (or ID) is made, then print the outcome
   python3 hoist.py mode [ask|autopilot] [project]   ask before hard-to-undo choices (default), or let the agent decide and record it
   python3 hoist.py log QUESTION --chose X --because Y [--options "A|B|C"]   record a decision the agent made (autopilot)
 
-Standard library only. The page and its server listen on 127.0.0.1 and never call an API.
+Standard library only. The page and its server listen on 127.0.0.1. Live sessions and the critic call
+Muse Spark (api.meta.ai) with the task and an excerpt of the project's manifest, config and schema files;
+the key comes from MODEL_API_KEY or the macOS Keychain entry "hoist-meta-api".
 """
 import argparse, concurrent.futures, json, os, re, shlex, shutil, socket, subprocess, sys, threading, time, urllib.request, webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -1074,7 +1076,8 @@ def run_session(root, task, hints="", resume=False):
     save_session(root, ses)
     try:
         if not ensure_key():
-            raise RuntimeError("No Muse Spark key. Save it with: security add-generic-password -a \"$USER\" -s hoist-meta-api -w")
+            raise RuntimeError("No Muse Spark key. Export MODEL_API_KEY before starting Muse Code, or on macOS save it with: "
+                               "security add-generic-password -a \"$USER\" -s hoist-meta-api -w")
         if resume:
             p = json.loads(plan_file.read_text())
         else:
@@ -1128,6 +1131,8 @@ def start(task, project):
 # ---------- install ----------
 def install(project):
     root = Path(project).resolve()
+    if not root.is_dir():
+        sys.exit(f"No project folder at {root}. Create it (or cd into your project) and run install again.")
     hooks_file = root / ".muse" / "hooks.json"
     hooks_file.parent.mkdir(exist_ok=True)
     cfg = json.loads(hooks_file.read_text()) if hooks_file.exists() else {}
@@ -1160,6 +1165,10 @@ def install(project):
     print(f"  skill:   {skill.relative_to(root)}")
     print(f"  records: docs/decisions/")
     print("Restart Muse Code in this folder and trust it, so the hook loads.")
+    if not ensure_key():
+        print("Muse Spark key not found yet: export MODEL_API_KEY, or on macOS run\n"
+              "  security add-generic-password -a \"$USER\" -s hoist-meta-api -w\n"
+              "Without it the hook still pauses the agent; live sessions can't draft decisions.")
 
 
 def main():

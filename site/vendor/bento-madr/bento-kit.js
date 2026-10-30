@@ -1,4 +1,4 @@
-/*! Bento MADR v0.2 — decision canvases built from swappable compartments.
+/*! Bento MADR v0.2.1 — decision canvases built from swappable compartments.
  *  No dependencies. Load bento-kit.css, then this file; it defines a global `BentoKit`
  *  (and `module.exports` under CommonJS bundlers).
  *
@@ -555,7 +555,7 @@ ${lines.join('\n')}`;
   }
 
   const BentoKit = {
-    version: '0.2.0',
+    version: '0.2.1',
     components: C, templates: T, guide: GUIDE, kinds: KINDS,
     render, renderComponent, toHTML, recommend, compose, define, defineTemplate,
     analyze: {scores, robustness, crossover},
