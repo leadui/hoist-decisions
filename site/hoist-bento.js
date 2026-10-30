@@ -23,6 +23,10 @@
     }
   });
 
+  /* One critic, written for this decision: not a menu of job titles that may not exist in this project. */
+  BentoKit.advocate.personas.push({ id: "most-affected", name: "The person this affects most",
+    lens: "First work out who, in this project, this choice would hurt most: a customer, the owner, a helper, whoever is real here, never a generic job title. Argue as them, from what they would actually live through." });
+
   /* The kit's empty-state text is guidance for whoever writes a record ("List the phases and…").
      Visitors read Hoist's canvases, so an empty compartment just says nothing was recorded; the hatching shows the gap. */
   var EMPTY = "Nothing recorded here for this decision.";

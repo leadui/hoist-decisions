@@ -9,7 +9,7 @@ confidence: medium
 ---
 # Draft decisions with the agent by default; Muse Spark is an optional, independent drafter
 
-> **Decision:** When the person picks "Decide with Hoist instead", the agent (or a fresh subagent it starts) drafts the plan and each decision through `hoist brief` and `hoist submit`, held to the same contracts and quality checks as Muse Spark; a Muse Spark key plus `hoist drafter muse` makes Muse Spark the drafter and turns on the live critic. **Because** people hesitate to hand an API key to a tool they just met, so Hoist has to work out of the box, while a second, independent model is still worth having one command away. **Accepted cost:** by default the options are drafted by the same model that already has a favourite, and the agent has a few more steps to follow. **Revisit if** most installs add a key anyway, or agent-drafted decisions turn out clearly weaker than Muse Spark's in live runs.
+> **Decision:** When the person picks "Decide with Hoist instead", the agent drafts the plan and each decision through `hoist brief` and `hoist submit`, held to the same contracts and quality checks as Muse Spark; a Muse Spark key plus `hoist drafter muse` makes Muse Spark the drafter and turns on the live critic. **Because** people hesitate to hand an API key to a tool they just met, so Hoist has to work out of the box, while a second, independent model is still worth having one command away. **Accepted cost:** by default the options are drafted by the same model that already has a favourite, and the agent has a few more steps to follow. **Revisit if** most installs add a key anyway, or agent-drafted decisions turn out clearly weaker than Muse Spark's in live runs.
 
 ## Context and Problem Statement
 Until now every decision session called Muse Spark to plan the task and draft the decisions, so Hoist needed an API key before it could do its main job. Asking for a key up front is a real barrier for a new tool, but taking Muse Spark out entirely would leave Hoist as little more than a skill. Who should draft the decisions the person sees?
@@ -30,9 +30,8 @@ Chosen: option 1, because it removes the key barrier without dropping the indepe
 
 ### Consequences
 - Good, because Hoist works with no key, and by default nothing leaves the machine beyond what the agent already reads and sends.
-- Good, because the brief tells the agent to hand the drafting to a subagent when it can: a fresh context drafts without the agent's own preferences.
 - Good, because a key now buys clear extras: Muse Spark as the drafter, the live critic personas, starting a session from the page, and the repo audit.
-- Bad, because a default draft comes from the model that already has a view on the answer; the rules (fair options, an honest downside for each) and the subagent advice reduce the bias but don't remove it.
+- Bad, because a default draft comes from the model that already has a view on the answer; the rules (fair options, an honest downside for each) reduce the bias but don't remove it.
 - Bad, because the agent must follow a `brief` → `submit` → `wait` loop; like the routing question in 0001, the skill asks for it but a hook can't enforce it. `hoist wait` refuses to block while drafts are missing, so a skipped step fails loudly instead of hanging.
 
 ### Confirmation
@@ -50,5 +49,7 @@ Chosen: option 1, because it removes the key barrier without dropping the indepe
 - Bad, because it gives up the independent second opinion and the live critic, which are the clearest reasons to add Muse Spark.
 
 ## More Information
+- Changed 2026-10-30: with a key found, Muse Spark drafts automatically (22 seconds against 2:29 for the agent in the same task), and `hoist drafter agent` opts out. The agent still needs no key, and asks at most two decisions to keep the wait short.
+- Changed 2026-10-30: the brief no longer suggests a subagent. In two live Muse Code runs a subagent took 35 to 127 seconds per decision against 15 to 21 seconds inline, and it wrote drafts in the wrong shape because it worked from a paraphrase of the contract. Speed won over the fresh context.
 - How to switch: `python3 hoist.py drafter muse /path/to/project` (needs a key; without one Hoist falls back to the agent). The README's "Optional: Muse Spark" section lists what the key adds.
 - Builds on [0001](0001-interrupt-muse-code-with-a-routing-question-and-posttoolbatch.md): the routing question still starts the session; only who drafts it changed.

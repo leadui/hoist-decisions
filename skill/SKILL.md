@@ -44,7 +44,7 @@ If the user picks `Decide with Hoist instead` on any question in any form, treat
 By default you write the decisions the user sees; Hoist checks them and shows them on the page.
 
 1. Run `python3 <path to hoist.py> brief`. It prints exactly what to write next (first the plan, then one decision at a time), the rules, the project input, and the file to write.
-2. If you can start a subagent, give it the brief and let it write the file: a fresh context drafts the options without your own preferences. Otherwise write it yourself.
+2. Write the file yourself, right away and in one go. Do not start a subagent: it is several times slower, and the person is waiting.
 3. Write only the JSON object to the file it names, then run the `submit` command it prints.
 4. If `submit` lists problems, fix exactly those in the same file and submit again.
 5. Repeat `brief` → write → `submit` until it says every decision is on the page. Then run `wait`.

@@ -100,11 +100,13 @@ def get_drafter(root):
         d = json.loads(config_file(root).read_text()).get("drafter")
     except (OSError, ValueError):
         d = None
-    return d if d in DRAFTERS else "agent"
+    if d in DRAFTERS:
+        return d
+    return "muse" if ensure_key() else "agent"  # a key means seconds instead of minutes; `drafter agent` opts out
 
 
 def effective_drafter(root):
-    """Muse Spark only when asked for and a key is there; otherwise the agent drafts (no key needed)."""
+    """Muse Spark when a key is there, unless the project chose the agent; without a key the agent drafts."""
     return "muse" if get_drafter(root) == "muse" and ensure_key() else "agent"
 
 
@@ -336,8 +338,8 @@ def questionnaire_handoff(payload, root):
             hc = hoist_cmd()
             print("Hoist: the user chose to decide in Hoist, so ignore every answer in that form. "
                   + (f"The page is open at {URL}/#/session. " if page else f"Tell the user to run `{hc} serve` and open {URL}/#/session. ")
-                  + f"You prepare the decisions for it: run `{hc} brief` and follow it (hand it to a subagent if you can), "
-                  f"submit what it asks for, and repeat until it says everything is on the page. Then run `{hc} wait` and let it "
+                  + f"You prepare the decisions for it, yourself, without a subagent: run `{hc} brief`, write what it asks for, submit it, "
+                  f"and repeat until it says everything is on the page. Then run `{hc} wait` and let it "
                   "finish: it waits until the user has decided and prints the choices. Follow them and continue the task.")
             return 0
         if ensure_server(root) and post_session(task, hints):
@@ -464,7 +466,7 @@ def make_handler(root):
             if path == "/api/state":
                 records = [{"file": p.name, "markdown": p.read_text()} for p in sorted(records_dir(root).glob("[0-9][0-9][0-9][0-9]-*.md"))]
                 return self.send(200, {"project": root.name, "root": str(root), "live": True, "build": build_stamp(),
-                                       "muse": has_key(), "drafter": "muse" if get_drafter(root) == "muse" and has_key() else "agent",
+                                       "muse": has_key(), "drafter": "muse" if has_key() and get_drafter(root) == "muse" else "agent",
                                        "decisions": load_decisions(root),
                                        "records": records, "session": session_state(root)})
             self.send(404, {"error": "not found"})
@@ -480,7 +482,7 @@ def make_handler(root):
                 ses = load_session(root)
                 if ses and ses["status"] in ("planning", "drafting"):
                     return self.send(409, {"error": "The last task is still being prepared."})
-                if not (get_drafter(root) == "muse" and has_key()):
+                if not (has_key() and get_drafter(root) == "muse"):
                     return self.send(400, {"error": "Your agent drafts the decisions, so sessions start from your agent: give it a task "
                                                     "and pick \"Decide with Hoist instead\" when it asks. To start one here instead, "
                                                     "add a Muse Spark key and run `hoist.py drafter muse`."})
@@ -642,13 +644,8 @@ def wait_session(root):
     print(f"{line}\nHOIST: paused while you make this task's lasting decisions\n  Task:       {ses['task']}\n"
           f"  Decide at:  {URL}/#/session\n  " + ("Your agent drafted them" if ses.get("drafter") == "agent" else "Muse Spark prepares them first")
           + f"; the agent continues when you're done.\n{line}", flush=True)
-    error_since, checked = None, 0.0
-    while True:
-        if time.time() - checked > 5:  # the page must show this project; take it back if another project's page holds the port
-            checked = time.time()
-            if not serving(root) and ensure_server(root):
-                print(f"HOIST: the decision page now shows this project: {URL}/#/session", flush=True)
-                webbrowser.open(f"{URL}/#/session")
+    error_since = None
+    while True:  # files only: this runs in the agent's sandbox, where a network call stops and waits for the person's approval
         ses = session_state(root)
         if ses["status"] == "error":
             if not error_since:
@@ -683,6 +680,7 @@ def wait_session(root):
 
 # ---------- Muse Spark writes the content; this code sets the contract and checks it ----------
 MAX_ASK = int(os.environ.get("HOIST_MAX_ASK", "3"))  # decision-fatigue budget: questions to the person per task
+AGENT_MAX_ASK = 2
 
 PLAN_SYSTEM = """You are Hoist. An AI agent is about to work on a task for a person. List the lasting decisions
 this task will force: choices that are costly to undo later. The project may be software, a design system,
@@ -857,6 +855,35 @@ VENDORS = ("vercel", "netlify", "aws", "azure", "gcp", "google cloud", "heroku",
            "planetscale", "turso", "mongodb", "firebase", "clerk", "auth0", "stripe", "tailwind", "radix", "shadcn")
 
 
+def tidy_draft(d):
+    """Agents slip on shape, not substance. Fix what has one obvious meaning; check_draft reports the rest."""
+    if not isinstance(d, dict):
+        return {}
+    d["options"] = [o for o in d.get("options") or [] if isinstance(o, dict)] if isinstance(d.get("options"), list) else []
+    for o in d["options"]:
+        for k in ("good", "bad"):
+            items = o.get(k) if isinstance(o.get(k), list) else [o[k]] if o.get(k) else []
+            o[k] = [{"when": "later" if k == "bad" else "now", "text": x} if isinstance(x, str) else x for x in items if isinstance(x, (str, dict))]
+    for k in ("profile_effects", "questions", "risks", "evidence", "confirm"):
+        if not isinstance(d.get(k), list):
+            d[k] = []
+    d["profile_effects"] = [pe for pe in d["profile_effects"] if isinstance(pe, dict)]
+    d["questions"] = [q for q in d["questions"] if isinstance(q, dict)]
+    for pe in d["profile_effects"]:
+        pe["answers"] = [a for a in pe.get("answers") or [] if isinstance(a, dict)]
+        for a in pe["answers"]:
+            a["effects"] = [e for e in a.get("effects") or [] if isinstance(e, dict)]
+    for q in d["questions"]:
+        q["answers"] = [a for a in q.get("answers") or [] if isinstance(a, dict)]
+    if isinstance(d.get("assumes"), list):
+        d["assumes"] = " ".join(str(x) for x in d["assumes"])
+    if not isinstance(d.get("lean"), dict):
+        d["lean"] = {}
+    if d["lean"] and not d.get("agent_pick"):
+        d["agent_pick"] = d.get("default_option")
+    return d
+
+
 def check_draft(d, profile=None):
     """Lean-draft quality rules; returns problems in plain words (empty = passes). Deep material has check_deep."""
     problems = []
@@ -980,12 +1007,13 @@ def link_ok(url):
         return False
 
 
-def apply_budget(plan):
+def apply_budget(plan, limit=None):
     """Decision fatigue: ask about at most MAX_ASK decisions; the rest get safe defaults the person can review."""
+    limit = limit or MAX_ASK
     asks = [d for d in plan.get("decisions", []) if d.get("mode") == "ask"]
     asks.sort(key=lambda d: -int(d.get("door", 2)))
-    for d in asks[MAX_ASK:]:
-        d["mode"], d["budget_note"] = "default", f"over the {MAX_ASK}-question budget; default recorded for review"
+    for d in asks[limit:]:
+        d["mode"], d["budget_note"] = "default", f"over the {limit}-question budget; default recorded for review"
     return plan
 
 
@@ -1242,7 +1270,7 @@ def start(task, project):
     print(f"HOIST: Muse Spark is preparing the decisions for \"{task}\". Follow along at {URL}/#/session")
 
 
-# ---------- agent drafting: the agent (or a subagent it starts) writes the plan and drafts; Hoist checks them ----------
+# ---------- agent drafting: the agent writes the plan and drafts; Hoist checks them ----------
 def hoist_cmd():
     return f"python3 {shlex.quote(str(HOME / 'hoist.py'))}"
 
@@ -1279,8 +1307,8 @@ def brief(project):
     if ses["status"] == "planning":
         out = work / "plan.json"
         print(f"{rule}\nHOIST BRIEF · step 1: plan the decisions for \"{ses['task']}\"\n{rule}\n"
-              "You are drafting for Hoist. If you can start a subagent, hand it this whole brief so the drafting starts fresh, "
-              "without your own preferences; otherwise do it yourself. Follow the contract exactly.\n")
+              "You are drafting for Hoist. Write this yourself, now, in one go: do not start a subagent, it is slower and loses "
+              "the contract below. The person is waiting. Follow the contract exactly.\n")
         print(PLAN_SYSTEM + "\n\n" + rule + "\nINPUT\n" + rule + "\n" + plan_input(root, ses["task"], ses.get("hints", "")))
         print(f"\n{rule}\nWrite only the JSON object to {out}\nThen run: {hc} submit plan {shlex.quote(str(out))}\n{rule}")
         return
@@ -1294,7 +1322,8 @@ def brief(project):
     _, _, title, _, _, prompt = lean_input(root, did, ses["task"])
     out = work / f"{did}.json"
     print(f"{rule}\nHOIST BRIEF · step {asks.index(did) + 2} of {len(asks) + 1}: draft \"{title}\" for the person\n{rule}\n"
-          "Write it so a smart newcomer can decide. Do not decide for them: the page shows every option fairly, "
+          "Write it yourself, in one go, no subagent: the page shows it to the person as soon as you submit. Write it so a smart "
+          "newcomer can decide. Do not decide for them: the page shows every option fairly, "
           "and your own pick goes only in agent_pick and lean.\n")
     print(LEAN_SYSTEM + "\n\n" + rule + "\nINPUT\n" + rule + "\n" + prompt)
     print(f"\n{rule}\nWrite only the JSON object to {out}\nThen run: {hc} submit draft {did} {shlex.quote(str(out))}\n{rule}")
@@ -1319,7 +1348,7 @@ def submit(kind, args, project):
             sys.exit("HOIST: the plan is already in. Run `" + hc + " brief` for the next step.")
         if not isinstance(d.get("decisions"), list) or not all(isinstance(x, dict) and x.get("id") and x.get("mode") for x in d["decisions"]):
             sys.exit("HOIST: the plan needs a \"decisions\" list, each with an id and a mode (ask, default or log). Fix it and submit again.")
-        p = apply_budget(d)
+        p = apply_budget(d, min(MAX_ASK, AGENT_MAX_ASK))  # the agent writes one at a time, so fewer keeps the wait short
         (root / ".hoist" / "plan.json").write_text(json.dumps({"task": ses["task"], **p}, indent=2))
         asks = [x["id"] for x in p["decisions"] if x.get("mode") == "ask"]
         ses.update(status="drafting" if asks else "ready", total=len(asks))
@@ -1331,6 +1360,7 @@ def submit(kind, args, project):
     asks = [x["id"] for x in pl.get("decisions", []) if x.get("mode") == "ask"]
     if did not in asks:
         sys.exit(f"HOIST: {did or 'that'} isn't one of this task's decisions ({', '.join(asks)}).")
+    d = tidy_draft(d)
     problems = check_draft(d, pl.get("profile"))
     tries = ses.setdefault("attempts", {}).get(did, 0) + 1
     ses["attempts"][did] = tries
@@ -1358,6 +1388,8 @@ def install(project):
     root = Path(project).resolve()
     if not root.is_dir():
         sys.exit(f"No project folder at {root}. Create it (or cd into your project) and run install again.")
+    if root == Path.home():
+        sys.exit("Hoist installs per project, and this is your home folder (it would run in every project). cd into a project and run install again.")
     hooks_file = root / ".muse" / "hooks.json"
     hooks_file.parent.mkdir(exist_ok=True)
     cfg = json.loads(hooks_file.read_text()) if hooks_file.exists() else {}
@@ -1390,9 +1422,8 @@ def install(project):
     print(f"  skill:   {skill.relative_to(root)}")
     print(f"  records: docs/decisions/")
     print("Restart Muse Code in this folder and trust it, so the hook loads.")
-    print("Drafting: your agent writes the decisions (no key needed)." if not ensure_key() else
-          "Drafting: your agent writes the decisions. A Muse Spark key is available: `hoist.py drafter muse` makes Muse Spark "
-          "the independent drafter and turns on the live critic.")
+    print("Drafting: your agent writes the decisions (no key needed). Add a Muse Spark key to draft in seconds." if not ensure_key() else
+          "Drafting: Muse Spark, in seconds, plus the live critic. `hoist.py drafter agent` keeps it all with your agent.")
 
 
 def main():
@@ -1455,7 +1486,7 @@ def main():
         if want:
             set_config(root, "drafter", want)
         d, eff = get_drafter(root), effective_drafter(root)
-        print(f"Hoist drafter for {root.name}: {d}. " + ("Your agent writes the decisions (a subagent if it can); Hoist checks them. No key needed."
+        print(f"Hoist drafter for {root.name}: {d}. " + ("Your agent writes the decisions; Hoist checks them. No key needed."
               if eff == "agent" and d == "agent" else "Muse Spark writes the decisions, an independent second opinion." if eff == "muse"
               else "Muse Spark was asked for, but no key was found, so your agent drafts for now."))
     elif args.cmd == "brief":

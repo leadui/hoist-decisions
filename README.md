@@ -6,7 +6,7 @@ You've got an idea and an agent to build it. Whatever you build, the agent will 
 - **Read the pitch:** https://leadui.github.io/hoist-decisions/landing.html
 - **Built on [Bento MADR](https://github.com/leadui/bento-madr)**, the decision-canvas library that started here.
 
-Built for the Meta Global AI Developer Hackathon with **Muse Code** (the agent Hoist guards) and, optionally, **Muse Spark** (an independent drafter and critic). No API key is needed: by default your agent drafts the decisions and Hoist checks them.
+Built for the Meta Global AI Developer Hackathon with **Muse Code** (the agent Hoist guards) and, optionally, **Muse Spark** (an independent drafter and critic). No API key is needed: your agent can draft the decisions and Hoist checks them. With a key, Muse Spark drafts them in seconds.
 
 What Hoist stands for:
 
@@ -21,7 +21,7 @@ Hoist steps in at two moments.
 
 **When the agent is about to ask you something hard to undo**, Hoist's skill has it ask one question first: *"These are hard to change later. How do you want to decide?"* with **Answer here** or **Decide with Hoist instead**. If you pick Hoist:
 
-1. Your agent drafts the decisions for the page through `hoist brief` and `hoist submit`, handing the work to a fresh subagent when it can, so the options aren't shaped by its own favourite. Hoist checks every draft against its rules (plain words, fair options, an honest downside for each) and sends problems back to fix. With a Muse Spark key you can make Muse Spark the drafter instead.
+1. Your agent drafts the decisions for the page through `hoist brief` and `hoist submit`, Hoist checks every draft against its rules (plain words, fair options, an honest downside for each) and sends problems back to fix. With a Muse Spark key, Muse Spark drafts instead, in about 20 seconds.
 2. Your browser opens the decision page. Each decision is one canvas: the options in plain words, your answers as a matrix that shows what would flip the pick, the risks, the agent's own lean, and a critic.
 3. You pick and commit. Hoist writes one [MADR](https://adr.github.io/madr/) record per decision to `docs/decisions/`.
 4. The agent, waiting on `hoist wait`, gets your decisions and carries on. The page tells you it's okay to go back to the terminal.
@@ -58,16 +58,15 @@ Restart Muse Code in the project and trust the folder so the hook loads.
 A key from [dev.meta.ai](https://dev.meta.ai) adds what an agent drafting for itself can't give you:
 
 - **An independent drafter.** Muse Spark plans and drafts the decisions instead of the agent, a second opinion that doesn't grade the agent's own homework.
-- **The live critic.** Ask a skeptic, a CFO, an on-call engineer and other personas to argue against your pick.
+- **The live critic.** One click on *Challenge this pick* argues against your choice as the person it would affect most in your project, written on demand.
 - **Starting a session from the page** instead of from the agent, and `hoist_audit.py`, which lists the decisions a repo has already made.
 
 ```bash
 export MODEL_API_KEY=...                                         # in the shell you start Muse Code from
 security add-generic-password -a "$USER" -s hoist-meta-api -w    # or, on macOS, once in the Keychain
-python3 ~/hoist-decisions/hoist.py drafter muse .
 ```
 
-`drafter agent` switches back. Without a key Hoist always falls back to the agent.
+With a key found, Muse Spark drafts automatically. `drafter agent` keeps drafting with your agent, and without a key Hoist always uses the agent.
 
 ## Ask or autopilot
 
@@ -103,8 +102,8 @@ The hook (`hoist.py gate`) and the page server start on their own; you rarely ne
 ## Privacy and cost
 
 - The decision page and its server listen on 127.0.0.1 only.
-- By default nothing leaves your machine beyond what your agent already reads and sends: the agent drafts, Hoist checks locally.
-- With `drafter muse`, sessions and the critic send Muse Spark the task, the titles of existing decision records, the folder layout, and an excerpt of the project's manifest, config and schema files (for example `package.json`, Dockerfiles, CI workflows, Prisma or SQL schemas, READMEs, `.env.example`), about 9,000 characters in all. Never `.env` and never application source files. The full list is `EVIDENCE` in `hoist_audit.py`.
+- Without a key nothing leaves your machine beyond what your agent already reads and sends: the agent drafts, Hoist checks locally.
+- With a key (unless you chose `drafter agent`), sessions and the critic send Muse Spark the task, the titles of existing decision records, the folder layout, and an excerpt of the project's manifest, config and schema files (for example `package.json`, Dockerfiles, CI workflows, Prisma or SQL schemas, READMEs, `.env.example`), about 9,000 characters in all. Never `.env` and never application source files. The full list is `EVIDENCE` in `hoist_audit.py`.
 - Every Muse Spark call (only with a key) is logged to `~/.hoist/spend.json` with its cost, and calls are refused once the ledger reaches $25. Delete or edit the ledger to reset it.
 - The hosted demo uses recorded sample data and makes no API calls. Its three ideas are real Muse Spark sessions, recorded through Hoist's own pipeline and checked by its rules.
 

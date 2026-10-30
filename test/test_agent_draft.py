@@ -54,7 +54,13 @@ def test_agent_drafting():
         root = Path(d)
         (root / ".hoist").mkdir()
         (root / ".hoist" / "last_task.txt").write_text(SAMPLE["task"])
-        check("the default drafter is the agent", hoist.get_drafter(root) == "agent")
+        with mock.patch.object(hoist, "ensure_key", return_value=False):
+            check("without a key the agent drafts", hoist.get_drafter(root) == "agent")
+        with mock.patch.object(hoist, "ensure_key", return_value=True):
+            check("with a key Muse Spark drafts", hoist.get_drafter(root) == "muse")
+            hoist.set_config(root, "drafter", "agent")
+            check("choosing the agent wins over the key", hoist.get_drafter(root) == "agent")
+            (root / ".hoist" / "config.json").unlink()
 
         payload = json.loads(FIXTURE.read_text().replace("__ROOT__", str(root)))
         out = io.StringIO()
@@ -67,7 +73,7 @@ def test_agent_drafting():
         check("picking Hoist starts an agent session", ses and ses.get("drafter") == "agent" and ses["status"] == "planning", str(ses))
         check("the page opens", opened.called)
         check("the agent is told to brief, then wait", " brief" in out.getvalue() and " wait" in out.getvalue(), out.getvalue())
-        check("the agent hears it can use a subagent", "subagent" in out.getvalue())
+        check("the agent is told to draft itself", "without a subagent" in out.getvalue())
 
         code, text = run(hoist.wait, None, str(root))
         check("wait refuses to block before the drafts are in", code == 1 and "brief" in text, text)
@@ -107,6 +113,38 @@ def test_agent_drafting():
         check("brief says there is nothing left to draft", "wait" in text, text)
 
 
+def test_wait_stays_off_the_network():
+    """`hoist wait` runs in the agent's sandbox, where any network call stops for the person's approval."""
+    with tempfile.TemporaryDirectory() as d:
+        root = Path(d)
+        (root / ".hoist").mkdir()
+        (root / ".hoist" / "plan.json").write_text(json.dumps(SAMPLE["plan"]))
+        asks = [x["id"] for x in SAMPLE["plan"]["decisions"] if x["mode"] == "ask"]
+        hoist.save_session(root, {"task": "t", "status": "ready", "drafter": "agent", "drafted": asks, "total": len(asks), "failed": [],
+                                  "outcomes": {a: {"mode": "default"} for a in asks}, "answers": {}, "profile_answers": {}})
+        boom = AssertionError("hoist wait touched the network")
+        with mock.patch("urllib.request.urlopen", side_effect=boom), mock.patch("socket.socket.connect_ex", side_effect=boom), \
+                mock.patch.object(hoist, "ensure_server", side_effect=boom):
+            code, text = run(hoist.wait_session, root)
+        check("wait finishes from files alone", code == 0 and "decided" in text, text[-200:])
+
+
+def test_tidy_draft():
+    """Shape slips the agent made in a live run: no crash, and no repair round for what has one obvious meaning."""
+    d = json.loads(json.dumps(SAMPLE["drafts"][next(iter(SAMPLE["drafts"]))]))
+    d["profile_effects"] = ["more walks mean more driving"]
+    d["assumes"] = ["one person", "local clients"]
+    d.pop("agent_pick", None)
+    for o in d["options"]:
+        o["good"] = [x["text"] for x in o["good"]]
+    t = hoist.tidy_draft(d)
+    check("strings where objects belong don't crash the checks", isinstance(hoist.check_draft(t, SAMPLE["plan"]["profile"]), list))
+    check("a lean with no agent_pick takes the default option", t["agent_pick"] == t["default_option"])
+    check("assumes becomes a sentence", isinstance(t["assumes"], str))
+    check("plain-text upsides become items", all(isinstance(x, dict) for o in t["options"] for x in o["good"]))
+    check("junk isn't a draft", hoist.tidy_draft("nope") == {})
+
+
 def test_server_with_agent_drafting():
     with tempfile.TemporaryDirectory() as d, mock.patch.dict(os.environ, {"HOIST_DRAFTER": ""}), \
             mock.patch.object(hoist, "ensure_key", return_value=False):
@@ -135,6 +173,8 @@ def test_server_with_agent_drafting():
 
 if __name__ == "__main__":
     test_agent_drafting()
+    test_wait_stays_off_the_network()
+    test_tidy_draft()
     test_server_with_agent_drafting()
     print(f"\n{len(FAILURES)} failure(s)")
     for f in FAILURES:

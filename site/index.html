@@ -206,7 +206,7 @@
   <div id="app" aria-live="polite"></div>
 </div>
 <script src="vendor/bento-madr/bento-kit.js?v=0.2.1"></script>
-<script src="hoist-bento.js?v=3"></script>
+<script src="hoist-bento.js?v=4"></script>
 <script>
 (function () {
   "use strict";
@@ -422,14 +422,11 @@
     var l = (q.draft && q.draft.lean) || {};
     return { name: o.name, why: l.why || o.desc || "", flips: (l.flips || []).map(function (f) { return f.replace(/^if\s+/i, ""); }) };
   }
-  var PERSONAS = ["skeptic", "maintainer", "oncall", "cfo", "security"];
-  function criticFor(q, optionId) {
-    var live = (state.critic[q.id] || {})[optionId];
-    if (live) return live;
-    var baked = q.draft && q.draft.advocate && q.draft.advocate[optionId];
-    if (!baked) return null;
-    for (var i = 0; i < PERSONAS.length; i++) if (baked[PERSONAS[i]]) return baked[PERSONAS[i]];
-    return null;
+  /* The critic is on demand: nothing shows until the person asks for it. */
+  function criticFor(q, optionId) { return (state.critic[q.id] || {})[optionId] || null; }
+  function bakedCritic(q, optionId) {
+    var b = q.draft && q.draft.advocate && q.draft.advocate[optionId];
+    return b ? b.skeptic || b[Object.keys(b)[0]] || null : null;
   }
   function optionCardsWire(q) {
     var mount = $("bk-moment");
@@ -548,7 +545,7 @@
 
   function composeMoment(q, data) {
     if (typeof BentoKit === "undefined" || !BentoKit.compose) return null;
-    var c = BentoKit.compose(data, { kind: kindOf(q), lead: "proscons", skip: ["proscons"], extras: ["agent-lean", "advocate"] });
+    var c = BentoKit.compose(data, { kind: kindOf(q), lead: "proscons", skip: ["proscons"], extras: data.advocate ? ["agent-lean", "advocate"] : ["agent-lean"] });
     /* The page column is narrow, so the template's two-column layout is the desktop layout here. */
     c.wide = { cols: c.template.cols, areas: c.template.areas };
     c.template.cols = c.template.md.cols; c.template.areas = c.template.md.areas;
@@ -592,37 +589,26 @@
     return html;
   }
   function criticHtml(q, data) {
-    if (!state.picked || typeof BentoKit === "undefined") return "";
-    var baked = (q.draft && q.draft.advocate && q.draft.advocate[state.picked]) || {};
-    var avail = PERSONAS.filter(function (p) { return (LIVE && S.muse) || baked[p]; });
-    if (!avail.length) return "";
-    var cur = data.advocate && data.advocate.persona;
-    var html = '<div class="escape-row critic-row"><span>Stress-test ' + esc((optBy(state.picked) || {}).name || "the pick") + " with</span>";
-    avail.forEach(function (pid) {
-      var P = null;
-      BentoKit.advocate.personas.forEach(function (x) { if (x.id === pid) P = x; });
-      var busy = state.criticBusy === pid;
-      html += '<button type="button" class="escape-btn" data-action="critic" data-v="' + pid + '" aria-pressed="' + (cur === pid ? "true" : "false") + '"' +
-        (state.criticBusy ? " disabled" : "") + ">" + esc(busy ? "Asking…" : P.name) + "</button>";
-    });
-    return html + "</div>";
+    if (!state.picked || typeof BentoKit === "undefined" || data.advocate) return "";
+    if (!bakedCritic(q, state.picked) && !(LIVE && S.muse)) return "";
+    return '<div class="escape-row critic-row"><button type="button" class="escape-btn" data-action="critic"' + (state.criticBusy ? " disabled" : "") + ">" +
+      esc(state.criticBusy ? "Asking…" : "Challenge this pick") + "</button></div>";
   }
-  function askCritic(pid) {
+  function askCritic() {
     var q = Q();
     if (!q || !state.picked) return;
-    var opt = state.picked;
-    var baked = q.draft && q.draft.advocate && q.draft.advocate[opt] && q.draft.advocate[opt][pid];
+    var opt = state.picked, baked = bakedCritic(q, opt);
     var keep = function (r) {
       state.critic[q.id] = state.critic[q.id] || {};
-      r.persona = pid;
       state.critic[q.id][opt] = r;
     };
     if (baked) { keep(baked); render(); return; }
     if (!LIVE || !S.muse) return;
     var d = momentData(q, opt);
     d.advocate = null;
-    state.criticBusy = pid; state.err = null; render();
-    post("/api/advocate", { prompt: BentoKit.advocate.prompt(d, pid) }).then(function (r) {
+    state.criticBusy = true; state.err = null; render();
+    post("/api/advocate", { prompt: BentoKit.advocate.prompt(d, "most-affected") }).then(function (r) {
+      r.persona = "most-affected";
       state.criticBusy = null; keep(r); render();
     }, function (e) {
       state.criticBusy = null; state.err = "The critic could not answer: " + e.message; render();
@@ -1975,7 +1961,7 @@
     else if (action === "confirm") confirm("chosen");
     else if (action === "next") advance();
     else if (action === "kind") { var kq = Q(); if (kq) { state.kindView[kq.id] = v; render(); } }
-    else if (action === "critic") askCritic(v);
+    else if (action === "critic") askCritic();
     else if (action === "intro") introAct(v);
     else if (action === "idea") pickIdea(v);
     else if (action === "reset-sample") resetSample();
