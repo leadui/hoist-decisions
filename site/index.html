@@ -175,6 +175,12 @@
   .note{background:var(--bk-well);border:1px solid var(--bk-line);border-radius:10px;padding:10px 14px;margin-bottom:10px;font-size:13.5px;color:var(--bk-muted)}
   .note strong{color:var(--bk-ink)}
   .list-opt{display:block;text-decoration:none;color:var(--bk-ink)}
+  .ideas{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:0 0 16px}
+  .idea{display:grid;gap:4px;align-content:start;text-align:left}
+  .idea[aria-pressed="true"]{border:2px solid var(--bk-signal);padding:11px 13px}
+  .idea small{margin:0}
+  .idea i{font-style:normal;font:500 12px/1.4 var(--bk-mono);color:var(--bk-muted);margin-top:6px}
+  @media (max-width: 720px){.ideas{grid-template-columns:1fr}}
   @media (max-width: 560px) {
     .page { padding: 20px 14px 48px; }
     .actions .btn { flex: 1; }
@@ -1188,7 +1194,7 @@
       var dr = (ses.drafts || {})[d.id];
       if (!dr) {
         if (ses.status === "ready") continue;
-        PACKS.push({ id: d.id, tab: humanId(d.id) || shortTab(d.title), title: d.title, shortTitle: shortTab(d.title),
+        PACKS.push({ id: d.id, tab: d.tab || humanId(d.id) || shortTab(d.title), title: d.title, shortTitle: shortTab(d.title),
           chatAsk: ses.task, agentAsk: "", decision: "", model: "", microLabel: "", growth: null,
           links: [], options: [], preparing: true, plan: d, draft: null });
         continue;
@@ -1204,7 +1210,7 @@
       }
       var undoTxt = dr.undo || d.why || "";
       PACKS.push({
-        id: d.id, tab: humanId(d.id) || shortTab(d.title), title: dr.question || d.title,
+        id: d.id, tab: d.tab || humanId(d.id) || shortTab(d.title), title: dr.question || d.title,
         shortTitle: shortTab(dr.question || d.title).replace(/\?$/, ""),
         chatAsk: ses.task,
         agentAsk: "Before I start — <strong>" + esc(undoTxt) + "</strong> " + esc(dr.why_now || "") + " How do you want to decide?",
@@ -1453,7 +1459,7 @@
   }
   /* Sample mode keeps records in this browser, so a reload or a trip to the landing never wipes them.
      Records only ever append; an entry point replaces nothing but its own earlier record. */
-  var SAMPLE_KEY = "hoist-sample-records-v1";
+  var SAMPLE_KEY = "hoist-sample-records-v2";
   function saveSample() {
     if (LIVE || !S) return;
     var base = S.__base || [];
@@ -1606,15 +1612,22 @@
     return chain;
   }
 
-  var EXAMPLES = ["Add user accounts with saved projects",
-    "Set up color tokens and theming for our design system",
-    "Add analytics to see where customers drop off during checkout"];
+  var EXAMPLES = ["Let customers pre-order cakes online for pickup",
+    "Let clients book and pay for walks online",
+    "Start a paid tier for the newsletter"];
+  /* The sample plays one of three everyday ideas; each is a real Muse Spark session recorded through Hoist. */
+  var SCN_ID = null;
+  function scenario() {
+    var list = (S && S.scenarios) || [];
+    for (var i = 0; i < list.length; i++) if (list[i].id === SCN_ID) return list[i];
+    return list[0] || { id: "", project: S && S.project, idea: "", session: S && S.sample_session, ask: "" };
+  }
 
   function startHtml() {
     var badge = LIVE ? "" : '<a class="sample-badge" href="landing.html#install">Sample data</a>';
     return '<div class="card"><h2>What are we deciding?' + badge + "</h2>" +
       '<p class="hint">Tell me the task — I\'ll find every choice that\'s hard to undo, and we\'ll take each decision moment together. ' + esc(LIVE && !S.muse ? "Your agent drafts each moment" : LIVE && S.drafter === "agent" ? "Your agent drafts each moment" : "Muse Spark prepares each moment") + '; Hoist checks every draft against its rules before you see it.</p>' +
-      '<textarea class="task-input" id="taskIn" aria-label="Task"' + (LIVE ? "" : " readonly") + ">" + (LIVE ? "" : esc(EXAMPLES[0])) + "</textarea>" +
+      '<textarea class="task-input" id="taskIn" aria-label="Task"' + (LIVE ? "" : " readonly") + ">" + (LIVE ? "" : esc((scenario().session || {}).task || EXAMPLES[0])) + "</textarea>" +
       (LIVE ? '<div class="escape-row">' + EXAMPLES.map(function (e) {
         return '<button type="button" class="escape-btn" data-action="ex" data-v="' + esc(e) + '">' + esc(e) + "</button>";
       }).join("") + "</div>"
@@ -1654,7 +1667,7 @@
       });
       return;
     }
-    var base = JSON.parse(JSON.stringify(S.sample_session));
+    var base = JSON.parse(JSON.stringify(scenario().session || S.sample_session));
     var ids = base.plan.decisions.filter(function (d) { return d.mode === "ask"; }).map(function (d) { return d.id; });
     SIM = { task: task, status: "planning", plan: null, drafts: {}, drafted: [], total: ids.length, outcomes: {} };
     render();
@@ -1720,11 +1733,11 @@
   /* Sample mode opens where a real Hoist session starts: Muse Code, interrupted in the terminal. */
   var INTRO = { stage: "ask", shown: 0 };
   function ttyLines() {
+    var sc = scenario(), ses = sc.session || {};
     var L = [
-      ['<span class="p">$</span>', 'muse "add user accounts with saved projects"'],
+      ['<span class="p">$</span>', 'muse "' + esc((ses.task || "").toLowerCase()) + '"'],
       ['<span class="p">·</span>', '<span class="dim">reading the project, planning the change…</span>'],
-      ['<span class="p">◼</span>', 'About to run <span class="hl">npm install mongoose</span>'],
-      ['<span class="p">?</span>', 'The database and the sign-in method are hard to change later. How do you want to decide?']
+      ['<span class="p">?</span>', esc(sc.ask || "These are hard to change later. How do you want to decide?")]
     ];
     if (INTRO.stage === "ask") {
       L.push(['<span class="p"> </span>', '<span class="opts"><button type="button" class="opt-b" data-action="intro" data-v="answer">Answer here</button>' +
@@ -1732,11 +1745,16 @@
     }
     if (INTRO.stage === "answer" || INTRO.stage === "answer-hoist") {
       L.push(['<span class="p">❯</span>', "Answer here"]);
-      L.push(['<span class="p">?</span>', 'Which database should we use?']);
-      L.push(['<span class="p"> </span>', '<span class="xq"><span>▸ PostgreSQL</span><span>▸ MongoDB (Recommended)</span><span>▸ SQLite</span><span>▸ MySQL</span></span>']);
-      L.push(['<span class="p">?</span>', 'Which auth strategy?']);
-      L.push(['<span class="p"> </span>', '<span class="xq"><span>▸ JWT</span><span>▸ Session cookies</span><span>▸ OAuth (Recommended)</span></span>']);
-      L.push(['<span class="p">·</span>', '<span class="dim">This is the questionnaire Hoist replaces: it assumes you already know the answers.</span>']);
+      /* what the agent would ask on its own: option one, option two, option three */
+      (ses.drafted || []).slice(0, 2).forEach(function (id) {
+        var dr = (ses.drafts || {})[id];
+        if (!dr) return;
+        L.push(['<span class="p">?</span>', esc(dr.question)]);
+        L.push(['<span class="p"> </span>', '<span class="xq">' + dr.options.map(function (o, i) {
+          return "<span>" + (i + 1) + ". " + esc(o.name) + (o.id === dr.agent_pick ? " (Recommended)" : "") + "</span>";
+        }).join("") + "</span>"]);
+      });
+      L.push(['<span class="p">·</span>', '<span class="dim">Option one, option two, option three. You pick without seeing what each one means for you.</span>']);
       if (INTRO.stage === "answer") {
         L.push(['<span class="p"> </span>', '<span class="opts"><button type="button" class="opt-b go" data-action="intro" data-v="hoist">Decide with Hoist instead</button></span>']);
       }
@@ -1750,7 +1768,7 @@
   }
   function introHtml() {
     var L = ttyLines();
-    var html = '<div class="tty" role="group" aria-label="A Muse Code session, interrupted by Hoist"><div class="tty-head" aria-hidden="true"><i></i><i></i><i></i><span style="margin-left:8px">muse code · fieldnotes</span></div>';
+    var html = '<div class="tty" role="group" aria-label="A Muse Code session, interrupted by Hoist"><div class="tty-head" aria-hidden="true"><i></i><i></i><i></i><span style="margin-left:8px">muse code · ' + esc(scenario().project || "your project") + '</span></div>';
     L.forEach(function (l, i) {
       html += '<div class="ln' + (i >= INTRO.shown ? " new" : "") + '"' + (i >= INTRO.shown ? ' style="animation-delay:' + ((i - INTRO.shown) * 0.38 + 0.15).toFixed(2) + 's"' : "") + ">" + l[0] + "<span>" + l[1] + "</span></div>";
     });
@@ -1765,14 +1783,30 @@
     setTimeout(function () {
       INTRO = { stage: "ask", shown: 0 };
       location.hash = "#/session";
-      setTimeout(function () { startSession(EXAMPLES[0], false); }, 30);
+      setTimeout(function () { startSession((scenario().session || {}).task || EXAMPLES[0], false); }, 30);
     }, reduce ? 300 : 2200);
   }
+  function pickIdea(id) {
+    if (id === SCN_ID) return;
+    SCN_ID = id;
+    INTRO = { stage: "ask", shown: 0 };
+    S.session = null; SIM = null; resetState();
+    render();
+  }
+  function ideasHtml() {
+    var list = S.scenarios || [];
+    if (!list.length) return "";
+    var cur = scenario().id;
+    return '<div class="ideas" role="group" aria-label="What are you building?">' + list.map(function (sc) {
+      return '<button type="button" class="opt idea" data-action="idea" data-v="' + esc(sc.id) + '" aria-pressed="' + (sc.id === cur ? "true" : "false") + '">' +
+        "<b>" + esc(sc.idea) + "</b><small>" + esc(sc.blurb) + "</small><i>“" + esc(sc.session.task) + "”</i></button>";
+    }).join("") + "</div>";
+  }
   function sampleHomeHtml() {
-    return '<p class="lede">This is where a Hoist session starts: your agent, mid-task, about to make a choice that is hard to undo. Pick how you want to decide.</p>' +
+    return '<p class="lede">You have an idea and an agent to build it. Whatever you build, it will ask you things that are hard to undo. Pick an idea and see what happens when it does.</p>' +
+      '<h2 style="margin:0 0 12px">What are you building?</h2>' + ideasHtml() +
       introHtml() +
       '<div class="jump"><span>Or jump in:</span><a class="escape-btn" href="#/session" style="text-decoration:none;display:inline-flex;align-items:center">The decision page</a>' +
-      '<a class="escape-btn" href="#/decide/0004" style="text-decoration:none;display:inline-flex;align-items:center">A single interruption</a>' +
       '<a class="escape-btn" href="#/records" style="text-decoration:none;display:inline-flex;align-items:center">Records</a></div>';
   }
   function homeHtml() {
@@ -1797,7 +1831,7 @@
       html += '<a class="opt list-opt" href="#/session"><b>' + esc(ses.task || "Task session") + "</b><small>" + esc(drafterName(true)) + " is preparing it…</small></a>";
     }
     html += '<a class="opt list-opt" href="#/session" style="border:2px solid var(--bk-signal)"><b>' + (LIVE ? "Walk a task" : "Walk the sample task") + "</b><small>" +
-      esc(LIVE ? "Describe a task; " + (S.drafter === "muse" ? "Muse Spark" : "your agent") + " finds every hard-to-undo choice in it." : "Add user accounts with saved projects · three moments drafted by Muse Spark") + "</small></a>";
+      esc(LIVE ? "Describe a task; " + (S.drafter === "muse" ? "Muse Spark" : "your agent") + " finds every hard-to-undo choice in it." : (scenario().session || {}).task + " · three moments drafted by Muse Spark") + "</small></a>";
     html += "</div>";
     return html;
   }
@@ -1941,6 +1975,7 @@
     else if (action === "kind") { var kq = Q(); if (kq) { state.kindView[kq.id] = v; render(); } }
     else if (action === "critic") askCritic(v);
     else if (action === "intro") introAct(v);
+    else if (action === "idea") pickIdea(v);
     else if (action === "reset-sample") resetSample();
     else if (action === "restart") {
       if (CTX.kind === "decide") { location.hash = "#/"; return; }

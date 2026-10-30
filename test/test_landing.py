@@ -44,11 +44,11 @@ V2 = (Path(__file__).resolve().parent.parent / "site" / "landing.html").read_tex
 
 
 def test_landing_v2():
-    """Version 2: one live canvas, pause → decide → record, ask vs autopilot, Bento MADR, install."""
-    for name, needle in [("headline", "It's okay to stop and"), ("terminal moment", 'id="term"'), ("one live canvas", 'id="live"'),
+    """The story: your idea, the questions come, hard to undo, okay to stop, answers before you ask, one live canvas, records outlive the agent."""
+    for name, needle in [("headline", "You've got a"), ("the belief", "It's okay to stop"), ("option one, two, three", "Option one. Option two."), ("terminal moment", 'id="term"'), ("one live canvas", 'id="live"'),
                          ("kit composes the canvas", "K.compose("), ("Hoist extensions", "hoist-bento.js"),
                          ("pinned kit", "vendor/bento-madr/bento-kit.js"), ("ask vs autopilot", "hoist.py mode autopilot"),
-                         ("four beliefs", "It's not okay to say yes to everything."), ("Bento MADR link", "github.com/leadui/bento-madr"),
+                         ("four beliefs", "It's not okay to say yes blindly."), ("answers before you ask", 'id="asks"'), ("idea switcher on the canvas", 'id="ideas"'), ("records outlive the agent", "outlive"), ("Bento MADR link", "github.com/leadui/bento-madr"),
                          ("Muse Spark credit", "Muse Spark"), ("reduced motion", "prefers-reduced-motion"), ("mobile menu", 'id="burger"')]:
         check("v2 has " + name, needle in V2, repr(needle))
     check("v2 has exactly one live canvas", V2.count('id="live"') == 1)
@@ -66,11 +66,9 @@ def test_landing_v2():
     check("v2 icons sit in the layout, not offset", "icon3d" not in V2 and V2.count('class="ic obj') == 6)
     check("v2 terminal lives in the Pause step", 'class="term-box"' in V2 and "hero-term" not in V2)
     check("v2 link preview image", 'og:image' in V2 and (site / "images" / "og.jpg").exists())
-    import json as _json
-    kinds = list(_json.loads((Path(__file__).resolve().parent.parent / "catalog.json").read_text())["kinds"])
-    rot = V2[V2.index('id="rot"'):V2.index('id="rot"') + 300]
-    words = re.findall(r'<span[^>]*>([a-z -]+) decision\.</span>', rot)
-    check("v2 rotation stays within guarded kinds", words and all(w == "hard-to-undo" or w in kinds for w in words), str(words))
+    rots = re.findall(r'<span class="rot[^"]*"[^>]*>(.*?)</span></(?:p|h2)>', V2)
+    check("v2 rotating lines: the ideas in the hero, the question at install", len(rots) == 2 and "Cake pre-orders." in rots[0], str(len(rots)))
+    check("v2 rotation names no decision kind Hoist doesn't guard", all("database" not in r for r in rots))
     check("v2 kind tabs disclose the same decision", "Same decision, as a" in V2 and "the options stay the same" in V2)
     check("v2 demo links open the Start terminal", 'href="index.html#/"' in V2 and "index.html#/session" not in V2)
     check("v2 has no 3D scene", "three.module" not in V2 and "importmap" not in V2 and "GLTFLoader" not in V2)

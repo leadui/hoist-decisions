@@ -1,8 +1,8 @@
 # Hoist
 
-Coding agents make choices that take weeks to undo, often in a single line of a diff. Hoist stops the agent at those one-way doors, explains the options in plain language, lets you decide, and writes the decision down so any person or agent can see why later.
+You've got an idea and an agent to build it. Whatever you build, the agent will ask you things: option one, option two, option three. Some of those answers take weeks to undo. Hoist stops the agent at those questions, answers the questions you'd have before you ask them, lets you decide, and writes the decision down so the next agent (or future you) knows why.
 
-- **Try the demo** (sample data, runs in the browser): https://leadui.github.io/hoist-decisions/
+- **Try the demo** (sample data, runs in the browser): pick an idea (cake pre-orders, dog-walk bookings or a paid newsletter) and decide its hard questions: https://leadui.github.io/hoist-decisions/
 - **Read the pitch:** https://leadui.github.io/hoist-decisions/landing.html
 - **Built on [Bento MADR](https://github.com/leadui/bento-madr)**, the decision-canvas library that started here.
 
@@ -10,7 +10,7 @@ Built for the Meta Global AI Developer Hackathon with **Muse Code** (the agent H
 
 What Hoist stands for:
 
-- **It's okay to interrupt.** A pause costs a minute; a wrong database costs weeks.
+- **It's okay to pause.** A pause costs a minute; a wrong call can cost weeks.
 - **It's okay to ask dumb questions.** Every option comes with an everyday analogy, what living with it is like, and the terms explained.
 - **It's okay to take your time.** Decide later, send it back to chat, or pick for now. The record says why, so changing it later is a plan, not a regret.
 - **It's not okay to say yes to everything.** When speed matters, autopilot lets the agent decide, and Hoist writes every call down for you to review.
@@ -48,7 +48,7 @@ This adds to your project:
 
 Restart Muse Code in the project and trust the folder so the hook loads.
 
-**Try it:** ask Muse Code to *"add user accounts with saved projects"* and pick **Decide with Hoist instead** when it asks how you want to decide.
+**Try it:** ask Muse Code for something with real choices in it, such as *"let customers pre-order cakes online for pickup"*, and pick **Decide with Hoist instead** when it asks how you want to decide.
 
 ### Optional: Muse Spark
 
@@ -103,7 +103,7 @@ The hook (`hoist.py gate`) and the page server start on their own; you rarely ne
 - By default nothing leaves your machine beyond what your agent already reads and sends: the agent drafts, Hoist checks locally.
 - With `drafter muse`, sessions and the critic send Muse Spark the task, the titles of existing decision records, the folder layout, and an excerpt of the project's manifest, config and schema files (for example `package.json`, Dockerfiles, CI workflows, Prisma or SQL schemas, READMEs, `.env.example`), about 9,000 characters in all. Never `.env` and never application source files. The full list is `EVIDENCE` in `hoist_audit.py`.
 - Every Muse Spark call (only with a key) is logged to `~/.hoist/spend.json` with its cost, and calls are refused once the ledger reaches $25. Delete or edit the ledger to reset it.
-- The hosted demo uses recorded sample data and makes no API calls.
+- The hosted demo uses recorded sample data and makes no API calls. Its three ideas are real Muse Spark sessions, recorded through Hoist's own pipeline and checked by its rules.
 
 ## Configuration
 
