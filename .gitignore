@@ -8,3 +8,9 @@ __pycache__/
 # local-only assets and OS files
 Icons/
 .DS_Store
+
+# working notes for building Hoist (kept locally, not published)
+taskmanager.md
+AGENTS.md
+docs/plan.md
+docs/questionnaire-research.md

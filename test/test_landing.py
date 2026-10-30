@@ -56,7 +56,7 @@ def test_landing_v2():
     for img in set(re.findall(r'src="(images/[^"]+)"', V2)):
         check("v2 image exists: " + img, (site / img).exists())
     check("v2 uses the brand renders", "images/door.webp" in V2 and "images/yes.webp" in V2)
-    check("v2 renders blend into the page", "mix-blend-mode:multiply" in V2)
+    check("v2 icons are true cut-outs in front, not blended", "mix-blend-mode:multiply" not in V2 and ".obj{filter:drop-shadow" in V2)
     check("v2 hero uses the desk photo as a backdrop", 'class="hero-bg"' in V2 and "images/desk.webp" in V2)
     check("v2 hero has a video slot", 'data-video=' in V2 and "createElement(\"video\")" in V2)
     check("v2 yes-person is a full-bleed band", 'class="band"' in V2 and "images/yes.webp" in V2)
